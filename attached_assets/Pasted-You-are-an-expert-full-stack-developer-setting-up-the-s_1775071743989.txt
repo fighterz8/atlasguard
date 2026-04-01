@@ -1,0 +1,64 @@
+You are an expert full-stack developer setting up the scaffolding for a project named "AtlasGuard" (a relocation decision-support application). 
+
+Please generate a VERY MINIMAL, cleanly structured codebase. The bulk of the logic will be implemented later in Cursor, so your goal is strictly to set up the architecture, folder structure, database schema, and core TypeScript interfaces based on the provided design constraints.
+
+### 1. Architectural Constraints
+* **Tech Stack:** Next.js (App Router, TypeScript), TailwindCSS, and SQLite (using Prisma or Drizzle for ORM).
+* **Architecture:** Modular Monolith. No microservices. No live external API calls or scraping.
+* **Data Flow:** The evaluation flow is strictly synchronous: User Input -> Scorer -> Explainer -> Verifier -> (Optional Repair) -> Fallback Renderer -> Persistence -> UI.
+
+### 2. Database Schema (SQLite)
+Set up the ORM schema with these lean MVP tables:
+* `metros`: city, state, slug, affordabilityScore, climateScore, climateTendency, safetyScore, amenitiesScore, familyFitScore, mobilityScore, opportunityScore, incomeTaxRegime, benchmarkVersion, staleRiskFlag.
+* `scenarios`: id, email (string/null), currentCity, targetCity, requestPayload (JSON), createdAt.
+* `scenario_results`: id, scenarioId, lifestyleFit, financialFit, moveScore, verdictBand, resultMode (enum: explainer, repaired_explainer, deterministic_fallback), structuredExplanation (JSON), renderedOutput (JSON), createdAt.
+* `trace_runs`: id, scenarioId (nullable), scoringEvidence (JSON), rawExplanation (JSON), verifierResult (JSON), finalMode, benchmarkVersion, createdAt.
+
+### 3. Folder Structure & Stubs
+Create the following directory structure with minimal placeholder files and exported empty functions (e.g., `export const computeScoring = () => { /* TODO */ }`).
+
+/src
+  /app
+    /api
+      /evaluate
+        route.ts          // Orchestrates the synchronous pipeline
+    /wizard
+      page.tsx            // Placeholder for the 4-step UI (Current, Target, Finances, Lifestyle)
+    /results
+      page.tsx            // Placeholder for final rendered output
+  /core
+    /contracts
+      types.ts            // Put the TypeScript interfaces here (see section 4)
+    /scorer
+      index.ts            // Deterministic scoring engine (Returns ScoringEvidence)
+    /explainer
+      index.ts            // AI generator (Returns StructuredExplanation JSON)
+    /verifier
+      index.ts            // Verifier engine (Checks V-001 through V-010, returns PASS/PARTIAL/FAIL)
+    /fallback
+      index.ts            // Deterministic Fallback Renderer
+  /db
+    schema.ts             // ORM schema
+
+### 4. Core TypeScript Interfaces (`/src/core/contracts/types.ts`)
+Please define these exact TypeScript interfaces so the contract boundaries are locked in for future development:
+
+1.  **`ScenarioInput`**: currentCity, targetCity, priorityMode ('finance' | 'balanced' | 'lifestyle'), climatePreference ('warm' | 'cold'), weights (affordability, climate, safety, amenities, familyFit, mobility, opportunity), income (current, target), housing (current, target), expenses (current, target), retainedIncomeAdjustment.
+2.  **`ScoringEvidence`**: Must contain nested objects for `scenarioContext`, `userInputs`, `lifestyleEvidence`, `financialEvidence`, `moveEvidence`, and `derivedSignals` (which includes arrays for `positiveDrivers`, `tradeoffs`, `sensitivityFlags`, `caveatFlags`, plus `verdictBand`, `verdictDowngraded`, `downgradeReason`).
+3.  **`StructuredExplanation`**: 
+    * `verdict` (enum: strong_fit | qualified_yes | caution | weak_fit)
+    * `score_summary` (lifestyle_fit, financial_fit, move_score)
+    * `top_positive_drivers` (array of objects with factor, evidenceRef, reason)
+    * `top_tradeoffs` (array of objects with factor, evidenceRef, reason)
+    * `assumptions_used` (array of objects with assumption, sourceField, material)
+    * `sensitivity_notes` (array of objects with variable, evidenceRef, note)
+    * `uncertainty_or_caveats` (array of objects with type, evidenceRef, description)
+    * `recommended_next_step` (string)
+4.  **`VerifierResult`**: status ('PASS' | 'PARTIAL' | 'FAIL'), checkResults (array), failingCheckIds (array), partialCheckIds (array), messages (array), repairRecommended (boolean).
+
+### 5. Version Control (GitHub)
+Ensure Git is enabled in the repository. Initialize the repo, stage the scaffolding, make an initial commit, and explicitly link it to the following remote repository:
+`git remote add origin https://github.com/fighterz8/atlasguard.git`
+(Push the initial commit to the `main` branch once the scaffolding is complete).
+
+**Instructions:** Generate the Next.js project, install the basic dependencies, write the DB schema, set up the types, wire up the empty folder structure, and configure the GitHub remote. Leave all business logic, math, and LLM prompts as `// TODO: Implement via Cursor`.

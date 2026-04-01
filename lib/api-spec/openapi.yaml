@@ -1,0 +1,335 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: AtlasGuard API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: evaluate
+    description: Scenario evaluation pipeline
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /evaluate:
+    post:
+      operationId: evaluateScenario
+      tags: [evaluate]
+      summary: Evaluate a relocation scenario
+      description: Runs the synchronous evaluation pipeline (Scorer → Explainer → Verifier → Fallback)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateRequest"
+      responses:
+        "200":
+          description: Evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluateResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /scenarios:
+    get:
+      operationId: listScenarios
+      tags: [evaluate]
+      summary: List past scenarios
+      responses:
+        "200":
+          description: List of scenarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScenarioSummary"
+  /scenarios/{id}:
+    get:
+      operationId: getScenario
+      tags: [evaluate]
+      summary: Get a scenario and its result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scenario with result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /metros:
+    get:
+      operationId: listMetros
+      tags: [evaluate]
+      summary: List available metros
+      responses:
+        "200":
+          description: List of metros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Metro"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    WeightConfig:
+      type: object
+      properties:
+        affordability:
+          type: number
+        climate:
+          type: number
+        safety:
+          type: number
+        amenities:
+          type: number
+        familyFit:
+          type: number
+        mobility:
+          type: number
+        opportunity:
+          type: number
+      required:
+        - affordability
+        - climate
+        - safety
+        - amenities
+        - familyFit
+        - mobility
+        - opportunity
+    IncomeConfig:
+      type: object
+      properties:
+        current:
+          type: number
+        target:
+          type: number
+      required:
+        - current
+        - target
+    HousingConfig:
+      type: object
+      properties:
+        current:
+          type: number
+        target:
+          type: number
+      required:
+        - current
+        - target
+    ExpensesConfig:
+      type: object
+      properties:
+        current:
+          type: number
+        target:
+          type: number
+      required:
+        - current
+        - target
+    EvaluateRequest:
+      type: object
+      properties:
+        email:
+          type: ["string", "null"]
+        currentCity:
+          type: string
+        targetCity:
+          type: string
+        priorityMode:
+          type: string
+          enum: [finance, balanced, lifestyle]
+        climatePreference:
+          type: string
+          enum: [warm, cold]
+        weights:
+          $ref: "#/components/schemas/WeightConfig"
+        income:
+          $ref: "#/components/schemas/IncomeConfig"
+        housing:
+          $ref: "#/components/schemas/HousingConfig"
+        expenses:
+          $ref: "#/components/schemas/ExpensesConfig"
+        retainedIncomeAdjustment:
+          type: number
+      required:
+        - currentCity
+        - targetCity
+        - priorityMode
+        - climatePreference
+        - weights
+        - income
+        - housing
+        - expenses
+        - retainedIncomeAdjustment
+    EvaluateResponse:
+      type: object
+      properties:
+        scenarioId:
+          type: integer
+        lifestyleFit:
+          type: number
+        financialFit:
+          type: number
+        moveScore:
+          type: number
+        verdictBand:
+          type: string
+        verdict:
+          type: string
+          enum: [strong_fit, qualified_yes, caution, weak_fit]
+        resultMode:
+          type: string
+          enum: [explainer, repaired_explainer, deterministic_fallback]
+        structuredExplanation:
+          type: object
+        renderedOutput:
+          type: object
+      required:
+        - scenarioId
+        - lifestyleFit
+        - financialFit
+        - moveScore
+        - verdictBand
+        - verdict
+        - resultMode
+    ScenarioSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        currentCity:
+          type: string
+        targetCity:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - currentCity
+        - targetCity
+        - createdAt
+    ScenarioDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        currentCity:
+          type: string
+        targetCity:
+          type: string
+        email:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        result:
+          $ref: "#/components/schemas/EvaluateResponse"
+      required:
+        - id
+        - currentCity
+        - targetCity
+        - createdAt
+    Metro:
+      type: object
+      properties:
+        id:
+          type: integer
+        city:
+          type: string
+        state:
+          type: string
+        slug:
+          type: string
+        affordabilityScore:
+          type: number
+        climateScore:
+          type: number
+        climateTendency:
+          type: string
+        safetyScore:
+          type: number
+        amenitiesScore:
+          type: number
+        familyFitScore:
+          type: number
+        mobilityScore:
+          type: number
+        opportunityScore:
+          type: number
+        incomeTaxRegime:
+          type: string
+        benchmarkVersion:
+          type: string
+        staleRiskFlag:
+          type: boolean
+      required:
+        - id
+        - city
+        - state
+        - slug
+        - affordabilityScore
+        - climateScore
+        - climateTendency
+        - safetyScore
+        - amenitiesScore
+        - familyFitScore
+        - mobilityScore
+        - opportunityScore
+        - incomeTaxRegime
+        - benchmarkVersion
+        - staleRiskFlag
