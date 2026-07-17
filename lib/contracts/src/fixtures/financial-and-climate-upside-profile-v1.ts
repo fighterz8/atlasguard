@@ -238,16 +238,6 @@ export const financialAndClimateUpsideProfile = {
   findings: {
     drivers: [
       {
-        id: "finding.financial_cushion_improves",
-        code: "financial_cushion_improves",
-        subject: {
-          kind: "financial",
-          metricId: "financial.monthly_cushion_delta",
-        },
-        material: true,
-        evidenceRefs: ["derived.financial.cushion_delta"],
-      },
-      {
         id: "finding.climate_heat_improves",
         code: "climate_heat_improves",
         subject: {
@@ -257,21 +247,21 @@ export const financialAndClimateUpsideProfile = {
         material: true,
         evidenceRefs: ["benchmark.climate_heat.fixture"],
       },
+      {
+        id: "finding.financial_cushion_improves",
+        code: "financial_cushion_improves",
+        subject: {
+          kind: "financial",
+          metricId: "financial.monthly_cushion_delta",
+        },
+        material: true,
+        evidenceRefs: ["derived.financial.cushion_delta"],
+      },
     ],
     tradeoffs: [],
     blockers: [],
     caveats: [],
     assumptions: [
-      {
-        id: "finding.target_housing_estimate",
-        code: "target_housing_estimate",
-        subject: {
-          kind: "assumption",
-          inputPath: "finances.destination.housingCost.monthlyCents",
-        },
-        material: true,
-        evidenceRefs: ["input.destination.housing"],
-      },
       {
         id: "finding.target_expenses_estimate",
         code: "target_expenses_estimate",
@@ -283,9 +273,31 @@ export const financialAndClimateUpsideProfile = {
         material: true,
         evidenceRefs: ["input.destination.recurring"],
       },
+      {
+        id: "finding.target_housing_estimate",
+        code: "target_housing_estimate",
+        subject: {
+          kind: "assumption",
+          inputPath: "finances.destination.housingCost.monthlyCents",
+        },
+        material: true,
+        evidenceRefs: ["input.destination.housing"],
+      },
     ],
     omittedPriorities: [],
   },
+  nextSteps: [
+    {
+      id: "next_step.verify_target_expenses",
+      code: "verify_target_expenses",
+      evidenceRefs: ["input.destination.recurring"],
+    },
+    {
+      id: "next_step.verify_target_housing",
+      code: "verify_target_housing",
+      evidenceRefs: ["input.destination.housing"],
+    },
+  ],
   evidence: [
     benchmarkEvidence({
       id: "benchmark.climate_heat.fixture",
@@ -334,6 +346,35 @@ export const financialAndClimateUpsideProfile = {
         "input.origin.housing",
         "input.origin.recurring",
         "input.origin.take_home",
+      ],
+    },
+    {
+      kind: "derived",
+      id: "derived.financial.destination_housing_burden",
+      metricId: "financial.destination_housing_burden",
+      unit: "basis_points",
+      value: 2_208,
+      formula: {
+        id: "financial.destination_housing_burden",
+        version: "1.0.0",
+      },
+      inputRefs: ["input.destination.gross", "input.destination.housing"],
+    },
+    {
+      kind: "derived",
+      id: "derived.financial.destination_monthly_cushion",
+      metricId: "financial.destination_monthly_cushion",
+      unit: "usd_cents",
+      value: 150_000,
+      formula: {
+        id: "financial.destination_monthly_cushion",
+        version: "1.0.0",
+      },
+      inputRefs: [
+        "input.destination.housing",
+        "input.destination.recurring",
+        "input.destination.retained",
+        "input.destination.take_home",
       ],
     },
     inputEvidence(

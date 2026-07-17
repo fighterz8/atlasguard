@@ -12,12 +12,24 @@ import type {
   FinancialInputPath,
   ScenarioInputEvidence,
 } from "./benchmark";
+import { compareCodePoints } from "./canonical-json";
 import {
   calculateFinancialMaterialityCents,
   calculateHousingBurdenBps,
   calculateMonthlyCushion,
   classifySignedChange,
   DECISION_RULE_VERSION,
+  deriveConfidenceSelection,
+  deriveDecisionNextSteps,
+  deriveFinancialBlockerCodes,
+  deriveFinancialRiskCodes,
+  FINANCIAL_BLOCKER_CODES,
+  FINANCIAL_BLOCKER_FINDING_REGISTRY,
+  FINANCIAL_DERIVED_EVIDENCE_REGISTRY,
+  FINANCIAL_INPUT_EVIDENCE_IDS,
+  FINANCIAL_RISK_CODES,
+  getFinancialRiskFindingRegistration,
+  isPriorityChangeMaterial,
   roundHalfAwayFromZero,
   selectDecisionCondition,
 } from "./decision-rules";
@@ -55,24 +67,14 @@ export const DecisionConditionValueSchema = z.enum([
   "high_financial_risk_under_assumptions",
 ]);
 
-export const FinancialBlockerCodeSchema = z.enum([
-  "negative_target_cushion",
-  "target_housing_burden_at_or_above_50_percent",
-]);
+export const FinancialBlockerCodeSchema = z.enum(FINANCIAL_BLOCKER_CODES);
 
-export const FinancialRiskCodeSchema = z.enum([
-  "target_income_not_confirmed",
-  "target_gross_income_unknown",
-  "target_gross_income_not_confirmed",
-  "target_housing_not_confirmed",
-  "target_expenses_not_confirmed",
-  "retained_property_net_not_confirmed",
-]);
+export const FinancialRiskCodeSchema = z.enum(FINANCIAL_RISK_CODES);
 
 export const FinancialStateSchema = z
   .object({
     monthlyTakeHomeIncomeCents: MonthlyCentsSchema,
-    monthlyGrossIncomeCents: MonthlyCentsSchema.nullable(),
+    monthlyGrossIncomeCents: MonthlyCentsSchema.positive().nullable(),
     monthlyHousingCostCents: MonthlyCentsSchema,
     monthlyRecurringExpensesCents: MonthlyCentsSchema,
     monthlyRetainedPropertyNetCents: SafeIntegerSchema,
@@ -224,16 +226,10 @@ export const FinancialPositionSchema = z
       });
     }
 
-    const expectedBlockers: z.infer<typeof FinancialBlockerCodeSchema>[] = [];
-    if (position.destination.monthlyCushionCents < 0) {
-      expectedBlockers.push("negative_target_cushion");
-    }
-    if (
-      position.destination.housingBurdenBps !== null &&
-      position.destination.housingBurdenBps >= 5_000
-    ) {
-      expectedBlockers.push("target_housing_burden_at_or_above_50_percent");
-    }
+    const expectedBlockers = deriveFinancialBlockerCodes({
+      destinationMonthlyCushionCents: position.destination.monthlyCushionCents,
+      destinationHousingBurdenBps: position.destination.housingBurdenBps,
+    });
     if (!arraysEqual(position.blockerCodes, expectedBlockers)) {
       context.addIssue({
         code: "custom",
@@ -243,24 +239,14 @@ export const FinancialPositionSchema = z
     }
 
     const destinationBasis = position.destination.assumptionBasis;
-    const expectedRisks: z.infer<typeof FinancialRiskCodeSchema>[] = [];
-    if (destinationBasis.takeHomeIncome !== "confirmed") {
-      expectedRisks.push("target_income_not_confirmed");
-    }
-    if (position.destination.monthlyGrossIncomeCents === null) {
-      expectedRisks.push("target_gross_income_unknown");
-    } else if (destinationBasis.grossIncome !== "confirmed") {
-      expectedRisks.push("target_gross_income_not_confirmed");
-    }
-    if (destinationBasis.housingCost !== "confirmed") {
-      expectedRisks.push("target_housing_not_confirmed");
-    }
-    if (destinationBasis.recurringExpenses !== "confirmed") {
-      expectedRisks.push("target_expenses_not_confirmed");
-    }
-    if (destinationBasis.retainedPropertyNet !== "confirmed") {
-      expectedRisks.push("retained_property_net_not_confirmed");
-    }
+    const expectedRisks = deriveFinancialRiskCodes({
+      targetTakeHomeBasis: destinationBasis.takeHomeIncome,
+      targetGrossIncomeCents: position.destination.monthlyGrossIncomeCents,
+      targetGrossIncomeBasis: destinationBasis.grossIncome,
+      targetHousingBasis: destinationBasis.housingCost,
+      targetExpensesBasis: destinationBasis.recurringExpenses,
+      retainedPropertyNetBasis: destinationBasis.retainedPropertyNet,
+    });
     if (!arraysEqual(position.riskCodes, expectedRisks)) {
       context.addIssue({
         code: "custom",
@@ -282,7 +268,7 @@ export const PriorityChangeSchema = z
     destinationUtilityBps: BasisPointsSchema.nullable(),
     utilityDeltaBps: SignedBasisPointsSchema.nullable(),
     weightedContribution: SafeIntegerSchema.nullable(),
-    materialityThresholdBps: BasisPointsSchema.min(1),
+    materialityThresholdBps: BasisPointsSchema.min(1).nullable(),
     classification: z.enum(["improves", "similar", "worsens", "unavailable"]),
     material: z.boolean(),
     transformationId: StableIdSchema,
@@ -301,6 +287,7 @@ export const PriorityChangeSchema = z
         change.classification !== "unavailable" ||
         change.material ||
         change.evidenceRefs.length > 0 ||
+        change.materialityThresholdBps !== null ||
         change.transformationId !== "not_evaluated" ||
         change.transformationVersion !== "0.0.0"
       ) {
@@ -311,6 +298,15 @@ export const PriorityChangeSchema = z
           path: ["weight"],
         });
       }
+      return;
+    }
+
+    if (change.materialityThresholdBps === null) {
+      context.addIssue({
+        code: "custom",
+        message: "Every active priority requires a materiality threshold.",
+        path: ["materialityThresholdBps"],
+      });
       return;
     }
 
@@ -384,8 +380,11 @@ export const PriorityChangeSchema = z
       });
     }
 
-    const expectedMaterial =
-      change.weight > 0 && expectedClassification !== "similar";
+    const expectedMaterial = isPriorityChangeMaterial(
+      expectedDelta,
+      change.weight,
+      change.materialityThresholdBps,
+    );
     if (change.material !== expectedMaterial) {
       context.addIssue({
         code: "custom",
@@ -425,7 +424,25 @@ export const FindingSchema = z
     material: z.boolean(),
     evidenceRefs: z.array(StableIdSchema),
   })
-  .strict();
+  .strict()
+  .transform((finding) => ({
+    ...finding,
+    evidenceRefs: [...finding.evidenceRefs].sort(compareCodePoints),
+  }));
+
+export const NextStepSchema = z
+  .object({
+    id: StableIdSchema.refine((id) => id.startsWith("next_step."), {
+      message: "Next-step IDs must use the next_step. namespace.",
+    }),
+    code: StableIdSchema,
+    evidenceRefs: z.array(StableIdSchema).min(1),
+  })
+  .strict()
+  .transform((nextStep) => ({
+    ...nextStep,
+    evidenceRefs: [...nextStep.evidenceRefs].sort(compareCodePoints),
+  }));
 
 const BreakpointDestinationSchema = z.enum([
   "worth_a_closer_look",
@@ -523,6 +540,7 @@ export const DecisionProfileSchema = z
         omittedPriorities: z.array(PriorityIdSchema),
       })
       .strict(),
+    nextSteps: z.array(NextStepSchema).min(1),
     evidence: z.array(DecisionEvidenceSchema),
   })
   .strict()
@@ -536,6 +554,11 @@ export const DecisionProfileSchema = z
     );
     const breakpointById = new Map(
       profile.breakpoints.map((breakpoint) => [breakpoint.id, breakpoint]),
+    );
+    const registeredDerivedMetrics = new Set<string>(
+      Object.values(FINANCIAL_DERIVED_EVIDENCE_REGISTRY).map(
+        (registration) => registration.metricId,
+      ),
     );
 
     const reportDuplicate = (ids: string[], path: (string | number)[]) => {
@@ -573,6 +596,10 @@ export const DecisionProfileSchema = z
       ["priorityChanges"],
     );
     reportDuplicate(breakpointIds, ["breakpoints"]);
+    reportDuplicate(
+      profile.nextSteps.map((nextStep) => nextStep.id),
+      ["nextSteps"],
+    );
 
     if (evidenceIds.join("|") !== [...evidenceIds].sort().join("|")) {
       context.addIssue({
@@ -628,11 +655,11 @@ export const DecisionProfileSchema = z
       }
 
       if (evidence.kind === "derived") {
-        if (evidence.metricId !== "financial.monthly_cushion_delta") {
+        if (!registeredDerivedMetrics.has(evidence.metricId)) {
           context.addIssue({
             code: "custom",
             message:
-              "Phase 0 permits only the registered monthly-cushion derived metric.",
+              "Phase 0 permits only registered deterministic derived metrics.",
             path: ["evidence", index, "metricId"],
           });
         }
@@ -642,11 +669,11 @@ export const DecisionProfileSchema = z
           "inputRefs",
         ]);
         evidence.inputRefs.forEach((reference, referenceIndex) => {
-          if (evidenceById.get(reference)?.kind === "benchmark_metric") {
+          if (evidenceById.get(reference)?.kind !== "scenario_input") {
             context.addIssue({
               code: "custom",
               message:
-                "Derived financial evidence may reference only input or derived evidence.",
+                "Registered financial evidence may reference only scenario inputs.",
               path: ["evidence", index, "inputRefs", referenceIndex],
             });
           }
@@ -745,13 +772,14 @@ export const DecisionProfileSchema = z
       const evidence = matches[0];
       inputEvidenceIdsByPath.set(expected.path, evidence.id);
       if (
+        evidence.id !== FINANCIAL_INPUT_EVIDENCE_IDS[expected.path] ||
         evidence.value !== expected.value ||
         evidence.assumptionBasis !== expected.basis
       ) {
         context.addIssue({
           code: "custom",
           message:
-            "Input evidence must match the profile value and assumption basis.",
+            "Input evidence ID, value, and assumption basis must match the canonical financial input.",
           path: ["evidence", profile.evidence.indexOf(evidence)],
         });
       }
@@ -769,56 +797,86 @@ export const DecisionProfileSchema = z
       }
     });
 
-    const cushionEvidence = profile.evidence.filter(
-      (evidence): evidence is DerivedEvidence =>
-        evidence.kind === "derived" &&
-        evidence.metricId === "financial.monthly_cushion_delta",
+    const derivedExpectations = [
+      {
+        registration: FINANCIAL_DERIVED_EVIDENCE_REGISTRY.monthlyCushionDelta,
+        value: profile.financialPosition.change.monthlyCushionDeltaCents,
+      },
+      {
+        registration:
+          FINANCIAL_DERIVED_EVIDENCE_REGISTRY.destinationMonthlyCushion,
+        value: profile.financialPosition.destination.monthlyCushionCents,
+      },
+      ...(profile.financialPosition.destination.housingBurdenBps === null
+        ? []
+        : [
+            {
+              registration:
+                FINANCIAL_DERIVED_EVIDENCE_REGISTRY.destinationHousingBurden,
+              value: profile.financialPosition.destination.housingBurdenBps,
+            },
+          ]),
+    ];
+    const expectedDerivedMetricIds = new Set<string>(
+      derivedExpectations.map(({ registration }) => registration.metricId),
     );
-    if (cushionEvidence.length !== 1) {
-      context.addIssue({
-        code: "custom",
-        message:
-          "Decision Profile requires one derived monthly-cushion-delta record.",
-        path: ["evidence"],
-      });
-    } else {
-      const evidence = cushionEvidence[0];
+    const derivedEvidenceByMetricId = new Map<string, DerivedEvidence>();
+
+    derivedExpectations.forEach(({ registration, value }) => {
+      const matches = profile.evidence.filter(
+        (evidence): evidence is DerivedEvidence =>
+          evidence.kind === "derived" &&
+          evidence.metricId === registration.metricId,
+      );
+      if (matches.length !== 1) {
+        context.addIssue({
+          code: "custom",
+          message: `Decision Profile requires exactly one ${registration.metricId} evidence record.`,
+          path: ["evidence"],
+        });
+        return;
+      }
+
+      const evidence = matches[0];
+      derivedEvidenceByMetricId.set(registration.metricId, evidence);
+      const expectedRefs = registration.inputPaths
+        .map((path) => inputEvidenceIdsByPath.get(path))
+        .filter((reference): reference is string => reference !== undefined)
+        .sort(compareCodePoints);
       if (
-        evidence.value !==
-          profile.financialPosition.change.monthlyCushionDeltaCents ||
-        evidence.formula.id !== "financial.monthly_cushion_delta" ||
-        evidence.formula.version !== DECISION_RULE_VERSION
+        evidence.id !== registration.evidenceId ||
+        evidence.unit !== registration.unit ||
+        evidence.value !== value ||
+        evidence.formula.id !== registration.metricId ||
+        evidence.formula.version !== DECISION_RULE_VERSION ||
+        !arraysEqual(evidence.inputRefs, expectedRefs) ||
+        expectedRefs.length !== registration.inputPaths.length
       ) {
         context.addIssue({
           code: "custom",
           message:
-            "Derived cushion evidence does not match the financial position.",
+            "Derived financial evidence must match its registered ID, formula, value, unit, and complete input set.",
           path: ["evidence", profile.evidence.indexOf(evidence)],
         });
       }
+    });
 
-      const cushionPaths: FinancialInputPath[] = [
-        "finances.origin.takeHomeIncome.monthlyCents",
-        "finances.origin.housingCost.monthlyCents",
-        "finances.origin.recurringExpensesExcludingHousing.monthlyCents",
-        "finances.destination.takeHomeIncome.monthlyCents",
-        "finances.destination.housingCost.monthlyCents",
-        "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
-        "finances.destination.retainedPropertyNet.monthlyCents",
-      ];
-      const expectedRefs = cushionPaths
-        .map((path) => inputEvidenceIdsByPath.get(path))
-        .filter((reference): reference is string => reference !== undefined)
-        .sort();
-      if (!arraysEqual([...evidence.inputRefs].sort(), expectedRefs)) {
+    profile.evidence.forEach((evidence, index) => {
+      if (
+        evidence.kind === "derived" &&
+        !expectedDerivedMetricIds.has(evidence.metricId)
+      ) {
         context.addIssue({
           code: "custom",
-          message:
-            "Derived cushion evidence must cite every contributing input.",
-          path: ["evidence", profile.evidence.indexOf(evidence), "inputRefs"],
+          message: "Derived evidence is not applicable to this profile.",
+          path: ["evidence", index, "metricId"],
         });
       }
-    }
+    });
+
+    const cushionEvidence = derivedEvidenceByMetricId.get(
+      FINANCIAL_DERIVED_EVIDENCE_REGISTRY.monthlyCushionDelta.metricId,
+    );
 
     reportMissingEvidence(profile.condition.evidenceRefs, [
       "condition",
@@ -828,6 +886,13 @@ export const DecisionProfileSchema = z
       "confidence",
       "evidenceRefs",
     ]);
+    profile.nextSteps.forEach((nextStep, index) =>
+      reportMissingEvidence(nextStep.evidenceRefs, [
+        "nextSteps",
+        index,
+        "evidenceRefs",
+      ]),
+    );
 
     const materialPriorityEvidence = new Set<string>();
     profile.priorityChanges.forEach((change, index) => {
@@ -923,8 +988,8 @@ export const DecisionProfileSchema = z
     }
 
     const expectedConditionEvidence = new Set(materialPriorityEvidence);
-    if (cushionEvidence.length === 1) {
-      expectedConditionEvidence.add(cushionEvidence[0].id);
+    if (cushionEvidence !== undefined) {
+      expectedConditionEvidence.add(cushionEvidence.id);
     }
     profile.priorityChanges
       .filter(
@@ -932,25 +997,19 @@ export const DecisionProfileSchema = z
       )
       .flatMap((change) => change.evidenceRefs)
       .forEach((reference) => expectedConditionEvidence.add(reference));
-    if (
-      profile.financialPosition.blockerCodes.includes(
-        "target_housing_burden_at_or_above_50_percent",
-      )
-    ) {
-      const housingReference = inputEvidenceIdsByPath.get(
-        "finances.destination.housingCost.monthlyCents",
-      );
-      const grossReference = inputEvidenceIdsByPath.get(
-        "finances.destination.grossIncome.monthlyCents",
-      );
-      if (housingReference !== undefined) {
-        expectedConditionEvidence.add(housingReference);
-      }
-      if (grossReference !== undefined) {
-        expectedConditionEvidence.add(grossReference);
-      }
-    }
-    const expectedConditionEvidenceRefs = [...expectedConditionEvidence].sort();
+    profile.financialPosition.blockerCodes.forEach((blockerCode) => {
+      const registration = FINANCIAL_BLOCKER_FINDING_REGISTRY[blockerCode];
+      expectedConditionEvidence.add(registration.evidenceId);
+      registration.inputPaths.forEach((inputPath) => {
+        const reference = inputEvidenceIdsByPath.get(inputPath);
+        if (reference !== undefined) {
+          expectedConditionEvidence.add(reference);
+        }
+      });
+    });
+    const expectedConditionEvidenceRefs = [...expectedConditionEvidence].sort(
+      compareCodePoints,
+    );
     if (
       !arraysEqual(
         profile.condition.evidenceRefs,
@@ -1065,13 +1124,34 @@ export const DecisionProfileSchema = z
             path: ["findings", groupName, findingIndex, "evidenceRefs"],
           });
         }
+        if (!finding.material) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Phase 0 findings must be selected by a registered material rule.",
+            path: ["findings", groupName, findingIndex, "material"],
+          });
+        }
 
         finding.evidenceRefs.forEach((reference, referenceIndex) => {
           const evidence = evidenceById.get(reference);
+          const financialMetricId =
+            finding.subject.kind === "financial"
+              ? finding.subject.metricId
+              : null;
+          const matchingDerivedEvidence =
+            financialMetricId !== null
+              ? profile.evidence.find(
+                  (candidate): candidate is DerivedEvidence =>
+                    candidate.kind === "derived" &&
+                    candidate.metricId === financialMetricId,
+                )
+              : undefined;
           const subjectMatches =
             (finding.subject.kind === "financial" &&
-              evidence?.kind === "derived" &&
-              evidence.metricId === finding.subject.metricId) ||
+              matchingDerivedEvidence !== undefined &&
+              (evidence?.id === matchingDerivedEvidence.id ||
+                matchingDerivedEvidence.inputRefs.includes(reference))) ||
             (finding.subject.kind === "priority" &&
               evidence?.kind === "benchmark_metric" &&
               evidence.priorityId === finding.subject.priorityId) ||
@@ -1158,33 +1238,9 @@ export const DecisionProfileSchema = z
       }
     });
 
-    const assumptionRiskPaths = new Map<
-      z.infer<typeof FinancialRiskCodeSchema>,
-      FinancialInputPath
-    >([
-      [
-        "target_income_not_confirmed",
-        "finances.destination.takeHomeIncome.monthlyCents",
-      ],
-      [
-        "target_gross_income_not_confirmed",
-        "finances.destination.grossIncome.monthlyCents",
-      ],
-      [
-        "target_housing_not_confirmed",
-        "finances.destination.housingCost.monthlyCents",
-      ],
-      [
-        "target_expenses_not_confirmed",
-        "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
-      ],
-      [
-        "retained_property_net_not_confirmed",
-        "finances.destination.retainedPropertyNet.monthlyCents",
-      ],
-    ]);
     profile.financialPosition.riskCodes.forEach((riskCode) => {
-      const inputPath = assumptionRiskPaths.get(riskCode);
+      const inputPath =
+        getFinancialRiskFindingRegistration(riskCode)?.inputPath;
       if (inputPath === undefined || !inputEvidenceIdsByPath.has(inputPath)) {
         return;
       }
@@ -1215,7 +1271,7 @@ export const DecisionProfileSchema = z
       return `assumption:${finding.subject.inputPath}`;
     };
     const materialFindingKey = (finding: Finding): string =>
-      `${finding.id}|${finding.code}|${findingSubjectKey(finding)}`;
+      `${finding.id}|${finding.code}|${findingSubjectKey(finding)}|${finding.evidenceRefs.join(",")}`;
     const compareExpectedMaterialFindings = (
       groupName: "drivers" | "tradeoffs" | "assumptions",
       expectedKeys: string[],
@@ -1238,17 +1294,17 @@ export const DecisionProfileSchema = z
     const expectedTradeoffKeys: string[] = [];
     if (financialClassification === "improves") {
       expectedDriverKeys.push(
-        "finding.financial_cushion_improves|financial_cushion_improves|financial:financial.monthly_cushion_delta",
+        `finding.financial_cushion_improves|financial_cushion_improves|financial:financial.monthly_cushion_delta|${FINANCIAL_DERIVED_EVIDENCE_REGISTRY.monthlyCushionDelta.evidenceId}`,
       );
     } else if (financialClassification === "worsens") {
       expectedTradeoffKeys.push(
-        "finding.financial_cushion_worsens|financial_cushion_worsens|financial:financial.monthly_cushion_delta",
+        `finding.financial_cushion_worsens|financial_cushion_worsens|financial:financial.monthly_cushion_delta|${FINANCIAL_DERIVED_EVIDENCE_REGISTRY.monthlyCushionDelta.evidenceId}`,
       );
     }
     profile.priorityChanges.forEach((change) => {
       if (!change.material || change.classification === "similar") return;
       const code = `${change.priorityId}_${change.classification}`;
-      const key = `finding.${code}|${code}|priority:${change.priorityId}`;
+      const key = `finding.${code}|${code}|priority:${change.priorityId}|${change.evidenceRefs.join(",")}`;
       if (change.classification === "improves") {
         expectedDriverKeys.push(key);
       } else if (change.classification === "worsens") {
@@ -1256,20 +1312,11 @@ export const DecisionProfileSchema = z
       }
     });
 
-    const assumptionFindingCodes = new Map<
-      z.infer<typeof FinancialRiskCodeSchema>,
-      string
-    >([
-      ["target_income_not_confirmed", "target_income_estimate"],
-      ["target_gross_income_not_confirmed", "target_gross_income_estimate"],
-      ["target_housing_not_confirmed", "target_housing_estimate"],
-      ["target_expenses_not_confirmed", "target_expenses_estimate"],
-      ["retained_property_net_not_confirmed", "retained_property_net_estimate"],
-    ]);
     const expectedAssumptionKeys = profile.financialPosition.riskCodes.flatMap(
       (riskCode) => {
-        const inputPath = assumptionRiskPaths.get(riskCode);
-        const code = assumptionFindingCodes.get(riskCode);
+        const registration = getFinancialRiskFindingRegistration(riskCode);
+        const inputPath = registration?.inputPath;
+        const code = registration?.code;
         if (
           inputPath === undefined ||
           code === undefined ||
@@ -1277,7 +1324,10 @@ export const DecisionProfileSchema = z
         ) {
           return [];
         }
-        return [`finding.${code}|${code}|assumption:${inputPath}`];
+        const evidenceId = inputEvidenceIdsByPath.get(inputPath);
+        return evidenceId === undefined
+          ? []
+          : [`finding.${code}|${code}|assumption:${inputPath}|${evidenceId}`];
       },
     );
     compareExpectedMaterialFindings("drivers", expectedDriverKeys);
@@ -1285,10 +1335,16 @@ export const DecisionProfileSchema = z
     compareExpectedMaterialFindings("assumptions", expectedAssumptionKeys);
 
     const expectedBlockerKeys = profile.financialPosition.blockerCodes
-      .map(
-        (blockerCode) =>
-          `finding.${blockerCode}|${blockerCode}|financial:financial.monthly_cushion_delta|true`,
-      )
+      .map((blockerCode) => {
+        const registration = FINANCIAL_BLOCKER_FINDING_REGISTRY[blockerCode];
+        const evidenceRefs = [
+          registration.evidenceId,
+          ...registration.inputPaths.map(
+            (inputPath) => FINANCIAL_INPUT_EVIDENCE_IDS[inputPath],
+          ),
+        ].sort(compareCodePoints);
+        return `finding.${blockerCode}|${blockerCode}|financial:${registration.metricId}|${evidenceRefs.join(",")}|true`;
+      })
       .sort();
     const actualBlockerKeys = profile.findings.blockers
       .map(
@@ -1421,6 +1477,41 @@ export const DecisionProfileSchema = z
       });
     }
 
+    const expectedNextSteps = deriveDecisionNextSteps({
+      blockerCodes: profile.financialPosition.blockerCodes,
+      criticalMissingPriorities: profile.priorityChanges
+        .filter(
+          (change) =>
+            change.weight >= 4 && change.availability === "unavailable",
+        )
+        .map((change) => ({
+          priorityId: change.priorityId,
+          evidenceRefs: change.evidenceRefs,
+        })),
+      riskCodes: profile.financialPosition.riskCodes,
+      conditionEvidenceRefs: profile.condition.evidenceRefs,
+    });
+    const nextStepKey = (nextStep: {
+      id: string;
+      code: string;
+      evidenceRefs: readonly string[];
+    }): string =>
+      `${nextStep.id}|${nextStep.code}|${[...nextStep.evidenceRefs].sort(compareCodePoints).join(",")}`;
+    const actualNextStepKeys = profile.nextSteps
+      .map(nextStepKey)
+      .sort(compareCodePoints);
+    const expectedNextStepKeys = expectedNextSteps
+      .map(nextStepKey)
+      .sort(compareCodePoints);
+    if (!arraysEqual(actualNextStepKeys, expectedNextStepKeys)) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Next steps must exactly match the deterministic blocker, evidence-gap, assumption, or review rule.",
+        path: ["nextSteps"],
+      });
+    }
+
     profile.breakpoints.forEach((breakpoint, index) => {
       if (breakpoint.changesConditionTo === profile.condition.value) {
         context.addIssue({
@@ -1486,21 +1577,13 @@ export const DecisionProfileSchema = z
       .map((reference) => evidenceById.get(reference))
       .filter((evidence) => evidence?.kind === "benchmark_metric")
       .map((evidence) => evidence.quality.grade.value);
-    const expectedConfidenceLevel =
-      hasCriticalEvidenceGap || activeQualityGrades.includes("limited")
-        ? "limited"
-        : activeQualityGrades.includes("moderate")
-          ? "moderate"
-          : "high";
-    const expectedConfidenceRule =
-      expectedConfidenceLevel === "limited"
-        ? "confidence.active_evidence_limited"
-        : expectedConfidenceLevel === "moderate"
-          ? "confidence.active_evidence_moderate"
-          : "confidence.active_evidence_high";
+    const expectedConfidence = deriveConfidenceSelection({
+      hasCriticalEvidenceGap,
+      activeQualityGrades,
+    });
     if (
-      profile.confidence.level !== expectedConfidenceLevel ||
-      !arraysEqual(profile.confidence.ruleIds, [expectedConfidenceRule])
+      profile.confidence.level !== expectedConfidence.level ||
+      !arraysEqual(profile.confidence.ruleIds, [expectedConfidence.ruleId])
     ) {
       context.addIssue({
         code: "custom",
@@ -1532,7 +1615,37 @@ export const DecisionProfileSchema = z
         });
       }
     }
-  });
+  })
+  .transform((profile) => ({
+    ...profile,
+    breakpoints: [...profile.breakpoints].sort((left, right) =>
+      compareCodePoints(left.id, right.id),
+    ),
+    findings: {
+      ...profile.findings,
+      drivers: [...profile.findings.drivers].sort((left, right) =>
+        compareCodePoints(left.id, right.id),
+      ),
+      tradeoffs: [...profile.findings.tradeoffs].sort((left, right) =>
+        compareCodePoints(left.id, right.id),
+      ),
+      blockers: [...profile.findings.blockers].sort((left, right) =>
+        compareCodePoints(left.id, right.id),
+      ),
+      caveats: [...profile.findings.caveats].sort((left, right) =>
+        compareCodePoints(left.id, right.id),
+      ),
+      assumptions: [...profile.findings.assumptions].sort((left, right) =>
+        compareCodePoints(left.id, right.id),
+      ),
+      omittedPriorities: [...profile.findings.omittedPriorities].sort(
+        compareCodePoints,
+      ),
+    },
+    nextSteps: [...profile.nextSteps].sort((left, right) =>
+      compareCodePoints(left.id, right.id),
+    ),
+  }));
 
 export type ChangeClassification = z.infer<typeof ChangeClassificationSchema>;
 export type DecisionConditionValue = z.infer<
@@ -1542,5 +1655,6 @@ export type FinancialState = z.infer<typeof FinancialStateSchema>;
 export type FinancialPosition = z.infer<typeof FinancialPositionSchema>;
 export type PriorityChange = z.infer<typeof PriorityChangeSchema>;
 export type Finding = z.infer<typeof FindingSchema>;
+export type NextStep = z.infer<typeof NextStepSchema>;
 export type Breakpoint = z.infer<typeof BreakpointSchema>;
 export type DecisionProfile = z.infer<typeof DecisionProfileSchema>;

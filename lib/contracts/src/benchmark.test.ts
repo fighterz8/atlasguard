@@ -49,6 +49,43 @@ describe("BenchmarkComparisonSchema", () => {
     );
   });
 
+  it("binds the registered metric and transformation to its priority", () => {
+    const comparison = cloneBenchmark();
+    const commute = comparison.priorities.find(
+      (priority) => priority.priorityId === "commute_time",
+    );
+    expect(commute).toBeDefined();
+    if (commute === undefined) return;
+
+    commute.transformationId = "climate_heat.utility";
+    commute.evidence.metricId = "climate.annual_hot_days";
+    commute.evidence.unit = "days";
+    commute.evidence.originValue = 38;
+    commute.evidence.destinationValue = 41;
+    commute.evidence.deltaValue = 3;
+    commute.evidence.transformation.id = "climate_heat.utility";
+
+    expect(issuePaths(comparison)).toContain(
+      "priorities.1.evidence.transformation",
+    );
+  });
+
+  it("binds materiality thresholds to the registered metric policy", () => {
+    const comparison = cloneBenchmark();
+    const commute = comparison.priorities.find(
+      (priority) => priority.priorityId === "commute_time",
+    );
+    expect(commute).toBeDefined();
+    if (commute === undefined) return;
+
+    commute.materialityThresholdBps = 1;
+    commute.evidence.materialityPolicy.utilityDeltaBps = 1;
+
+    expect(issuePaths(comparison)).toContain(
+      "priorities.1.evidence.transformation",
+    );
+  });
+
   it("binds raw missingness to transformed utility availability", () => {
     const comparison = cloneBenchmark();
     const evidence = comparison.priorities[0].evidence;
@@ -118,6 +155,13 @@ describe("BenchmarkComparisonSchema", () => {
     expect(issuePaths(comparison)).toContain(
       "priorities.0.evidence.snapshotVersion",
     );
+  });
+
+  it("reserves the benchmark evidence namespace", () => {
+    const comparison = cloneBenchmark();
+    comparison.priorities[0].evidence.id = "input.destination.housing";
+
+    expect(issuePaths(comparison)).toContain("priorities.0.evidence.id");
   });
 
   it("rejects an exact geography that does not match the resolved CBSA", () => {
@@ -190,6 +234,11 @@ describe("verifyBenchmarkComparison", () => {
       ),
     );
     expect(() => verifyBenchmarkComparison(comparison)).not.toThrow();
+    expect(
+      verifyBenchmarkComparison(comparison).priorities.map(
+        (priority) => priority.priorityId,
+      ),
+    ).toEqual(["climate_heat", "commute_time"]);
   });
 
   it("rejects checksum-valid partial evidence at promotion", () => {

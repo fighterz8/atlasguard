@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DecisionProfileSchema,
   FinancialStateSchema,
+  PriorityChangeSchema,
 } from "./decision-profile";
 import {
   BenchmarkComparisonSchema,
@@ -155,6 +156,48 @@ describe("DecisionProfileSchema", () => {
     expect(issuePaths(profile)).toContain("priorityChanges.0.utilityDeltaBps");
   });
 
+  it("uses null materiality only for canonical weight-zero exclusions", () => {
+    const excluded = {
+      ...cloneProfile().priorityChanges[0],
+      weight: 0 as const,
+      availability: "unavailable" as const,
+      originUtilityBps: null,
+      destinationUtilityBps: null,
+      utilityDeltaBps: null,
+      weightedContribution: null,
+      materialityThresholdBps: null,
+      classification: "unavailable" as const,
+      material: false,
+      transformationId: "not_evaluated",
+      transformationVersion: "0.0.0",
+      evidenceRefs: [],
+    };
+    expect(PriorityChangeSchema.safeParse(excluded).success).toBe(true);
+
+    const active = cloneProfile().priorityChanges[0];
+    active.materialityThresholdBps = null;
+    expect(PriorityChangeSchema.safeParse(active).success).toBe(false);
+  });
+
+  it("uses weight in decision materiality without overriding metric similarity", () => {
+    const lowWeight = cloneProfile().priorityChanges[0];
+    lowWeight.weight = 1;
+    lowWeight.originUtilityBps = 3_000;
+    lowWeight.destinationUtilityBps = 3_500;
+    lowWeight.utilityDeltaBps = 500;
+    lowWeight.weightedContribution = 500;
+    lowWeight.classification = "improves";
+    lowWeight.material = true;
+
+    const result = PriorityChangeSchema.safeParse(lowWeight);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.map((issue) => issue.path.join(".")),
+      ).toContain("material");
+    }
+  });
+
   it("does not permit unsupported utilities on an excluded priority", () => {
     const profile = cloneProfile();
     profile.priorityChanges[0].weight = 0;
@@ -217,6 +260,25 @@ describe("DecisionProfileSchema", () => {
     );
   });
 
+  it("requires every finding to cite its exact deterministic evidence set", () => {
+    const result = cloneEvaluationResult();
+    const financialDriver = result.decisionProfile.findings.drivers.find(
+      (finding) => finding.code === "financial_cushion_improves",
+    );
+    expect(financialDriver).toBeDefined();
+    if (financialDriver === undefined) return;
+
+    financialDriver.evidenceRefs = ["input.destination.housing"];
+
+    const parsed = EvaluationResultSchema.safeParse(result);
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(
+        parsed.error.issues.map((issue) => issue.path.join(".")),
+      ).toContain("decisionProfile.findings.drivers");
+    }
+  });
+
   it("requires confidence to cite the complete active benchmark set", () => {
     const profile = cloneProfile();
     profile.confidence.evidenceRefs = ["input.destination.housing"];
@@ -246,10 +308,82 @@ describe("DecisionProfileSchema", () => {
     );
   });
 
+  it("strictly binds destination cushion and housing-burden evidence", () => {
+    const profile = cloneProfile();
+    const destinationCushion = profile.evidence.find(
+      (evidence) =>
+        evidence.id === "derived.financial.destination_monthly_cushion",
+    );
+    const destinationBurden = profile.evidence.find(
+      (evidence) =>
+        evidence.id === "derived.financial.destination_housing_burden",
+    );
+    if (
+      destinationCushion?.kind !== "derived" ||
+      destinationBurden?.kind !== "derived"
+    ) {
+      throw new Error("Expected registered destination evidence.");
+    }
+
+    destinationCushion.value += 1;
+    destinationBurden.inputRefs.reverse();
+
+    expect(issuePaths(profile)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^evidence\.\d+$/)]),
+    );
+  });
+
+  it("rejects arbitrary non-material findings", () => {
+    const profile = cloneProfile();
+    profile.findings.drivers.push({
+      id: "finding.extra_nonmaterial",
+      code: "extra_nonmaterial",
+      subject: { kind: "priority", priorityId: "climate_heat" },
+      material: false,
+      evidenceRefs: ["benchmark.climate_heat.fixture"],
+    });
+
+    expect(issuePaths(profile)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^findings\.drivers\.\d+\.material$/),
+      ]),
+    );
+  });
+
+  it("rejects fabricated next steps and canonicalizes finding order", () => {
+    const fabricated = cloneProfile();
+    fabricated.nextSteps = [
+      {
+        id: "next_step.do_something_else",
+        code: "do_something_else",
+        evidenceRefs: ["derived.financial.cushion_delta"],
+      },
+    ];
+    expect(issuePaths(fabricated)).toContain("nextSteps");
+
+    const reordered = cloneProfile();
+    reordered.findings.drivers.reverse();
+    reordered.findings.assumptions.reverse();
+    const parsed = DecisionProfileSchema.parse(reordered);
+    expect(parsed.findings.drivers.map((finding) => finding.id)).toEqual([
+      "finding.climate_heat_improves",
+      "finding.financial_cushion_improves",
+    ]);
+    expect(parsed.findings.assumptions.map((finding) => finding.id)).toEqual([
+      "finding.target_expenses_estimate",
+      "finding.target_housing_estimate",
+    ]);
+  });
+
   it("accepts a complete financial-only Decision Profile", () => {
     const profile = cloneProfile();
     profile.priorityChanges = [];
-    profile.confidence.evidenceRefs = [];
+    profile.confidence = {
+      level: "limited",
+      ruleIds: ["confidence.no_active_benchmark_evidence"],
+      evidenceRefs: [],
+      missingPriorityIds: [],
+    };
     profile.condition.evidenceRefs = ["derived.financial.cushion_delta"];
     profile.findings.drivers = profile.findings.drivers.filter(
       (finding) => finding.subject.kind === "financial",
@@ -295,6 +429,161 @@ describe("DecisionProfileSchema", () => {
         },
       }).success,
     ).toBe(true);
+  });
+
+  it("grounds a negative target cushion blocker in its absolute metric and inputs", () => {
+    const profile = cloneProfile();
+    profile.financialPosition.destination.monthlyRecurringExpensesCents = 500_000;
+    profile.financialPosition.destination.monthlyCushionCents = -110_000;
+    profile.financialPosition.change.monthlyCushionDeltaCents = -230_000;
+    profile.financialPosition.change.cushionDeltaBpsOfOriginTakeHome = -4_600;
+    profile.financialPosition.change.classification = "worsens";
+    profile.financialPosition.blockerCodes = ["negative_target_cushion"];
+    profile.condition = {
+      value: "high_financial_risk_under_assumptions",
+      ruleId: "condition.financial_blocker",
+      evidenceRefs: [
+        "benchmark.climate_heat.fixture",
+        "derived.financial.cushion_delta",
+        "derived.financial.destination_monthly_cushion",
+        "input.destination.housing",
+        "input.destination.recurring",
+        "input.destination.retained",
+        "input.destination.take_home",
+      ],
+    };
+    profile.findings.drivers = profile.findings.drivers.filter(
+      (finding) => finding.subject.kind === "priority",
+    );
+    profile.findings.tradeoffs = [
+      {
+        id: "finding.financial_cushion_worsens",
+        code: "financial_cushion_worsens",
+        subject: {
+          kind: "financial",
+          metricId: "financial.monthly_cushion_delta",
+        },
+        material: true,
+        evidenceRefs: ["derived.financial.cushion_delta"],
+      },
+    ];
+    profile.findings.blockers = [
+      {
+        id: "finding.negative_target_cushion",
+        code: "negative_target_cushion",
+        subject: {
+          kind: "financial",
+          metricId: "financial.destination_monthly_cushion",
+        },
+        material: true,
+        evidenceRefs: [
+          "derived.financial.destination_monthly_cushion",
+          "input.destination.housing",
+          "input.destination.recurring",
+          "input.destination.retained",
+          "input.destination.take_home",
+        ],
+      },
+    ];
+    profile.nextSteps = [
+      {
+        id: "next_step.resolve_negative_target_cushion",
+        code: "resolve_negative_target_cushion",
+        evidenceRefs: [
+          "derived.financial.destination_monthly_cushion",
+          "input.destination.housing",
+          "input.destination.recurring",
+          "input.destination.retained",
+          "input.destination.take_home",
+        ],
+      },
+    ];
+
+    const recurring = profile.evidence.find(
+      (evidence) => evidence.id === "input.destination.recurring",
+    );
+    const cushionDelta = profile.evidence.find(
+      (evidence) => evidence.id === "derived.financial.cushion_delta",
+    );
+    const destinationCushion = profile.evidence.find(
+      (evidence) =>
+        evidence.id === "derived.financial.destination_monthly_cushion",
+    );
+    if (
+      recurring?.kind !== "scenario_input" ||
+      cushionDelta?.kind !== "derived" ||
+      destinationCushion?.kind !== "derived"
+    ) {
+      throw new Error("Expected financial evidence.");
+    }
+    recurring.value = 500_000;
+    recurring.plausibleRangeCents = { min: 490_000, max: 510_000 };
+    cushionDelta.value = -230_000;
+    destinationCushion.value = -110_000;
+
+    expect(DecisionProfileSchema.safeParse(profile).success).toBe(true);
+  });
+
+  it("grounds the fifty-percent housing blocker in burden and gross/housing inputs", () => {
+    const profile = cloneProfile();
+    profile.financialPosition.destination.monthlyGrossIncomeCents = 340_000;
+    profile.financialPosition.destination.housingBurdenBps = 5_000;
+    profile.financialPosition.change.housingBurdenDeltaBps = 2_857;
+    profile.financialPosition.blockerCodes = [
+      "target_housing_burden_at_or_above_50_percent",
+    ];
+    profile.condition = {
+      value: "high_financial_risk_under_assumptions",
+      ruleId: "condition.financial_blocker",
+      evidenceRefs: [
+        "benchmark.climate_heat.fixture",
+        "derived.financial.cushion_delta",
+        "derived.financial.destination_housing_burden",
+        "input.destination.gross",
+        "input.destination.housing",
+      ],
+    };
+    profile.findings.blockers = [
+      {
+        id: "finding.target_housing_burden_at_or_above_50_percent",
+        code: "target_housing_burden_at_or_above_50_percent",
+        subject: {
+          kind: "financial",
+          metricId: "financial.destination_housing_burden",
+        },
+        material: true,
+        evidenceRefs: [
+          "derived.financial.destination_housing_burden",
+          "input.destination.gross",
+          "input.destination.housing",
+        ],
+      },
+    ];
+    profile.nextSteps = [
+      {
+        id: "next_step.verify_target_housing_burden",
+        code: "verify_target_housing_burden",
+        evidenceRefs: [
+          "derived.financial.destination_housing_burden",
+          "input.destination.gross",
+          "input.destination.housing",
+        ],
+      },
+    ];
+    const gross = profile.evidence.find(
+      (evidence) => evidence.id === "input.destination.gross",
+    );
+    const burden = profile.evidence.find(
+      (evidence) =>
+        evidence.id === "derived.financial.destination_housing_burden",
+    );
+    if (gross?.kind !== "scenario_input" || burden?.kind !== "derived") {
+      throw new Error("Expected housing-burden evidence.");
+    }
+    gross.value = 340_000;
+    burden.value = 5_000;
+
+    expect(DecisionProfileSchema.safeParse(profile).success).toBe(true);
   });
 
   it("requires promising-if results to cite a decision-changing breakpoint", () => {
@@ -408,6 +697,49 @@ describe("EvaluationResultSchema", () => {
     expect(
       EvaluationResultSchema.safeParse(cloneEvaluationResult()).success,
     ).toBe(true);
+  });
+
+  it("accepts null optional gross income without throwing in refinements", () => {
+    const result = cloneEvaluationResult();
+    result.scenarioInput.finances.destination.grossIncome = null;
+    const profile = result.decisionProfile;
+    profile.inputFingerprintSha256 = fingerprintScenarioInput(
+      result.scenarioInput,
+    );
+    profile.financialPosition.destination.monthlyGrossIncomeCents = null;
+    profile.financialPosition.destination.housingBurdenBps = null;
+    profile.financialPosition.destination.assumptionBasis.grossIncome = null;
+    profile.financialPosition.change.housingBurdenDeltaBps = null;
+    profile.financialPosition.riskCodes = [
+      "target_gross_income_unknown",
+      "target_housing_not_confirmed",
+      "target_expenses_not_confirmed",
+    ];
+    profile.evidence = profile.evidence.filter(
+      (evidence) =>
+        evidence.id !== "input.destination.gross" &&
+        evidence.id !== "derived.financial.destination_housing_burden",
+    );
+    profile.nextSteps = [
+      {
+        id: "next_step.collect_target_gross_income",
+        code: "collect_target_gross_income",
+        evidenceRefs: ["input.destination.housing"],
+      },
+      {
+        id: "next_step.verify_target_expenses",
+        code: "verify_target_expenses",
+        evidenceRefs: ["input.destination.recurring"],
+      },
+      {
+        id: "next_step.verify_target_housing",
+        code: "verify_target_housing",
+        evidenceRefs: ["input.destination.housing"],
+      },
+    ];
+
+    expect(() => EvaluationResultSchema.safeParse(result)).not.toThrow();
+    expect(EvaluationResultSchema.safeParse(result).success).toBe(true);
   });
 
   it("returns a deeply frozen, checksum-verified evaluation bundle", () => {

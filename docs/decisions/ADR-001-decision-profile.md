@@ -16,13 +16,22 @@ Nick authorized implementation after receiving a roadmap that identified this re
 
 ## Decision
 
-MoveWise will make a deterministic `DecisionProfile` its canonical user-facing result. It contains five independent parts:
+MoveWise will make a deterministic `DecisionProfile` its canonical user-facing result. It contains six independent parts:
 
 1. `FinancialPosition`: current and target monthly cushion, change, housing burden when gross income is supplied, assumption status, and absolute blocker/risk flags.
 2. `PriorityChange[]`: origin-to-destination changes for supported dimensions, including raw evidence, transformation, user weight from 0–5, contribution, and availability.
 3. `DecisionCondition`: exactly one of `worth_a_closer_look`, `promising_if`, `meaningful_tradeoff`, or `high_financial_risk_under_assumptions`.
 4. `ConfidenceAssessment`: `high`, `moderate`, or `limited`, based on evidence quality rather than outcome favorability.
 5. `StabilityAssessment`: `not_evaluated`, `stable`, or `assumption_sensitive`. `not_evaluated` is mandatory until deterministic range reevaluation has run; evaluated results include exact decision-changing breakpoints when a valid breakpoint exists.
+6. `NextStep[]`: a minimal evidence-backed investigation set selected deterministically from blockers, missing critical evidence, or unconfirmed assumptions; a result with none of those receives one review-evidence step.
+
+Phase 0 applies these additional rules:
+
+- A supplied gross-income value must be greater than zero; unknown gross income is represented as `null` and leaves housing burden unavailable.
+- Only priorities with a registered Phase 0 transformation may receive a positive weight. Weight zero preserves a future priority as an explicit, not-evaluated exclusion with a null materiality threshold.
+- A priority is decision-material only after its metric delta is non-similar and `abs(utilityDeltaBps * weight) >= materialityThresholdBps * 3`. Weight three is the reference point; lower weights require a larger observed change.
+- Financial blockers are grounded in registered absolute destination metrics and every contributing input, not in a relative cushion delta. Destination cushion and destination housing burden therefore have their own derived evidence records.
+- Evidence confidence is limited under `confidence.no_active_benchmark_evidence` when a scenario has no positively weighted benchmark dimensions. Financial-only scenarios remain valid; they do not receive vacuous high evidence confidence.
 
 The legacy three 0–100 scores, blend modes, score bands, and financial downgrade rules are retired from the active MVP contract. They will not be retained as hidden compatibility outputs.
 

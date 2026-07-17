@@ -1,12 +1,14 @@
-import type { PreferredDirection } from "./primitives";
+import type { PreferredDirection, PriorityId } from "./primitives";
 
 const clampBasisPoints = (value: number): number =>
   Math.min(10_000, Math.max(0, Math.round(value)));
 
 type UtilityTransformDefinition = {
+  priorityId: PriorityId;
   metricId: string;
   transformationId: string;
   transformationVersion: string;
+  materialityThresholdBps: number;
   unit: string;
   supportedDirections: readonly PreferredDirection[];
   rawRange: { min: number; max: number };
@@ -15,9 +17,11 @@ type UtilityTransformDefinition = {
 
 const UTILITY_TRANSFORM_REGISTRY: readonly UtilityTransformDefinition[] = [
   {
+    priorityId: "climate_heat",
     metricId: "climate.annual_hot_days",
     transformationId: "climate_heat.utility",
     transformationVersion: "1.0.0",
+    materialityThresholdBps: 500,
     unit: "days",
     supportedDirections: ["lower", "higher"],
     rawRange: { min: 0, max: 366 },
@@ -25,9 +29,11 @@ const UTILITY_TRANSFORM_REGISTRY: readonly UtilityTransformDefinition[] = [
     lowerIsBetterUtility: (rawValue) => 11_000 - rawValue * 100,
   },
   {
+    priorityId: "commute_time",
     metricId: "commute.mean_minutes",
     transformationId: "commute_time.utility",
     transformationVersion: "1.0.0",
+    materialityThresholdBps: 500,
     unit: "minutes",
     supportedDirections: ["lower"],
     rawRange: { min: 0, max: 240 },
@@ -36,10 +42,19 @@ const UTILITY_TRANSFORM_REGISTRY: readonly UtilityTransformDefinition[] = [
   },
 ] as const;
 
+export const PHASE0_SUPPORTED_PRIORITY_IDS = [
+  ...new Set(UTILITY_TRANSFORM_REGISTRY.map((entry) => entry.priorityId)),
+] as readonly PriorityId[];
+
+export const isPhase0PrioritySupported = (priorityId: PriorityId): boolean =>
+  PHASE0_SUPPORTED_PRIORITY_IDS.includes(priorityId);
+
 export type UtilityTransformRequest = {
+  priorityId: PriorityId;
   metricId: string;
   transformationId: string;
   transformationVersion: string;
+  materialityThresholdBps: number;
   unit: string;
   preferredDirection: PreferredDirection;
   rawValue: number | null;
@@ -54,9 +69,11 @@ export const applyRegisteredUtilityTransform = (
 ): UtilityTransformResult => {
   const definition = UTILITY_TRANSFORM_REGISTRY.find(
     (candidate) =>
+      candidate.priorityId === request.priorityId &&
       candidate.metricId === request.metricId &&
       candidate.transformationId === request.transformationId &&
       candidate.transformationVersion === request.transformationVersion &&
+      candidate.materialityThresholdBps === request.materialityThresholdBps &&
       candidate.unit === request.unit &&
       candidate.supportedDirections.includes(request.preferredDirection),
   );

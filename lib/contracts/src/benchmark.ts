@@ -173,7 +173,9 @@ const InputPlausibleRangeSchema = z
 export const MetricEvidenceSchema = z
   .object({
     kind: z.literal("benchmark_metric"),
-    id: StableIdSchema,
+    id: StableIdSchema.refine((id) => id.startsWith("benchmark."), {
+      message: "Benchmark evidence IDs must use the benchmark. namespace.",
+    }),
     metricId: StableIdSchema,
     definition: z.string().trim().min(1).max(500),
     priorityId: PriorityIdSchema,
@@ -248,17 +250,21 @@ export const MetricEvidenceSchema = z
     const outputs = evidence.transformation.outputs;
 
     const originTransform = applyRegisteredUtilityTransform({
+      priorityId: evidence.priorityId,
       metricId: evidence.metricId,
       transformationId: evidence.transformation.id,
       transformationVersion: evidence.transformation.version,
+      materialityThresholdBps: evidence.materialityPolicy.utilityDeltaBps,
       unit: evidence.unit,
       preferredDirection: evidence.transformation.preferredDirection,
       rawValue: evidence.originValue,
     });
     const destinationTransform = applyRegisteredUtilityTransform({
+      priorityId: evidence.priorityId,
       metricId: evidence.metricId,
       transformationId: evidence.transformation.id,
       transformationVersion: evidence.transformation.version,
+      materialityThresholdBps: evidence.materialityPolicy.utilityDeltaBps,
       unit: evidence.unit,
       preferredDirection: evidence.transformation.preferredDirection,
       rawValue: evidence.destinationValue,
@@ -270,7 +276,7 @@ export const MetricEvidenceSchema = z
       context.addIssue({
         code: "custom",
         message:
-          "Metric, transformation, version, unit, and direction must be registered before promotion.",
+          "Priority, metric, transformation, version, materiality, unit, and direction must be registered before promotion.",
         path: ["transformation"],
       });
     } else if (
@@ -377,7 +383,9 @@ export const MetricEvidenceSchema = z
 export const ScenarioInputEvidenceSchema = z
   .object({
     kind: z.literal("scenario_input"),
-    id: StableIdSchema,
+    id: StableIdSchema.refine((id) => id.startsWith("input."), {
+      message: "Scenario-input evidence IDs must use the input. namespace.",
+    }),
     inputPath: FinancialInputPathSchema,
     unit: z.literal("usd_cents"),
     value: SafeIntegerSchema,
@@ -388,6 +396,7 @@ export const ScenarioInputEvidenceSchema = z
   .superRefine((evidence, context) => {
     const range = evidence.plausibleRangeCents;
     const isSignedInput = evidence.inputPath === SIGNED_FINANCIAL_INPUT_PATH;
+    const isGrossIncome = evidence.inputPath.includes(".grossIncome.");
 
     if (
       evidence.value < (isSignedInput ? -MAX_MONTHLY_CENTS : 0) ||
@@ -414,6 +423,17 @@ export const ScenarioInputEvidenceSchema = z
         path: ["plausibleRangeCents"],
       });
     }
+    if (
+      isGrossIncome &&
+      (evidence.value === 0 || (range !== null && range.min === 0))
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Provided gross-income evidence and its range must be greater than zero.",
+        path: evidence.value === 0 ? ["value"] : ["plausibleRangeCents", "min"],
+      });
+    }
     if (evidence.assumptionBasis === "confirmed" && range !== null) {
       context.addIssue({
         code: "custom",
@@ -436,7 +456,9 @@ export const ScenarioInputEvidenceSchema = z
 export const DerivedEvidenceSchema = z
   .object({
     kind: z.literal("derived"),
-    id: StableIdSchema,
+    id: StableIdSchema.refine((id) => id.startsWith("derived."), {
+      message: "Derived evidence IDs must use the derived. namespace.",
+    }),
     metricId: StableIdSchema,
     unit: MetricUnitSchema,
     value: z.number(),
@@ -616,7 +638,13 @@ export const BenchmarkComparisonSchema = z
         }
       });
     }
-  });
+  })
+  .transform((comparison) => ({
+    ...comparison,
+    priorities: [...comparison.priorities].sort((left, right) =>
+      compareCodePoints(left.priorityId, right.priorityId),
+    ),
+  }));
 
 export type ResolvedMetroRef = z.infer<typeof ResolvedMetroRefSchema>;
 export type BenchmarkSnapshotRef = z.infer<typeof BenchmarkSnapshotRefSchema>;

@@ -12,6 +12,7 @@ import {
   SignedAssumptionBasisSchema,
   SignedMonthlyCentsSchema,
 } from "./primitives";
+import { isPhase0PrioritySupported } from "./utility-transforms";
 
 const MoneyRangeSchema = z
   .object({
@@ -107,10 +108,29 @@ export const SignedMoneyAssumptionSchema = z
     }
   });
 
+export const GrossIncomeAssumptionSchema = MoneyAssumptionSchema.superRefine(
+  (assumption, context) => {
+    if (
+      assumption.monthlyCents === 0 ||
+      assumption.plausibleRangeCents?.min === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "A provided gross income and its plausible range must be greater than zero.",
+        path:
+          assumption.monthlyCents === 0
+            ? ["monthlyCents"]
+            : ["plausibleRangeCents", "min"],
+      });
+    }
+  },
+);
+
 export const BudgetInputSchema = z
   .object({
     takeHomeIncome: MoneyAssumptionSchema,
-    grossIncome: MoneyAssumptionSchema.nullable(),
+    grossIncome: GrossIncomeAssumptionSchema.nullable(),
     housingCost: MoneyAssumptionSchema,
     recurringExpensesExcludingHousing: MoneyAssumptionSchema,
   })
@@ -165,6 +185,18 @@ export const ScenarioInputSchema = z
           code: "custom",
           message: "Commute time can only prefer lower values.",
           path: ["priorities", index, "preferredDirection"],
+        });
+      }
+
+      if (
+        priority.weight > 0 &&
+        !isPhase0PrioritySupported(priority.priorityId)
+      ) {
+        context.addIssue({
+          code: "custom",
+          message:
+            "A positive weight requires a registered Phase 0 utility transformation.",
+          path: ["priorities", index, "weight"],
         });
       }
     });
@@ -244,7 +276,13 @@ export const ScenarioInputSchema = z
         });
       }
     });
-  });
+  })
+  .transform((scenario) => ({
+    ...scenario,
+    priorities: [...scenario.priorities].sort((left, right) =>
+      compareCodePoints(left.priorityId, right.priorityId),
+    ),
+  }));
 
 export type MoneyAssumption = z.infer<typeof MoneyAssumptionSchema>;
 export type SignedMoneyAssumption = z.infer<typeof SignedMoneyAssumptionSchema>;

@@ -22,13 +22,15 @@ Create one contracts package whose hand-authored Zod schemas are the executable 
 - Treat generated files as build artifacts; CI regenerates them and fails on drift.
 - Validate golden fixtures against the same schemas used at runtime.
 - Use stable evidence IDs or JSON Pointers; array positions are not durable references.
+- Reserve `benchmark.*`, `input.*`, and `derived.*` evidence-ID namespaces by evidence kind, and reject cross-namespace records before semantic evaluation.
 - Define canonical numeric units, rounding, precision, enums, missingness, and default-label semantics in schemas plus adjacent decision documentation.
+- Canonicalize semantically unordered input priorities, promoted benchmark priorities, findings, next steps, and referenced-input lists so equivalent inputs cannot produce different verified bytes.
 - Canonically serialize and SHA-256 fingerprint every accepted `ScenarioInput`.
 - Promote benchmark content only through a checksum-verifying loader that returns an immutable branded `VerifiedBenchmarkComparison`; plain schema parsing is structural validation, not promotion.
-- Treat `verifyEvaluationResult(ScenarioInput + VerifiedBenchmarkComparison + DecisionProfile)` as the Phase 0 semantic trust boundary. It binds every financial value, provenance label, plausible range, metro, priority, transformed utility, evidence record, condition, and confidence grade before a result is trusted.
+- Treat `verifyEvaluationResult(ScenarioInput + VerifiedBenchmarkComparison + DecisionProfile)` as the Phase 0 semantic trust boundary. It binds every financial value, provenance label, plausible range, metro, priority, transformed utility, registered derived metric, evidence record, finding, next step, condition, and confidence grade before a result is trusted.
 - Reject sensitivity breakpoints from trusted Phase 0 results until the deterministic engine can prove them by reevaluating both sides of the claimed threshold.
 
-The initial canonical objects are `ScenarioInput`, `BenchmarkSnapshotRef`, `MetricEvidence`, `VerifiedBenchmarkComparison`, `FinancialPosition`, `PriorityChange`, `DecisionCondition`, `ConfidenceAssessment`, `StabilityAssessment`, `DecisionProfile`, `VerifiedEvaluationResult`, `StructuredExplanation`, `VerifierResult`, `RenderedResult`, `ScenarioRecord`, `ScenarioResultRecord`, and `TraceRecord`.
+The initial canonical objects are `ScenarioInput`, `BenchmarkSnapshotRef`, `MetricEvidence`, `VerifiedBenchmarkComparison`, `FinancialPosition`, `PriorityChange`, `DecisionCondition`, `ConfidenceAssessment`, `StabilityAssessment`, `NextStep`, `DecisionProfile`, `VerifiedEvaluationResult`, `StructuredExplanation`, `VerifierResult`, `RenderedResult`, `ScenarioRecord`, `ScenarioResultRecord`, and `TraceRecord`.
 
 Drizzle remains the relational persistence schema, not a second domain-contract authority. Explicit adapters map validated domain records to database rows, and round-trip tests guard those mappings.
 

@@ -39,6 +39,32 @@ describe("ScenarioInputSchema", () => {
     expect(ScenarioInputSchema.safeParse(input).success).toBe(true);
   });
 
+  it("rejects zero when gross income is present but keeps null valid", () => {
+    const zeroGross = cloneFixture();
+    zeroGross.finances.destination.grossIncome = {
+      monthlyCents: 0,
+      basis: "user_estimate",
+      plausibleRangeCents: null,
+    };
+    expect(issuePaths(zeroGross)).toContain(
+      "finances.destination.grossIncome.monthlyCents",
+    );
+
+    const zeroRange = cloneFixture();
+    zeroRange.finances.destination.grossIncome = {
+      monthlyCents: 100_000,
+      basis: "user_estimate",
+      plausibleRangeCents: { min: 0, max: 200_000 },
+    };
+    expect(issuePaths(zeroRange)).toContain(
+      "finances.destination.grossIncome.plausibleRangeCents.min",
+    );
+
+    const unknownGross = cloneFixture();
+    unknownGross.finances.destination.grossIncome = null;
+    expect(ScenarioInputSchema.safeParse(unknownGross).success).toBe(true);
+  });
+
   it("rejects unnecessary identity fields", () => {
     const input = { ...cloneFixture(), email: "person@example.com" };
 
@@ -193,6 +219,31 @@ describe("ScenarioInputSchema", () => {
 
     const parsed = ScenarioInputSchema.parse(input);
     expect(parsed.priorities[0].weight).toBe(0);
+  });
+
+  it("permits future priorities only when they are excluded", () => {
+    const input = cloneFixture();
+    input.priorities.push({
+      priorityId: "climate_cold",
+      preferredDirection: "lower",
+      weight: 1,
+    });
+
+    expect(issuePaths(input)).toContain("priorities.2.weight");
+
+    input.priorities[2].weight = 0;
+    expect(ScenarioInputSchema.safeParse(input).success).toBe(true);
+  });
+
+  it("canonicalizes priority order at the runtime boundary", () => {
+    const input = cloneFixture();
+    input.priorities.reverse();
+
+    expect(
+      ScenarioInputSchema.parse(input).priorities.map(
+        (priority) => priority.priorityId,
+      ),
+    ).toEqual(["climate_heat", "commute_time"]);
   });
 
   it("serializes semantically identical priority orders identically", () => {
