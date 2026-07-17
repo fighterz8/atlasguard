@@ -23,8 +23,12 @@ Create one contracts package whose hand-authored Zod schemas are the executable 
 - Validate golden fixtures against the same schemas used at runtime.
 - Use stable evidence IDs or JSON Pointers; array positions are not durable references.
 - Define canonical numeric units, rounding, precision, enums, missingness, and default-label semantics in schemas plus adjacent decision documentation.
+- Canonically serialize and SHA-256 fingerprint every accepted `ScenarioInput`.
+- Promote benchmark content only through a checksum-verifying loader that returns an immutable branded `VerifiedBenchmarkComparison`; plain schema parsing is structural validation, not promotion.
+- Treat `verifyEvaluationResult(ScenarioInput + VerifiedBenchmarkComparison + DecisionProfile)` as the Phase 0 semantic trust boundary. It binds every financial value, provenance label, plausible range, metro, priority, transformed utility, evidence record, condition, and confidence grade before a result is trusted.
+- Reject sensitivity breakpoints from trusted Phase 0 results until the deterministic engine can prove them by reevaluating both sides of the claimed threshold.
 
-The initial canonical objects are `ScenarioInput`, `BenchmarkSnapshotRef`, `MetricEvidence`, `FinancialPosition`, `PriorityChange`, `DecisionCondition`, `ConfidenceAssessment`, `StabilityAssessment`, `DecisionProfile`, `StructuredExplanation`, `VerifierResult`, `RenderedResult`, `ScenarioRecord`, `ScenarioResultRecord`, and `TraceRecord`.
+The initial canonical objects are `ScenarioInput`, `BenchmarkSnapshotRef`, `MetricEvidence`, `VerifiedBenchmarkComparison`, `FinancialPosition`, `PriorityChange`, `DecisionCondition`, `ConfidenceAssessment`, `StabilityAssessment`, `DecisionProfile`, `VerifiedEvaluationResult`, `StructuredExplanation`, `VerifierResult`, `RenderedResult`, `ScenarioRecord`, `ScenarioResultRecord`, and `TraceRecord`.
 
 Drizzle remains the relational persistence schema, not a second domain-contract authority. Explicit adapters map validated domain records to database rows, and round-trip tests guard those mappings.
 
@@ -48,6 +52,8 @@ Persistence rows and user-facing domain objects have different responsibilities,
 - Contract-generation and no-diff checks become release gates.
 - Schema changes require fixtures, API artifacts, migration mapping, and tests in the same change.
 - Database adapters add a small amount of explicit code but prevent persistence concerns from shaping the public contract.
+- A syntactically valid checksum string, profile, or benchmark object is not trusted on its own; callers must use the branded verification loaders.
+- Registered benchmark transformations are documented in [the Phase 0 transformation registry](../movewise/phase-0-transformation-registry.md); synthetic calibration values are test infrastructure, not product claims.
 
 ## Revisit When
 

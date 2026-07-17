@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { financialAndClimateUpsideInput } from "./fixtures/financial-and-climate-upside-v1";
+import { financialAndClimateUpsideProfile } from "./fixtures/financial-and-climate-upside-profile-v1";
 import { MAX_MONTHLY_CENTS } from "./primitives";
-import { ScenarioInputSchema } from "./scenario-input";
+import {
+  fingerprintScenarioInput,
+  ScenarioInputSchema,
+  serializeScenarioInput,
+} from "./scenario-input";
 
 const cloneFixture = () =>
   ScenarioInputSchema.parse(financialAndClimateUpsideInput);
@@ -188,5 +193,25 @@ describe("ScenarioInputSchema", () => {
 
     const parsed = ScenarioInputSchema.parse(input);
     expect(parsed.priorities[0].weight).toBe(0);
+  });
+
+  it("serializes semantically identical priority orders identically", () => {
+    const input = cloneFixture();
+    const reversed = cloneFixture();
+    reversed.priorities.reverse();
+
+    expect(serializeScenarioInput(input)).toBe(
+      serializeScenarioInput(reversed),
+    );
+  });
+
+  it("binds the golden profile to the canonical input SHA-256", () => {
+    const fingerprint = fingerprintScenarioInput(
+      financialAndClimateUpsideInput,
+    );
+
+    expect(fingerprint).toBe(
+      financialAndClimateUpsideProfile.inputFingerprintSha256,
+    );
   });
 });

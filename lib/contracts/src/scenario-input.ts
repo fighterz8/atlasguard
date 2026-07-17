@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 
+import { compareCodePoints, sha256Hex, sortJsonKeys } from "./canonical-json";
 import {
   AssumptionBasisSchema,
   MetroSlugSchema,
@@ -253,3 +254,18 @@ export type DestinationBudgetInput = z.infer<
 >;
 export type PriorityInput = z.infer<typeof PriorityInputSchema>;
 export type ScenarioInput = z.infer<typeof ScenarioInputSchema>;
+
+export const serializeScenarioInput = (input: ScenarioInput): string => {
+  const parsed = ScenarioInputSchema.parse(input);
+  const canonicalInput = {
+    ...parsed,
+    priorities: [...parsed.priorities].sort((left, right) =>
+      compareCodePoints(left.priorityId, right.priorityId),
+    ),
+  };
+
+  return JSON.stringify(sortJsonKeys(canonicalInput));
+};
+
+export const fingerprintScenarioInput = (input: ScenarioInput): string =>
+  sha256Hex(serializeScenarioInput(input));

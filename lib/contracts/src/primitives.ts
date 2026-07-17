@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 
 export const SCENARIO_SCHEMA_VERSION = "1.0.0" as const;
+export const DECISION_PROFILE_SCHEMA_VERSION = "1.0.0" as const;
 
 // $100M per month is deliberately far above plausible household values while
 // keeping every ScenarioInput financial aggregate well inside safe-integer math.
@@ -17,6 +18,34 @@ export const MonthlyCentsSchema =
   SignedMonthlyCentsSchema.nonnegative().describe(
     "A non-negative monthly amount in integer US-dollar cents.",
   );
+
+export const SafeIntegerSchema = z
+  .number()
+  .int()
+  .min(Number.MIN_SAFE_INTEGER)
+  .max(Number.MAX_SAFE_INTEGER);
+
+export const BasisPointsSchema = z.number().int().min(0).max(10_000);
+
+export const NonnegativeBasisPointsSchema = SafeIntegerSchema.nonnegative();
+
+export const SignedBasisPointsSchema = SafeIntegerSchema;
+
+export const IsoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO 8601 calendar date.");
+
+export const VersionSchema = z
+  .string()
+  .regex(/^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$/);
+
+export const StableIdSchema = z
+  .string()
+  .min(1)
+  .max(160)
+  .regex(/^[a-z0-9]+(?:[._:-][a-z0-9]+)*$/);
+
+export const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
 
 export const MetroSlugSchema = z
   .string()
@@ -60,5 +89,6 @@ export const PriorityWeightSchema = z.union([
 ]);
 
 export type AssumptionBasis = z.infer<typeof AssumptionBasisSchema>;
+export type PreferredDirection = z.infer<typeof PreferredDirectionSchema>;
 export type PriorityId = z.infer<typeof PriorityIdSchema>;
 export type PriorityWeight = z.infer<typeof PriorityWeightSchema>;

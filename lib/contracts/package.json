@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@noble/hashes": "catalog:",
     "zod": "catalog:"
   }
 }

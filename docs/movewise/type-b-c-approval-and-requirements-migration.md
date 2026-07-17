@@ -88,7 +88,7 @@ These IDs are the active traceability anchors until a fully versioned replacemen
 - **MW-DEC-06:** Affordability is owned by Financial Position rather than counted again as lifestyle. Weight 0 excludes a priority. Missing data lowers completeness/confidence and is not imputed silently.
 - **MW-DEC-07:** Emit exactly one condition from `worth_a_closer_look`, `promising_if`, `meaningful_tradeoff`, or `high_financial_risk_under_assumptions`, using an approved precedence table that covers blockers, missing critical evidence, material gains/losses, and boundary cases.
 - **MW-DEC-08:** Derive Evidence Confidence as `high`, `moderate`, or `limited` from source age, geography match, uncertainty/coverage, and missing weighted evidence—not from whether the move looks favorable.
-- **MW-DEC-09:** Derive Decision Stability as `stable` or `assumption_sensitive` and emit exact rent, income, expense, or priority breakpoints when a finite in-range solution exists.
+- **MW-DEC-09:** Report Decision Stability as `not_evaluated` until deterministic range reevaluation runs; then derive `stable` or `assumption_sensitive` and emit exact rent, income, expense, or priority breakpoints when a finite in-range solution exists.
 - **MW-DEC-10:** Select drivers, tradeoffs, blockers, caveats, omitted dimensions, and next investigation steps deterministically. Every material claim carries a stable evidence ID.
 - **MW-DEC-11:** Bind each profile to exact benchmark, geography, metric-transformation, and decision-rule versions.
 - **MW-DEC-12:** The engine is pure TypeScript and does not depend on HTTP, a database, a browser, or an AI provider.
@@ -149,10 +149,12 @@ These IDs are the active traceability anchors until a fully versioned replacemen
 - **MW-BEN-06:** Bind each result to snapshot and transformation versions so it can be reproduced after refreshes.
 - **MW-BEN-07:** Show stale, missing, and geography-mismatched evidence and reduce confidence when policy requires it.
 - **MW-BEN-08:** Never present a metro statistic as a neighborhood, property, route, or individual outcome.
+- **MW-BEN-09:** Recompute the canonical snapshot SHA-256 before promotion; reject schema-valid content whose declared checksum is stale and expose only an immutable verified snapshot to the decision engine.
 
 ### 5.9 Non-functional requirements (`MW-NFR`)
 
 - **MW-NFR-COR-01:** Deterministic calculations, condition selection, confidence, stability, and evidence selection are reproducible and fixture-tested.
+- **MW-NFR-COR-02:** Trust a result only after semantic bundle verification binds the canonical input fingerprint, promoted benchmark checksum, transformed utilities, financial values/ranges, priorities, condition, confidence, and evidence references.
 - **MW-NFR-MOD-01:** Contracts, snapshots, pure engine, renderer, optional provider, verifier, persistence, HTTP, and UI remain separate modules inside one TypeScript monolith.
 - **MW-NFR-TEST-01:** Unit, property/invariant, data-contract, golden, API, integration, verifier, browser, accessibility, performance, and privacy/security layers have explicit traceability.
 - **MW-NFR-AVAIL-01:** The complete product flow works without AI and without persistence; optional-provider failure degrades safely.

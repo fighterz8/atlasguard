@@ -22,7 +22,7 @@ MoveWise will make a deterministic `DecisionProfile` its canonical user-facing r
 2. `PriorityChange[]`: origin-to-destination changes for supported dimensions, including raw evidence, transformation, user weight from 0–5, contribution, and availability.
 3. `DecisionCondition`: exactly one of `worth_a_closer_look`, `promising_if`, `meaningful_tradeoff`, or `high_financial_risk_under_assumptions`.
 4. `ConfidenceAssessment`: `high`, `moderate`, or `limited`, based on evidence quality rather than outcome favorability.
-5. `StabilityAssessment`: `stable` or `assumption_sensitive`, with exact decision-changing breakpoints when a valid breakpoint exists.
+5. `StabilityAssessment`: `not_evaluated`, `stable`, or `assumption_sensitive`. `not_evaluated` is mandatory until deterministic range reevaluation has run; evaluated results include exact decision-changing breakpoints when a valid breakpoint exists.
 
 The legacy three 0–100 scores, blend modes, score bands, and financial downgrade rules are retired from the active MVP contract. They will not be retained as hidden compatibility outputs.
 
@@ -52,6 +52,7 @@ A deterministic-only product is viable, but a verified optional paraphrase remai
 ## Consequences
 
 - The decision table, confidence policy, stability policy, materiality rules, missingness rules, and breakpoint behavior must be specified and fixture-tested before broad UI implementation.
+- An empty breakpoint list never proves stability. Only deterministic reevaluation across the supplied plausible ranges may promote `not_evaluated` to `stable` or `assumption_sensitive`.
 - The Wizard and Results contracts change; the legacy requirements remain historical evidence, not implementation authority.
 - Verifier checks are adapted from three-score fidelity to complete Decision Profile fidelity.
 - The 30–40-scenario regression suite remains required before the optional AI path is complete.
