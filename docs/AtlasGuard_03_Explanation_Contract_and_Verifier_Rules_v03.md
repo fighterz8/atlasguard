@@ -2,6 +2,10 @@
 
 03 · Explanation Contract and Verifier Rules
 
+> **Historical status (2026-07-17):** Superseded for implementation by
+> [MW-CHG-001](movewise/type-b-c-approval-and-requirements-migration.md)
+> and ADR-001 through ADR-005. Retained unchanged below as decision history.
+
 |                           |                                                                                                                                                                                                                                                                             |
 |---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Purpose**               | Define the structured explanation output, the rules governing what the AI is allowed to say, and the verifier checks that must run before any explanation is shown to the user.                                                                                             |

@@ -2,6 +2,10 @@
 
 **04 · System Architecture and Data Model**
 
+> **Historical status (2026-07-17):** Superseded for implementation by
+> [MW-CHG-001](movewise/type-b-c-approval-and-requirements-migration.md)
+> and ADR-001 through ADR-005. Retained unchanged below as decision history.
+
 | **Purpose**               | Define AtlasGuard’s MVP runtime architecture, component boundaries, request lifecycle, persistence model, and canonical data contracts connecting the scorer, explainer, verifier, fallback renderer, and trace logger. |
 |---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Owner / Status / Date** | Nick · Draft v0.2 · 2026-04-01                                                                                                                                                                                          |
