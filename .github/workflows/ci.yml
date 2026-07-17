@@ -40,6 +40,9 @@ jobs:
       - name: Check trusted-surface formatting
         run: pnpm run format:check
 
+      - name: Check generated transport artifacts
+        run: pnpm run transport:check
+
       - name: Run tests
         run: pnpm run test
 

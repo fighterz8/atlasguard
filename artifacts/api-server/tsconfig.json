@@ -9,12 +9,6 @@
   "references": [
     {
       "path": "../../lib/contracts"
-    },
-    {
-      "path": "../../lib/db"
-    },
-    {
-      "path": "../../lib/api-zod"
     }
   ]
 }

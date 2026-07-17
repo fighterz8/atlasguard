@@ -1,8 +1,8 @@
-# Workspace — AtlasGuard
+# Workspace — MoveWise (historical repository name: AtlasGuard)
 
 ## Overview
 
-AtlasGuard is a relocation decision-support application. Users input their current city, target city, finances, and lifestyle preferences; a synchronous pipeline (Scorer → Explainer → Verifier → Fallback) produces a structured verdict and explanation. Business logic is scaffolded as `// TODO` stubs for implementation in Cursor.
+MoveWise is a pre-commitment relocation validator. Canonical Zod schemas validate user inputs and versioned benchmark evidence before the deterministic decision engine produces a verified Decision Profile. The previous AtlasGuard three-score and mandatory-AI pipeline has been retired.
 
 ## Stack
 
@@ -14,7 +14,8 @@ AtlasGuard is a relocation decision-support application. Users input their curre
 - **API framework**: Express 5 (artifacts/api-server)
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
+- **API contract generation**: Zod-to-OpenAPI from `@workspace/contracts`
+- **Transport client codegen**: Orval (React Query client only)
 - **Build**: esbuild (CJS bundle)
 
 ## Architecture
@@ -22,7 +23,7 @@ AtlasGuard is a relocation decision-support application. Users input their curre
 Modular Monolith. No microservices.
 
 ```
-User Input → Scorer → Explainer → Verifier → (Optional Repair) → Fallback Renderer → Persistence → UI
+User Input → Canonical Validation → Verified Benchmark → Deterministic Decision Engine → Verified Evaluation Result → UI
 ```
 
 ## Structure
@@ -32,14 +33,8 @@ artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/               # Express 5 API server
 │   │   └── src/
-│   │       ├── core/             # Pipeline modules (all stub, implement in Cursor)
-│   │       │   ├── contracts/types.ts   # All TypeScript interfaces
-│   │       │   ├── scorer/index.ts      # Deterministic scoring engine
-│   │       │   ├── explainer/index.ts   # AI explanation generator
-│   │       │   ├── verifier/index.ts    # Verifier (V-001 through V-010)
-│   │       │   └── fallback/index.ts    # Deterministic fallback renderer
 │   │       └── routes/
-│   │           ├── evaluate.ts   # POST /evaluate + scenario routes
+│   │           ├── evaluate.ts   # POST /evaluate validation boundary
 │   │           └── health.ts     # GET /healthz
 │   └── atlasguard/               # React + Vite frontend
 │       └── src/
@@ -48,9 +43,10 @@ artifacts-monorepo/
 │           │   └── results.tsx   # Results display (stub)
 │           └── App.tsx           # Router
 ├── lib/
-│   ├── api-spec/openapi.yaml     # OpenAPI contract
+│   ├── contracts/                # Canonical runtime Zod contracts
+│   ├── decision-core/            # Verified deterministic evaluation engine
+│   ├── api-spec/                 # Generated structural OpenAPI + generator
 │   ├── api-client-react/         # Generated React Query hooks
-│   ├── api-zod/                  # Generated Zod schemas
 │   └── db/src/schema/
 │       ├── metros.ts             # metros table
 │       ├── scenarios.ts          # scenarios table
@@ -61,29 +57,23 @@ artifacts-monorepo/
 
 ## Database Schema
 
+The checked-in Drizzle tables below are legacy persistence scaffolding and are not currently reached by the API. They remain pending a separate persistence migration and do not define MoveWise runtime or transport contracts.
+
 - **metros**: city, state, slug, all seven scores, climateTendency, incomeTaxRegime, benchmarkVersion, staleRiskFlag
 - **scenarios**: id, email, currentCity, targetCity, requestPayload (JSON), createdAt
 - **scenario_results**: id, scenarioId, lifestyleFit, financialFit, moveScore, verdictBand, resultMode (enum), structuredExplanation (JSON), renderedOutput (JSON), createdAt
 - **trace_runs**: id, scenarioId, scoringEvidence (JSON), rawExplanation (JSON), verifierResult (JSON), finalMode, benchmarkVersion, createdAt
 
-## Core TypeScript Interfaces
+## Canonical Runtime Contracts
 
-All defined in `artifacts/api-server/src/core/contracts/types.ts`:
-- `ScenarioInput` — user's complete evaluation request
-- `ScoringEvidence` — full scoring output with nested evidence objects and derivedSignals
-- `StructuredExplanation` — AI/fallback explanation with verdict, scores, drivers, tradeoffs, assumptions, sensitivity, caveats, next step
-- `VerifierResult` — verifier output (PASS / PARTIAL / FAIL) with per-check details
-- `PipelineOutput` — complete pipeline result
+`lib/contracts` is the sole runtime/domain contract authority. TypeScript types are inferred from Zod schemas rather than maintained by hand. The generated OpenAPI file is a structural transport projection; refinements, checksums, and semantic bundle verification still run through `@workspace/contracts` at runtime.
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/healthz | Health check |
-| POST | /api/evaluate | Run evaluation pipeline |
-| GET | /api/scenarios | List past scenarios |
-| GET | /api/scenarios/:id | Get scenario + result |
-| GET | /api/metros | List all metros |
+| Method | Path          | Description                                                                                    |
+| ------ | ------------- | ---------------------------------------------------------------------------------------------- |
+| GET    | /api/healthz  | Health check                                                                                   |
+| POST   | /api/evaluate | Validate canonical input; currently returns 501 until the verified engine is connected to HTTP |
 
 ## TypeScript & Composite Projects
 
@@ -97,12 +87,14 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 - `pnpm run build` — runs `typecheck` first, then recursively runs `build`
 - `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly`
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate types from OpenAPI spec
+- `pnpm run transport:generate` — regenerate structural OpenAPI and the React Query client
+- `pnpm run transport:check` — verify checked-in transport artifacts without modifying them
 - `pnpm --filter @workspace/db run push` — push schema changes to DB
 
 ## GitHub Remote
 
 Remote is configured as:
+
 ```
 origin  https://github.com/fighterz8/atlasguard.git
 ```

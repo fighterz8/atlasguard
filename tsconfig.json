@@ -13,10 +13,10 @@
       "path": "./lib/db"
     },
     {
-      "path": "./lib/api-client-react"
+      "path": "./lib/api-spec"
     },
     {
-      "path": "./lib/api-zod"
+      "path": "./lib/api-client-react"
     }
   ]
 }

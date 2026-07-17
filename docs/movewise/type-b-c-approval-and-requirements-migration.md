@@ -267,9 +267,11 @@ Implementation may proceed against these requirements only when the active chang
 1. Canonical Zod schemas parse one golden `ScenarioInput` and one complete `DecisionProfile`.
 2. A documented decision table is mutually exclusive and exhaustive.
 3. Fixtures cover every condition boundary, blocker, precedence conflict, missing-critical-evidence state, same-city case, invalid combination, and no-valid-breakpoint case.
-4. Generated contracts have a no-diff CI check.
+4. `pnpm run transport:check` regenerates structural OpenAPI and the React transport client in an isolated temporary directory and fails CI on any checked-in drift.
 5. The root install, type-check, tests, and build are green.
 6. No implementation depends on a retired legacy score, blend, result mode, email field, or mandatory provider call.
+
+The generated OpenAPI contract is intentionally structural. Runtime request parsing, cross-field refinements, benchmark checksum promotion, and complete evaluation-result verification remain exclusively in `@workspace/contracts`; generated Orval types provide transport ergonomics, not trust.
 
 ## 10. Linked decisions
 

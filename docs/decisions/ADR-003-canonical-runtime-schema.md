@@ -20,6 +20,9 @@ Create one contracts package whose hand-authored Zod schemas are the executable 
 - Derive TypeScript types with `z.infer`; do not maintain parallel handwritten interfaces for the same object.
 - Generate JSON Schema/OpenAPI and client types from the canonical schemas.
 - Treat generated files as build artifacts; CI regenerates them and fails on drift.
+- Generate OpenAPI 3.1 with `@asteasolutions/zod-to-openapi` from the canonical Zod 4 schemas, then run Orval only for the React Query transport client.
+- Treat generated OpenAPI as a structural projection. Zod transforms, cross-field refinements, checksum promotion, and semantic bundle verification are not delegated to OpenAPI; the API route still parses `unknown` with `@workspace/contracts`.
+- Keep health and transport-error schemas local to the generator when they do not represent domain data. Do not create a second runtime validator package for canonical evaluation inputs or results.
 - Validate golden fixtures against the same schemas used at runtime.
 - Use stable evidence IDs or JSON Pointers; array positions are not durable references.
 - Reserve `benchmark.*`, `input.*`, and `derived.*` evidence-ID namespaces by evidence kind, and reject cross-namespace records before semantic evaluation.
@@ -51,7 +54,9 @@ Persistence rows and user-facing domain objects have different responsibilities,
 ## Consequences
 
 - Existing duplicate request/evidence interfaces are removed or converted into generated imports.
+- The duplicate `@workspace/api-zod` package and the unused AtlasGuard scorer/explainer/verifier/fallback stubs are removed; the generated React client contains transport types only and is never a runtime trust boundary.
 - Contract-generation and no-diff checks become release gates.
+- `pnpm run transport:check` generates into an isolated temporary directory, compares bytes, and reports drift without overwriting checked-in or user-edited files.
 - Schema changes require fixtures, API artifacts, migration mapping, and tests in the same change.
 - Database adapters add a small amount of explicit code but prevent persistence concerns from shaping the public contract.
 - A syntactically valid checksum string, profile, or benchmark object is not trusted on its own; callers must use the branded verification loaders.

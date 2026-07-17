@@ -33,16 +33,4 @@ router.post("/evaluate", async (req, res): Promise<void> => {
   });
 });
 
-/**
- * GET /api/metros
- *
- * The database is loaded only for this route, so health checks and input
- * validation do not require DATABASE_URL at process startup.
- */
-router.get("/metros", async (_req, res): Promise<void> => {
-  const { db, metrosTable } = await import("@workspace/db");
-  const rows = await db.select().from(metrosTable).orderBy(metrosTable.city);
-  res.json(rows);
-});
-
 export default router;

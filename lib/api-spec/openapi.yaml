@@ -1,27 +1,3143 @@
+# GENERATED FILE. DO NOT EDIT.
+# Source: @workspace/contracts plus lib/api-spec/src/generate-openapi.ts
+# This document is structural only; runtime refinements remain authoritative.
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
-  title: Api
-  version: 0.1.0
-  description: AtlasGuard API specification
+  title: MoveWise API
+  version: 0.2.0
+  description: Generated structural transport contract. Runtime validation and semantic trust remain authoritative in @workspace/contracts.
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
-  - name: evaluate
-    description: Scenario evaluation pipeline
+    description: Process health operations
+  - name: evaluation
+    description: Canonical MoveWise scenario evaluation transport
+components:
+  schemas:
+    ScenarioInput:
+      type: object
+      properties:
+        schemaVersion:
+          type: string
+          enum:
+            - 1.0.0
+        originMetroSlug:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        destinationMetroSlug:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        finances:
+          type: object
+          properties:
+            origin:
+              type: object
+              properties:
+                takeHomeIncome:
+                  type: object
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+                grossIncome:
+                  type:
+                    - object
+                    - "null"
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+                housingCost:
+                  type: object
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+                recurringExpensesExcludingHousing:
+                  type: object
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+              required:
+                - takeHomeIncome
+                - grossIncome
+                - housingCost
+                - recurringExpensesExcludingHousing
+              additionalProperties: false
+            destination:
+              type: object
+              properties:
+                takeHomeIncome:
+                  type: object
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+                grossIncome:
+                  type:
+                    - object
+                    - "null"
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+                housingCost:
+                  type: object
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+                recurringExpensesExcludingHousing:
+                  type: object
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                        - assumed_same_as_origin
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+                retainedPropertyNet:
+                  type: object
+                  properties:
+                    monthlyCents:
+                      type: integer
+                      minimum: -10000000000
+                      maximum: 10000000000
+                      description: A signed monthly amount in integer US-dollar cents.
+                    basis:
+                      type: string
+                      enum:
+                        - confirmed
+                        - user_estimate
+                    plausibleRangeCents:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        min:
+                          type: integer
+                          minimum: -10000000000
+                          maximum: 10000000000
+                          description: A signed monthly amount in integer US-dollar cents.
+                        max:
+                          type: integer
+                          minimum: -10000000000
+                          maximum: 10000000000
+                          description: A signed monthly amount in integer US-dollar cents.
+                      required:
+                        - min
+                        - max
+                      additionalProperties: false
+                  required:
+                    - monthlyCents
+                    - basis
+                    - plausibleRangeCents
+                  additionalProperties: false
+              required:
+                - takeHomeIncome
+                - grossIncome
+                - housingCost
+                - recurringExpensesExcludingHousing
+                - retainedPropertyNet
+              additionalProperties: false
+          required:
+            - origin
+            - destination
+          additionalProperties: false
+        priorities:
+          type: array
+          items:
+            type: object
+            properties:
+              priorityId:
+                type: string
+                enum:
+                  - climate_heat
+                  - climate_cold
+                  - climate_precipitation
+                  - climate_snow
+                  - climate_seasonality
+                  - commute_time
+              preferredDirection:
+                type: string
+                enum:
+                  - lower
+                  - higher
+              weight:
+                anyOf:
+                  - type: number
+                    enum:
+                      - 0
+                  - type: number
+                    enum:
+                      - 1
+                  - type: number
+                    enum:
+                      - 2
+                  - type: number
+                    enum:
+                      - 3
+                  - type: number
+                    enum:
+                      - 4
+                  - type: number
+                    enum:
+                      - 5
+            required:
+              - priorityId
+              - preferredDirection
+              - weight
+            additionalProperties: false
+          maxItems: 6
+      required:
+        - schemaVersion
+        - originMetroSlug
+        - destinationMetroSlug
+        - finances
+        - priorities
+      additionalProperties: false
+    EvaluationResult:
+      type: object
+      properties:
+        schemaVersion:
+          type: string
+          enum:
+            - 1.0.0
+        resultMode:
+          type: string
+          enum:
+            - deterministic
+        scenarioInput:
+          type: object
+          properties:
+            schemaVersion:
+              type: string
+              enum:
+                - 1.0.0
+            originMetroSlug:
+              type: string
+              minLength: 1
+              maxLength: 120
+              pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+            destinationMetroSlug:
+              type: string
+              minLength: 1
+              maxLength: 120
+              pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+            finances:
+              type: object
+              properties:
+                origin:
+                  type: object
+                  properties:
+                    takeHomeIncome:
+                      type: object
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                    grossIncome:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                    housingCost:
+                      type: object
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                    recurringExpensesExcludingHousing:
+                      type: object
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                  required:
+                    - takeHomeIncome
+                    - grossIncome
+                    - housingCost
+                    - recurringExpensesExcludingHousing
+                  additionalProperties: false
+                destination:
+                  type: object
+                  properties:
+                    takeHomeIncome:
+                      type: object
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                    grossIncome:
+                      type:
+                        - object
+                        - "null"
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                    housingCost:
+                      type: object
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                    recurringExpensesExcludingHousing:
+                      type: object
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 10000000000
+                          description: A non-negative monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: 0
+                              maximum: 10000000000
+                              description: A non-negative monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                    retainedPropertyNet:
+                      type: object
+                      properties:
+                        monthlyCents:
+                          type: integer
+                          minimum: -10000000000
+                          maximum: 10000000000
+                          description: A signed monthly amount in integer US-dollar cents.
+                        basis:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                        plausibleRangeCents:
+                          type:
+                            - object
+                            - "null"
+                          properties:
+                            min:
+                              type: integer
+                              minimum: -10000000000
+                              maximum: 10000000000
+                              description: A signed monthly amount in integer US-dollar cents.
+                            max:
+                              type: integer
+                              minimum: -10000000000
+                              maximum: 10000000000
+                              description: A signed monthly amount in integer US-dollar cents.
+                          required:
+                            - min
+                            - max
+                          additionalProperties: false
+                      required:
+                        - monthlyCents
+                        - basis
+                        - plausibleRangeCents
+                      additionalProperties: false
+                  required:
+                    - takeHomeIncome
+                    - grossIncome
+                    - housingCost
+                    - recurringExpensesExcludingHousing
+                    - retainedPropertyNet
+                  additionalProperties: false
+              required:
+                - origin
+                - destination
+              additionalProperties: false
+            priorities:
+              type: array
+              items:
+                type: object
+                properties:
+                  priorityId:
+                    type: string
+                    enum:
+                      - climate_heat
+                      - climate_cold
+                      - climate_precipitation
+                      - climate_snow
+                      - climate_seasonality
+                      - commute_time
+                  preferredDirection:
+                    type: string
+                    enum:
+                      - lower
+                      - higher
+                  weight:
+                    anyOf:
+                      - type: number
+                        enum:
+                          - 0
+                      - type: number
+                        enum:
+                          - 1
+                      - type: number
+                        enum:
+                          - 2
+                      - type: number
+                        enum:
+                          - 3
+                      - type: number
+                        enum:
+                          - 4
+                      - type: number
+                        enum:
+                          - 5
+                required:
+                  - priorityId
+                  - preferredDirection
+                  - weight
+                additionalProperties: false
+              maxItems: 6
+          required:
+            - schemaVersion
+            - originMetroSlug
+            - destinationMetroSlug
+            - finances
+            - priorities
+          additionalProperties: false
+        benchmarkComparison:
+          type: object
+          properties:
+            snapshot:
+              type: object
+              properties:
+                id:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+                  pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                version:
+                  type: string
+                  pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                sha256:
+                  type: string
+                  pattern: ^[a-f0-9]{64}$
+                delineationVersion:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                verifiedOn:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+              required:
+                - id
+                - version
+                - sha256
+                - delineationVersion
+                - verifiedOn
+              additionalProperties: false
+            origin:
+              type: object
+              properties:
+                slug:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                  pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                cbsaCode:
+                  type: string
+                  pattern: ^\d{5}$
+                label:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+                selectedPlace:
+                  type: object
+                  properties:
+                    city:
+                      type: string
+                      minLength: 1
+                      maxLength: 120
+                    stateCode:
+                      type: string
+                      pattern: ^[A-Z]{2}$
+                  required:
+                    - city
+                    - stateCode
+                  additionalProperties: false
+              required:
+                - slug
+                - cbsaCode
+                - label
+                - selectedPlace
+              additionalProperties: false
+            destination:
+              type: object
+              properties:
+                slug:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                  pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                cbsaCode:
+                  type: string
+                  pattern: ^\d{5}$
+                label:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+                selectedPlace:
+                  type: object
+                  properties:
+                    city:
+                      type: string
+                      minLength: 1
+                      maxLength: 120
+                    stateCode:
+                      type: string
+                      pattern: ^[A-Z]{2}$
+                  required:
+                    - city
+                    - stateCode
+                  additionalProperties: false
+              required:
+                - slug
+                - cbsaCode
+                - label
+                - selectedPlace
+              additionalProperties: false
+            priorities:
+              type: array
+              items:
+                type: object
+                properties:
+                  priorityId:
+                    type: string
+                    enum:
+                      - climate_heat
+                      - climate_cold
+                      - climate_precipitation
+                      - climate_snow
+                      - climate_seasonality
+                      - commute_time
+                  originUtilityBps:
+                    type:
+                      - integer
+                      - "null"
+                    minimum: 0
+                    maximum: 10000
+                  destinationUtilityBps:
+                    type:
+                      - integer
+                      - "null"
+                    minimum: 0
+                    maximum: 10000
+                  materialityThresholdBps:
+                    type: integer
+                    minimum: 1
+                    maximum: 10000
+                  transformationId:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  transformationVersion:
+                    type: string
+                    pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                  evidence:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                          - benchmark_metric
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      metricId:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      definition:
+                        type: string
+                        minLength: 1
+                        maxLength: 500
+                      priorityId:
+                        type: string
+                        enum:
+                          - climate_heat
+                          - climate_cold
+                          - climate_precipitation
+                          - climate_snow
+                          - climate_seasonality
+                          - commute_time
+                      unit:
+                        type: string
+                        enum:
+                          - basis_points
+                          - count
+                          - days
+                          - degrees_fahrenheit
+                          - index
+                          - inches
+                          - minutes
+                          - percent
+                          - usd_cents
+                      originValue:
+                        type:
+                          - number
+                          - "null"
+                      destinationValue:
+                        type:
+                          - number
+                          - "null"
+                      deltaValue:
+                        type:
+                          - number
+                          - "null"
+                      source:
+                        type: object
+                        properties:
+                          dataset:
+                            type: string
+                            minLength: 1
+                            maxLength: 160
+                          publisher:
+                            type: string
+                            minLength: 1
+                            maxLength: 160
+                          sourceUrl:
+                            type: string
+                            format: uri
+                          termsUrl:
+                            type:
+                              - string
+                              - "null"
+                            format: uri
+                        required:
+                          - dataset
+                          - publisher
+                          - sourceUrl
+                          - termsUrl
+                        additionalProperties: false
+                      observationPeriod:
+                        type: string
+                        minLength: 1
+                        maxLength: 80
+                      releasedOn:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                      verifiedOn:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                      geographies:
+                        type: object
+                        properties:
+                          origin:
+                            type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - cbsa
+                                  - county
+                                  - place
+                                  - state
+                                  - station
+                                  - national
+                              code:
+                                type: string
+                                minLength: 1
+                                maxLength: 40
+                              label:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                              matchQuality:
+                                type: string
+                                enum:
+                                  - exact
+                                  - mapped_proxy
+                                  - mismatch
+                            required:
+                              - kind
+                              - code
+                              - label
+                              - matchQuality
+                            additionalProperties: false
+                          destination:
+                            type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - cbsa
+                                  - county
+                                  - place
+                                  - state
+                                  - station
+                                  - national
+                              code:
+                                type: string
+                                minLength: 1
+                                maxLength: 40
+                              label:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                              matchQuality:
+                                type: string
+                                enum:
+                                  - exact
+                                  - mapped_proxy
+                                  - mismatch
+                            required:
+                              - kind
+                              - code
+                              - label
+                              - matchQuality
+                            additionalProperties: false
+                        required:
+                          - origin
+                          - destination
+                        additionalProperties: false
+                      snapshotVersion:
+                        type: string
+                        pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                      snapshotSha256:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      transformation:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            minLength: 1
+                            maxLength: 160
+                            pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                          version:
+                            type: string
+                            pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                          preferredDirection:
+                            type: string
+                            enum:
+                              - lower
+                              - higher
+                          outputs:
+                            type: object
+                            properties:
+                              originUtilityBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                              destinationUtilityBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                              originUncertaintyBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                              destinationUncertaintyBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                            required:
+                              - originUtilityBps
+                              - destinationUtilityBps
+                              - originUncertaintyBps
+                              - destinationUncertaintyBps
+                            additionalProperties: false
+                        required:
+                          - id
+                          - version
+                          - preferredDirection
+                          - outputs
+                        additionalProperties: false
+                      materialityPolicy:
+                        type: object
+                        properties:
+                          utilityDeltaBps:
+                            type: integer
+                            minimum: 1
+                            maximum: 10000
+                          rationale:
+                            type: string
+                            minLength: 1
+                            maxLength: 500
+                        required:
+                          - utilityDeltaBps
+                          - rationale
+                        additionalProperties: false
+                      quality:
+                        type: object
+                        properties:
+                          freshness:
+                            type: string
+                            enum:
+                              - current
+                              - stale
+                              - unknown
+                          missingness:
+                            type: string
+                            enum:
+                              - complete
+                              - partial
+                              - unavailable
+                          marginOfError:
+                            type:
+                              - object
+                              - "null"
+                            properties:
+                              origin:
+                                type:
+                                  - number
+                                  - "null"
+                                minimum: 0
+                              destination:
+                                type:
+                                  - number
+                                  - "null"
+                                minimum: 0
+                            required:
+                              - origin
+                              - destination
+                            additionalProperties: false
+                          coverageBps:
+                            type:
+                              - integer
+                              - "null"
+                            minimum: 0
+                            maximum: 10000
+                          grade:
+                            type: object
+                            properties:
+                              value:
+                                type: string
+                                enum:
+                                  - high
+                                  - moderate
+                                  - limited
+                              policyVersion:
+                                type: string
+                                enum:
+                                  - 1.0.0
+                            required:
+                              - value
+                              - policyVersion
+                            additionalProperties: false
+                        required:
+                          - freshness
+                          - missingness
+                          - marginOfError
+                          - coverageBps
+                          - grade
+                        additionalProperties: false
+                    required:
+                      - kind
+                      - id
+                      - metricId
+                      - definition
+                      - priorityId
+                      - unit
+                      - originValue
+                      - destinationValue
+                      - deltaValue
+                      - source
+                      - observationPeriod
+                      - releasedOn
+                      - verifiedOn
+                      - geographies
+                      - snapshotVersion
+                      - snapshotSha256
+                      - transformation
+                      - materialityPolicy
+                      - quality
+                    additionalProperties: false
+                required:
+                  - priorityId
+                  - originUtilityBps
+                  - destinationUtilityBps
+                  - materialityThresholdBps
+                  - transformationId
+                  - transformationVersion
+                  - evidence
+                additionalProperties: false
+              maxItems: 6
+          required:
+            - snapshot
+            - origin
+            - destination
+            - priorities
+          additionalProperties: false
+        decisionProfile:
+          type: object
+          properties:
+            schemaVersion:
+              type: string
+              enum:
+                - 1.0.0
+            inputFingerprintSha256:
+              type: string
+              pattern: ^[a-f0-9]{64}$
+            scenario:
+              type: object
+              properties:
+                origin:
+                  type: object
+                  properties:
+                    slug:
+                      type: string
+                      minLength: 1
+                      maxLength: 120
+                      pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                    cbsaCode:
+                      type: string
+                      pattern: ^\d{5}$
+                    label:
+                      type: string
+                      minLength: 1
+                      maxLength: 160
+                    selectedPlace:
+                      type: object
+                      properties:
+                        city:
+                          type: string
+                          minLength: 1
+                          maxLength: 120
+                        stateCode:
+                          type: string
+                          pattern: ^[A-Z]{2}$
+                      required:
+                        - city
+                        - stateCode
+                      additionalProperties: false
+                  required:
+                    - slug
+                    - cbsaCode
+                    - label
+                    - selectedPlace
+                  additionalProperties: false
+                destination:
+                  type: object
+                  properties:
+                    slug:
+                      type: string
+                      minLength: 1
+                      maxLength: 120
+                      pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                    cbsaCode:
+                      type: string
+                      pattern: ^\d{5}$
+                    label:
+                      type: string
+                      minLength: 1
+                      maxLength: 160
+                    selectedPlace:
+                      type: object
+                      properties:
+                        city:
+                          type: string
+                          minLength: 1
+                          maxLength: 120
+                        stateCode:
+                          type: string
+                          pattern: ^[A-Z]{2}$
+                      required:
+                        - city
+                        - stateCode
+                      additionalProperties: false
+                  required:
+                    - slug
+                    - cbsaCode
+                    - label
+                    - selectedPlace
+                  additionalProperties: false
+                benchmarkSnapshot:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      minLength: 1
+                      maxLength: 160
+                      pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                    version:
+                      type: string
+                      pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                    sha256:
+                      type: string
+                      pattern: ^[a-f0-9]{64}$
+                    delineationVersion:
+                      type: string
+                      minLength: 1
+                      maxLength: 80
+                    verifiedOn:
+                      type: string
+                      pattern: ^\d{4}-\d{2}-\d{2}$
+                  required:
+                    - id
+                    - version
+                    - sha256
+                    - delineationVersion
+                    - verifiedOn
+                  additionalProperties: false
+                decisionRuleVersion:
+                  type: string
+                  enum:
+                    - 1.0.0
+              required:
+                - origin
+                - destination
+                - benchmarkSnapshot
+                - decisionRuleVersion
+              additionalProperties: false
+            financialPosition:
+              type: object
+              properties:
+                origin:
+                  type: object
+                  properties:
+                    monthlyTakeHomeIncomeCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyGrossIncomeCents:
+                      type:
+                        - integer
+                        - "null"
+                      minimum: 0
+                      maximum: 10000000000
+                      exclusiveMinimum: 0
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyHousingCostCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyRecurringExpensesCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyRetainedPropertyNetCents:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    monthlyCushionCents:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    housingBurdenBps:
+                      type:
+                        - integer
+                        - "null"
+                      minimum: 0
+                      maximum: 9007199254740991
+                    assumptionBasis:
+                      type: object
+                      properties:
+                        takeHomeIncome:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        grossIncome:
+                          type:
+                            - string
+                            - "null"
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                            - null
+                        housingCost:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        recurringExpenses:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        retainedPropertyNet:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                      required:
+                        - takeHomeIncome
+                        - grossIncome
+                        - housingCost
+                        - recurringExpenses
+                        - retainedPropertyNet
+                      additionalProperties: false
+                  required:
+                    - monthlyTakeHomeIncomeCents
+                    - monthlyGrossIncomeCents
+                    - monthlyHousingCostCents
+                    - monthlyRecurringExpensesCents
+                    - monthlyRetainedPropertyNetCents
+                    - monthlyCushionCents
+                    - housingBurdenBps
+                    - assumptionBasis
+                  additionalProperties: false
+                destination:
+                  type: object
+                  properties:
+                    monthlyTakeHomeIncomeCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyGrossIncomeCents:
+                      type:
+                        - integer
+                        - "null"
+                      minimum: 0
+                      maximum: 10000000000
+                      exclusiveMinimum: 0
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyHousingCostCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyRecurringExpensesCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    monthlyRetainedPropertyNetCents:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    monthlyCushionCents:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    housingBurdenBps:
+                      type:
+                        - integer
+                        - "null"
+                      minimum: 0
+                      maximum: 9007199254740991
+                    assumptionBasis:
+                      type: object
+                      properties:
+                        takeHomeIncome:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        grossIncome:
+                          type:
+                            - string
+                            - "null"
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                            - null
+                        housingCost:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        recurringExpenses:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                            - assumed_same_as_origin
+                        retainedPropertyNet:
+                          type: string
+                          enum:
+                            - confirmed
+                            - user_estimate
+                      required:
+                        - takeHomeIncome
+                        - grossIncome
+                        - housingCost
+                        - recurringExpenses
+                        - retainedPropertyNet
+                      additionalProperties: false
+                  required:
+                    - monthlyTakeHomeIncomeCents
+                    - monthlyGrossIncomeCents
+                    - monthlyHousingCostCents
+                    - monthlyRecurringExpensesCents
+                    - monthlyRetainedPropertyNetCents
+                    - monthlyCushionCents
+                    - housingBurdenBps
+                    - assumptionBasis
+                  additionalProperties: false
+                change:
+                  type: object
+                  properties:
+                    monthlyCushionDeltaCents:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    cushionDeltaBpsOfOriginTakeHome:
+                      type:
+                        - integer
+                        - "null"
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    housingBurdenDeltaBps:
+                      type:
+                        - integer
+                        - "null"
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    materialityThresholdCents:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000000000
+                      description: A non-negative monthly amount in integer US-dollar cents.
+                    classification:
+                      type: string
+                      enum:
+                        - improves
+                        - similar
+                        - worsens
+                  required:
+                    - monthlyCushionDeltaCents
+                    - cushionDeltaBpsOfOriginTakeHome
+                    - housingBurdenDeltaBps
+                    - materialityThresholdCents
+                    - classification
+                  additionalProperties: false
+                blockerCodes:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - negative_target_cushion
+                      - target_housing_burden_at_or_above_50_percent
+                riskCodes:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - target_income_not_confirmed
+                      - target_gross_income_unknown
+                      - target_gross_income_not_confirmed
+                      - target_housing_not_confirmed
+                      - target_expenses_not_confirmed
+                      - retained_property_net_not_confirmed
+              required:
+                - origin
+                - destination
+                - change
+                - blockerCodes
+                - riskCodes
+              additionalProperties: false
+            priorityChanges:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  priorityId:
+                    type: string
+                    enum:
+                      - climate_heat
+                      - climate_cold
+                      - climate_precipitation
+                      - climate_snow
+                      - climate_seasonality
+                      - commute_time
+                  weight:
+                    anyOf:
+                      - type: number
+                        enum:
+                          - 0
+                      - type: number
+                        enum:
+                          - 1
+                      - type: number
+                        enum:
+                          - 2
+                      - type: number
+                        enum:
+                          - 3
+                      - type: number
+                        enum:
+                          - 4
+                      - type: number
+                        enum:
+                          - 5
+                  preferredDirection:
+                    type: string
+                    enum:
+                      - lower
+                      - higher
+                  availability:
+                    type: string
+                    enum:
+                      - available
+                      - unavailable
+                  originUtilityBps:
+                    type:
+                      - integer
+                      - "null"
+                    minimum: 0
+                    maximum: 10000
+                  destinationUtilityBps:
+                    type:
+                      - integer
+                      - "null"
+                    minimum: 0
+                    maximum: 10000
+                  utilityDeltaBps:
+                    type:
+                      - integer
+                      - "null"
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  weightedContribution:
+                    type:
+                      - integer
+                      - "null"
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  materialityThresholdBps:
+                    type:
+                      - integer
+                      - "null"
+                    minimum: 1
+                    maximum: 10000
+                  classification:
+                    type: string
+                    enum:
+                      - improves
+                      - similar
+                      - worsens
+                      - unavailable
+                  material:
+                    type: boolean
+                  transformationId:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  transformationVersion:
+                    type: string
+                    pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                  evidenceRefs:
+                    type: array
+                    items:
+                      type: string
+                      minLength: 1
+                      maxLength: 160
+                      pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                required:
+                  - id
+                  - priorityId
+                  - weight
+                  - preferredDirection
+                  - availability
+                  - originUtilityBps
+                  - destinationUtilityBps
+                  - utilityDeltaBps
+                  - weightedContribution
+                  - materialityThresholdBps
+                  - classification
+                  - material
+                  - transformationId
+                  - transformationVersion
+                  - evidenceRefs
+                additionalProperties: false
+            condition:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                    - worth_a_closer_look
+                    - promising_if
+                    - meaningful_tradeoff
+                    - high_financial_risk_under_assumptions
+                ruleId:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+                  pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                evidenceRefs:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  minItems: 1
+              required:
+                - value
+                - ruleId
+                - evidenceRefs
+              additionalProperties: false
+            confidence:
+              type: object
+              properties:
+                level:
+                  type: string
+                  enum:
+                    - high
+                    - moderate
+                    - limited
+                ruleIds:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  minItems: 1
+                evidenceRefs:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                missingPriorityIds:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - climate_heat
+                      - climate_cold
+                      - climate_precipitation
+                      - climate_snow
+                      - climate_seasonality
+                      - commute_time
+              required:
+                - level
+                - ruleIds
+                - evidenceRefs
+                - missingPriorityIds
+              additionalProperties: false
+            stability:
+              type: object
+              properties:
+                level:
+                  type: string
+                  enum:
+                    - not_evaluated
+                    - stable
+                    - assumption_sensitive
+                breakpointIds:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                reasonCodes:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  minItems: 1
+              required:
+                - level
+                - breakpointIds
+                - reasonCodes
+              additionalProperties: false
+            breakpoints:
+              type: array
+              items:
+                oneOf:
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      kind:
+                        type: string
+                        enum:
+                          - money
+                      inputPath:
+                        type: string
+                        enum:
+                          - finances.origin.takeHomeIncome.monthlyCents
+                          - finances.origin.grossIncome.monthlyCents
+                          - finances.origin.housingCost.monthlyCents
+                          - finances.origin.recurringExpensesExcludingHousing.monthlyCents
+                          - finances.destination.takeHomeIncome.monthlyCents
+                          - finances.destination.grossIncome.monthlyCents
+                          - finances.destination.housingCost.monthlyCents
+                          - finances.destination.recurringExpensesExcludingHousing.monthlyCents
+                          - finances.destination.retainedPropertyNet.monthlyCents
+                      operator:
+                        type: string
+                        enum:
+                          - at_or_below
+                          - at_or_above
+                      thresholdCents:
+                        type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                      withinPlausibleRange:
+                        type: boolean
+                      changesConditionTo:
+                        type: string
+                        enum:
+                          - worth_a_closer_look
+                          - meaningful_tradeoff
+                          - high_financial_risk_under_assumptions
+                      evidenceRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                        minItems: 1
+                    required:
+                      - id
+                      - kind
+                      - inputPath
+                      - operator
+                      - thresholdCents
+                      - withinPlausibleRange
+                      - changesConditionTo
+                      - evidenceRefs
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      kind:
+                        type: string
+                        enum:
+                          - priority_weight
+                      priorityId:
+                        type: string
+                        enum:
+                          - climate_heat
+                          - climate_cold
+                          - climate_precipitation
+                          - climate_snow
+                          - climate_seasonality
+                          - commute_time
+                      operator:
+                        type: string
+                        enum:
+                          - at_or_below
+                          - at_or_above
+                      thresholdWeight:
+                        anyOf:
+                          - type: number
+                            enum:
+                              - 0
+                          - type: number
+                            enum:
+                              - 1
+                          - type: number
+                            enum:
+                              - 2
+                          - type: number
+                            enum:
+                              - 3
+                          - type: number
+                            enum:
+                              - 4
+                          - type: number
+                            enum:
+                              - 5
+                      withinPlausibleRange:
+                        type: boolean
+                      changesConditionTo:
+                        type: string
+                        enum:
+                          - worth_a_closer_look
+                          - meaningful_tradeoff
+                          - high_financial_risk_under_assumptions
+                      evidenceRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                        minItems: 1
+                    required:
+                      - id
+                      - kind
+                      - priorityId
+                      - operator
+                      - thresholdWeight
+                      - withinPlausibleRange
+                      - changesConditionTo
+                      - evidenceRefs
+                    additionalProperties: false
+            findings:
+              type: object
+              properties:
+                drivers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      code:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      subject:
+                        oneOf:
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - financial
+                              metricId:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                                pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                            required:
+                              - kind
+                              - metricId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - priority
+                              priorityId:
+                                type: string
+                                enum:
+                                  - climate_heat
+                                  - climate_cold
+                                  - climate_precipitation
+                                  - climate_snow
+                                  - climate_seasonality
+                                  - commute_time
+                            required:
+                              - kind
+                              - priorityId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - assumption
+                              inputPath:
+                                type: string
+                                enum:
+                                  - finances.origin.takeHomeIncome.monthlyCents
+                                  - finances.origin.grossIncome.monthlyCents
+                                  - finances.origin.housingCost.monthlyCents
+                                  - finances.origin.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.takeHomeIncome.monthlyCents
+                                  - finances.destination.grossIncome.monthlyCents
+                                  - finances.destination.housingCost.monthlyCents
+                                  - finances.destination.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.retainedPropertyNet.monthlyCents
+                            required:
+                              - kind
+                              - inputPath
+                            additionalProperties: false
+                      material:
+                        type: boolean
+                      evidenceRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                    required:
+                      - id
+                      - code
+                      - subject
+                      - material
+                      - evidenceRefs
+                    additionalProperties: false
+                tradeoffs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      code:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      subject:
+                        oneOf:
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - financial
+                              metricId:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                                pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                            required:
+                              - kind
+                              - metricId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - priority
+                              priorityId:
+                                type: string
+                                enum:
+                                  - climate_heat
+                                  - climate_cold
+                                  - climate_precipitation
+                                  - climate_snow
+                                  - climate_seasonality
+                                  - commute_time
+                            required:
+                              - kind
+                              - priorityId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - assumption
+                              inputPath:
+                                type: string
+                                enum:
+                                  - finances.origin.takeHomeIncome.monthlyCents
+                                  - finances.origin.grossIncome.monthlyCents
+                                  - finances.origin.housingCost.monthlyCents
+                                  - finances.origin.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.takeHomeIncome.monthlyCents
+                                  - finances.destination.grossIncome.monthlyCents
+                                  - finances.destination.housingCost.monthlyCents
+                                  - finances.destination.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.retainedPropertyNet.monthlyCents
+                            required:
+                              - kind
+                              - inputPath
+                            additionalProperties: false
+                      material:
+                        type: boolean
+                      evidenceRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                    required:
+                      - id
+                      - code
+                      - subject
+                      - material
+                      - evidenceRefs
+                    additionalProperties: false
+                blockers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      code:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      subject:
+                        oneOf:
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - financial
+                              metricId:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                                pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                            required:
+                              - kind
+                              - metricId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - priority
+                              priorityId:
+                                type: string
+                                enum:
+                                  - climate_heat
+                                  - climate_cold
+                                  - climate_precipitation
+                                  - climate_snow
+                                  - climate_seasonality
+                                  - commute_time
+                            required:
+                              - kind
+                              - priorityId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - assumption
+                              inputPath:
+                                type: string
+                                enum:
+                                  - finances.origin.takeHomeIncome.monthlyCents
+                                  - finances.origin.grossIncome.monthlyCents
+                                  - finances.origin.housingCost.monthlyCents
+                                  - finances.origin.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.takeHomeIncome.monthlyCents
+                                  - finances.destination.grossIncome.monthlyCents
+                                  - finances.destination.housingCost.monthlyCents
+                                  - finances.destination.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.retainedPropertyNet.monthlyCents
+                            required:
+                              - kind
+                              - inputPath
+                            additionalProperties: false
+                      material:
+                        type: boolean
+                      evidenceRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                    required:
+                      - id
+                      - code
+                      - subject
+                      - material
+                      - evidenceRefs
+                    additionalProperties: false
+                caveats:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      code:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      subject:
+                        oneOf:
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - financial
+                              metricId:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                                pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                            required:
+                              - kind
+                              - metricId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - priority
+                              priorityId:
+                                type: string
+                                enum:
+                                  - climate_heat
+                                  - climate_cold
+                                  - climate_precipitation
+                                  - climate_snow
+                                  - climate_seasonality
+                                  - commute_time
+                            required:
+                              - kind
+                              - priorityId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - assumption
+                              inputPath:
+                                type: string
+                                enum:
+                                  - finances.origin.takeHomeIncome.monthlyCents
+                                  - finances.origin.grossIncome.monthlyCents
+                                  - finances.origin.housingCost.monthlyCents
+                                  - finances.origin.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.takeHomeIncome.monthlyCents
+                                  - finances.destination.grossIncome.monthlyCents
+                                  - finances.destination.housingCost.monthlyCents
+                                  - finances.destination.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.retainedPropertyNet.monthlyCents
+                            required:
+                              - kind
+                              - inputPath
+                            additionalProperties: false
+                      material:
+                        type: boolean
+                      evidenceRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                    required:
+                      - id
+                      - code
+                      - subject
+                      - material
+                      - evidenceRefs
+                    additionalProperties: false
+                assumptions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      code:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      subject:
+                        oneOf:
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - financial
+                              metricId:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                                pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                            required:
+                              - kind
+                              - metricId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - priority
+                              priorityId:
+                                type: string
+                                enum:
+                                  - climate_heat
+                                  - climate_cold
+                                  - climate_precipitation
+                                  - climate_snow
+                                  - climate_seasonality
+                                  - commute_time
+                            required:
+                              - kind
+                              - priorityId
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - assumption
+                              inputPath:
+                                type: string
+                                enum:
+                                  - finances.origin.takeHomeIncome.monthlyCents
+                                  - finances.origin.grossIncome.monthlyCents
+                                  - finances.origin.housingCost.monthlyCents
+                                  - finances.origin.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.takeHomeIncome.monthlyCents
+                                  - finances.destination.grossIncome.monthlyCents
+                                  - finances.destination.housingCost.monthlyCents
+                                  - finances.destination.recurringExpensesExcludingHousing.monthlyCents
+                                  - finances.destination.retainedPropertyNet.monthlyCents
+                            required:
+                              - kind
+                              - inputPath
+                            additionalProperties: false
+                      material:
+                        type: boolean
+                      evidenceRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                    required:
+                      - id
+                      - code
+                      - subject
+                      - material
+                      - evidenceRefs
+                    additionalProperties: false
+                omittedPriorities:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - climate_heat
+                      - climate_cold
+                      - climate_precipitation
+                      - climate_snow
+                      - climate_seasonality
+                      - commute_time
+              required:
+                - drivers
+                - tradeoffs
+                - blockers
+                - caveats
+                - assumptions
+                - omittedPriorities
+              additionalProperties: false
+            nextSteps:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  code:
+                    type: string
+                    minLength: 1
+                    maxLength: 160
+                    pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                  evidenceRefs:
+                    type: array
+                    items:
+                      type: string
+                      minLength: 1
+                      maxLength: 160
+                      pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                    minItems: 1
+                required:
+                  - id
+                  - code
+                  - evidenceRefs
+                additionalProperties: false
+              minItems: 1
+            evidence:
+              type: array
+              items:
+                oneOf:
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                          - benchmark_metric
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      metricId:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      definition:
+                        type: string
+                        minLength: 1
+                        maxLength: 500
+                      priorityId:
+                        type: string
+                        enum:
+                          - climate_heat
+                          - climate_cold
+                          - climate_precipitation
+                          - climate_snow
+                          - climate_seasonality
+                          - commute_time
+                      unit:
+                        type: string
+                        enum:
+                          - basis_points
+                          - count
+                          - days
+                          - degrees_fahrenheit
+                          - index
+                          - inches
+                          - minutes
+                          - percent
+                          - usd_cents
+                      originValue:
+                        type:
+                          - number
+                          - "null"
+                      destinationValue:
+                        type:
+                          - number
+                          - "null"
+                      deltaValue:
+                        type:
+                          - number
+                          - "null"
+                      source:
+                        type: object
+                        properties:
+                          dataset:
+                            type: string
+                            minLength: 1
+                            maxLength: 160
+                          publisher:
+                            type: string
+                            minLength: 1
+                            maxLength: 160
+                          sourceUrl:
+                            type: string
+                            format: uri
+                          termsUrl:
+                            type:
+                              - string
+                              - "null"
+                            format: uri
+                        required:
+                          - dataset
+                          - publisher
+                          - sourceUrl
+                          - termsUrl
+                        additionalProperties: false
+                      observationPeriod:
+                        type: string
+                        minLength: 1
+                        maxLength: 80
+                      releasedOn:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                      verifiedOn:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                      geographies:
+                        type: object
+                        properties:
+                          origin:
+                            type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - cbsa
+                                  - county
+                                  - place
+                                  - state
+                                  - station
+                                  - national
+                              code:
+                                type: string
+                                minLength: 1
+                                maxLength: 40
+                              label:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                              matchQuality:
+                                type: string
+                                enum:
+                                  - exact
+                                  - mapped_proxy
+                                  - mismatch
+                            required:
+                              - kind
+                              - code
+                              - label
+                              - matchQuality
+                            additionalProperties: false
+                          destination:
+                            type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - cbsa
+                                  - county
+                                  - place
+                                  - state
+                                  - station
+                                  - national
+                              code:
+                                type: string
+                                minLength: 1
+                                maxLength: 40
+                              label:
+                                type: string
+                                minLength: 1
+                                maxLength: 160
+                              matchQuality:
+                                type: string
+                                enum:
+                                  - exact
+                                  - mapped_proxy
+                                  - mismatch
+                            required:
+                              - kind
+                              - code
+                              - label
+                              - matchQuality
+                            additionalProperties: false
+                        required:
+                          - origin
+                          - destination
+                        additionalProperties: false
+                      snapshotVersion:
+                        type: string
+                        pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                      snapshotSha256:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      transformation:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            minLength: 1
+                            maxLength: 160
+                            pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                          version:
+                            type: string
+                            pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                          preferredDirection:
+                            type: string
+                            enum:
+                              - lower
+                              - higher
+                          outputs:
+                            type: object
+                            properties:
+                              originUtilityBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                              destinationUtilityBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                              originUncertaintyBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                              destinationUncertaintyBps:
+                                type:
+                                  - integer
+                                  - "null"
+                                minimum: 0
+                                maximum: 10000
+                            required:
+                              - originUtilityBps
+                              - destinationUtilityBps
+                              - originUncertaintyBps
+                              - destinationUncertaintyBps
+                            additionalProperties: false
+                        required:
+                          - id
+                          - version
+                          - preferredDirection
+                          - outputs
+                        additionalProperties: false
+                      materialityPolicy:
+                        type: object
+                        properties:
+                          utilityDeltaBps:
+                            type: integer
+                            minimum: 1
+                            maximum: 10000
+                          rationale:
+                            type: string
+                            minLength: 1
+                            maxLength: 500
+                        required:
+                          - utilityDeltaBps
+                          - rationale
+                        additionalProperties: false
+                      quality:
+                        type: object
+                        properties:
+                          freshness:
+                            type: string
+                            enum:
+                              - current
+                              - stale
+                              - unknown
+                          missingness:
+                            type: string
+                            enum:
+                              - complete
+                              - partial
+                              - unavailable
+                          marginOfError:
+                            type:
+                              - object
+                              - "null"
+                            properties:
+                              origin:
+                                type:
+                                  - number
+                                  - "null"
+                                minimum: 0
+                              destination:
+                                type:
+                                  - number
+                                  - "null"
+                                minimum: 0
+                            required:
+                              - origin
+                              - destination
+                            additionalProperties: false
+                          coverageBps:
+                            type:
+                              - integer
+                              - "null"
+                            minimum: 0
+                            maximum: 10000
+                          grade:
+                            type: object
+                            properties:
+                              value:
+                                type: string
+                                enum:
+                                  - high
+                                  - moderate
+                                  - limited
+                              policyVersion:
+                                type: string
+                                enum:
+                                  - 1.0.0
+                            required:
+                              - value
+                              - policyVersion
+                            additionalProperties: false
+                        required:
+                          - freshness
+                          - missingness
+                          - marginOfError
+                          - coverageBps
+                          - grade
+                        additionalProperties: false
+                    required:
+                      - kind
+                      - id
+                      - metricId
+                      - definition
+                      - priorityId
+                      - unit
+                      - originValue
+                      - destinationValue
+                      - deltaValue
+                      - source
+                      - observationPeriod
+                      - releasedOn
+                      - verifiedOn
+                      - geographies
+                      - snapshotVersion
+                      - snapshotSha256
+                      - transformation
+                      - materialityPolicy
+                      - quality
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                          - scenario_input
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      inputPath:
+                        type: string
+                        enum:
+                          - finances.origin.takeHomeIncome.monthlyCents
+                          - finances.origin.grossIncome.monthlyCents
+                          - finances.origin.housingCost.monthlyCents
+                          - finances.origin.recurringExpensesExcludingHousing.monthlyCents
+                          - finances.destination.takeHomeIncome.monthlyCents
+                          - finances.destination.grossIncome.monthlyCents
+                          - finances.destination.housingCost.monthlyCents
+                          - finances.destination.recurringExpensesExcludingHousing.monthlyCents
+                          - finances.destination.retainedPropertyNet.monthlyCents
+                      unit:
+                        type: string
+                        enum:
+                          - usd_cents
+                      value:
+                        type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                      assumptionBasis:
+                        type: string
+                        enum:
+                          - confirmed
+                          - user_estimate
+                          - assumed_same_as_origin
+                      plausibleRangeCents:
+                        type:
+                          - object
+                          - "null"
+                        properties:
+                          min:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                          max:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                        required:
+                          - min
+                          - max
+                        additionalProperties: false
+                    required:
+                      - kind
+                      - id
+                      - inputPath
+                      - unit
+                      - value
+                      - assumptionBasis
+                      - plausibleRangeCents
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                          - derived
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      metricId:
+                        type: string
+                        minLength: 1
+                        maxLength: 160
+                        pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                      unit:
+                        type: string
+                        enum:
+                          - basis_points
+                          - count
+                          - days
+                          - degrees_fahrenheit
+                          - index
+                          - inches
+                          - minutes
+                          - percent
+                          - usd_cents
+                      value:
+                        type: number
+                      formula:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            minLength: 1
+                            maxLength: 160
+                            pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                          version:
+                            type: string
+                            pattern: ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$
+                        required:
+                          - id
+                          - version
+                        additionalProperties: false
+                      inputRefs:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 160
+                          pattern: ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+                        minItems: 1
+                    required:
+                      - kind
+                      - id
+                      - metricId
+                      - unit
+                      - value
+                      - formula
+                      - inputRefs
+                    additionalProperties: false
+          required:
+            - schemaVersion
+            - inputFingerprintSha256
+            - scenario
+            - financialPosition
+            - priorityChanges
+            - condition
+            - confidence
+            - stability
+            - breakpoints
+            - findings
+            - nextSteps
+            - evidence
+          additionalProperties: false
+      required:
+        - schemaVersion
+        - resultMode
+        - scenarioInput
+        - benchmarkComparison
+        - decisionProfile
+      additionalProperties: false
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+      required:
+        - status
+      additionalProperties: false
+    ValidationIssue:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+      required:
+        - code
+        - message
+        - path
+      additionalProperties: false
+    InvalidScenarioInputError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+            - invalid_scenario_input
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationIssue"
+      required:
+        - error
+        - issues
+      additionalProperties: false
+    DecisionEngineUnavailableError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+            - decision_engine_not_ready
+        message:
+          type: string
+      required:
+        - error
+        - message
+      additionalProperties: false
+  parameters: {}
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
+      tags:
+        - health
       summary: Health check
-      description: Returns server health status
+      description: Returns the API process health status.
       responses:
         "200":
-          description: Healthy
+          description: The API process is healthy.
           content:
             application/json:
               schema:
@@ -29,307 +3145,34 @@ paths:
   /evaluate:
     post:
       operationId: evaluateScenario
-      tags: [evaluate]
+      tags:
+        - evaluation
       summary: Evaluate a relocation scenario
-      description: Runs the synchronous evaluation pipeline (Scorer → Explainer → Verifier → Fallback)
+      description: Validates a canonical MoveWise scenario. The 200 response is the canonical activation contract; the current HTTP route returns 501 after successful validation until the deterministic engine is wired to the transport boundary.
       requestBody:
         required: true
+        description: A structurally valid scenario. The server applies additional semantic refinements from @workspace/contracts at runtime.
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EvaluateRequest"
+              $ref: "#/components/schemas/ScenarioInput"
       responses:
         "200":
-          description: Evaluation result
+          description: Canonical deterministic result shape reserved for transport activation; not returned by the current Phase 0 route.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EvaluateResponse"
+                $ref: "#/components/schemas/EvaluationResult"
         "400":
-          description: Invalid input
+          description: The request failed canonical runtime validation.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Server error
+                $ref: "#/components/schemas/InvalidScenarioInputError"
+        "501":
+          description: The request is valid, but the decision engine is not active at the HTTP boundary.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /scenarios:
-    get:
-      operationId: listScenarios
-      tags: [evaluate]
-      summary: List past scenarios
-      responses:
-        "200":
-          description: List of scenarios
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ScenarioSummary"
-  /scenarios/{id}:
-    get:
-      operationId: getScenario
-      tags: [evaluate]
-      summary: Get a scenario and its result
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Scenario with result
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ScenarioDetail"
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /metros:
-    get:
-      operationId: listMetros
-      tags: [evaluate]
-      summary: List available metros
-      responses:
-        "200":
-          description: List of metros
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Metro"
-components:
-  schemas:
-    HealthStatus:
-      type: object
-      properties:
-        status:
-          type: string
-      required:
-        - status
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-      required:
-        - error
-    WeightConfig:
-      type: object
-      properties:
-        affordability:
-          type: number
-        climate:
-          type: number
-        safety:
-          type: number
-        amenities:
-          type: number
-        familyFit:
-          type: number
-        mobility:
-          type: number
-        opportunity:
-          type: number
-      required:
-        - affordability
-        - climate
-        - safety
-        - amenities
-        - familyFit
-        - mobility
-        - opportunity
-    IncomeConfig:
-      type: object
-      properties:
-        current:
-          type: number
-        target:
-          type: number
-      required:
-        - current
-        - target
-    HousingConfig:
-      type: object
-      properties:
-        current:
-          type: number
-        target:
-          type: number
-      required:
-        - current
-        - target
-    ExpensesConfig:
-      type: object
-      properties:
-        current:
-          type: number
-        target:
-          type: number
-      required:
-        - current
-        - target
-    EvaluateRequest:
-      type: object
-      properties:
-        email:
-          type: ["string", "null"]
-        currentCity:
-          type: string
-        targetCity:
-          type: string
-        priorityMode:
-          type: string
-          enum: [finance, balanced, lifestyle]
-        climatePreference:
-          type: string
-          enum: [warm, cold]
-        weights:
-          $ref: "#/components/schemas/WeightConfig"
-        income:
-          $ref: "#/components/schemas/IncomeConfig"
-        housing:
-          $ref: "#/components/schemas/HousingConfig"
-        expenses:
-          $ref: "#/components/schemas/ExpensesConfig"
-        retainedIncomeAdjustment:
-          type: number
-      required:
-        - currentCity
-        - targetCity
-        - priorityMode
-        - climatePreference
-        - weights
-        - income
-        - housing
-        - expenses
-        - retainedIncomeAdjustment
-    EvaluateResponse:
-      type: object
-      properties:
-        scenarioId:
-          type: integer
-        lifestyleFit:
-          type: number
-        financialFit:
-          type: number
-        moveScore:
-          type: number
-        verdictBand:
-          type: string
-        verdict:
-          type: string
-          enum: [strong_fit, qualified_yes, caution, weak_fit]
-        resultMode:
-          type: string
-          enum: [explainer, repaired_explainer, deterministic_fallback]
-        structuredExplanation:
-          type: object
-        renderedOutput:
-          type: object
-      required:
-        - scenarioId
-        - lifestyleFit
-        - financialFit
-        - moveScore
-        - verdictBand
-        - verdict
-        - resultMode
-    ScenarioSummary:
-      type: object
-      properties:
-        id:
-          type: integer
-        currentCity:
-          type: string
-        targetCity:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - currentCity
-        - targetCity
-        - createdAt
-    ScenarioDetail:
-      type: object
-      properties:
-        id:
-          type: integer
-        currentCity:
-          type: string
-        targetCity:
-          type: string
-        email:
-          type: ["string", "null"]
-        createdAt:
-          type: string
-          format: date-time
-        result:
-          $ref: "#/components/schemas/EvaluateResponse"
-      required:
-        - id
-        - currentCity
-        - targetCity
-        - createdAt
-    Metro:
-      type: object
-      properties:
-        id:
-          type: integer
-        city:
-          type: string
-        state:
-          type: string
-        slug:
-          type: string
-        affordabilityScore:
-          type: number
-        climateScore:
-          type: number
-        climateTendency:
-          type: string
-        safetyScore:
-          type: number
-        amenitiesScore:
-          type: number
-        familyFitScore:
-          type: number
-        mobilityScore:
-          type: number
-        opportunityScore:
-          type: number
-        incomeTaxRegime:
-          type: string
-        benchmarkVersion:
-          type: string
-        staleRiskFlag:
-          type: boolean
-      required:
-        - id
-        - city
-        - state
-        - slug
-        - affordabilityScore
-        - climateScore
-        - climateTendency
-        - safetyScore
-        - amenitiesScore
-        - familyFitScore
-        - mobilityScore
-        - opportunityScore
-        - incomeTaxRegime
-        - benchmarkVersion
-        - staleRiskFlag
+                $ref: "#/components/schemas/DecisionEngineUnavailableError"
+webhooks: {}
