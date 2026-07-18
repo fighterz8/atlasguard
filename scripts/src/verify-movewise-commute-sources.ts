@@ -1,7 +1,9 @@
 import {
   APPROVED_ACS_COMMUTE_SOURCE,
+  APPROVED_ACS_RENT_SOURCE,
   extractCbsaLabelsFromGeographyInventory,
   extractCommuteRowsFromOfficialTables,
+  extractRentRowsFromOfficialTable,
 } from "@workspace/benchmark-data";
 import { createHash } from "node:crypto";
 
@@ -23,11 +25,12 @@ const download = async (source: {
   return bytes;
 };
 
-const [delineation, geographies, b08013, b08006] = await Promise.all([
+const [delineation, geographies, b08013, b08006, b25064] = await Promise.all([
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.cbsaDelineation),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.acsGeographies),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.b08013),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.b08006),
+  download(APPROVED_ACS_RENT_SOURCE.artifacts.b25064),
 ]);
 if (delineation.byteLength === 0) {
   throw new Error("Official CBSA delineation artifact is empty.");
@@ -59,6 +62,16 @@ const geographyRows = extractCbsaLabelsFromGeographyInventory(
   }
 });
 
+const rentRows = extractRentRowsFromOfficialTable(decoder.decode(b25064));
+if (
+  JSON.stringify(rentRows) !==
+  JSON.stringify(APPROVED_ACS_RENT_SOURCE.extractedRows)
+) {
+  throw new Error(
+    "Official ACS rent rows do not match the approved extraction.",
+  );
+}
+
 process.stdout.write(
-  "Verified four official artifact checksums, two CBSA rows, and six ACS values.\n",
+  "Verified five official artifact checksums, two CBSA rows, and ten ACS values.\n",
 );

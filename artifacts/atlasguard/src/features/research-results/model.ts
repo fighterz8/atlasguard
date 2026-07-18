@@ -1,5 +1,6 @@
 import {
   loadLosAngelesToSeattleCommuteBenchmark,
+  loadLosAngelesToSeattleHousingContext,
   losAngelesToSeattleBalancedResearchScenario,
 } from "@workspace/benchmark-data";
 import type { Finding, MetricEvidence } from "@workspace/contracts";
@@ -73,6 +74,7 @@ export const createResearchResultsViewModel = () => {
     loadLosAngelesToSeattleCommuteBenchmark(),
   );
   const profile = result.decisionProfile;
+  const housingContext = loadLosAngelesToSeattleHousingContext();
   const metric = profile.evidence.find(
     (entry): entry is MetricEvidence => entry.kind === "benchmark_metric",
   );
@@ -98,6 +100,16 @@ export const createResearchResultsViewModel = () => {
     priority.classification === "similar"
       ? `The ${Math.abs(metric.deltaValue).toFixed(1)}-minute difference is below the registered materiality threshold. “Similar” is more defensible than declaring a winner.`
       : `The registered transformation classifies this change as ${priority.classification}.`;
+
+  if (
+    housingContext.origin.cbsaCode !== profile.scenario.origin.cbsaCode ||
+    housingContext.destination.cbsaCode !==
+      profile.scenario.destination.cbsaCode
+  ) {
+    throw new Error(
+      "Housing context must describe the same resolved metros as the Decision Profile.",
+    );
+  }
 
   return {
     releaseStatus: result.releaseStatus,
@@ -156,6 +168,32 @@ export const createResearchResultsViewModel = () => {
       cushionDelta: formatMoney(financialChange.monthlyCushionDeltaCents),
       classification: financialChange.classification,
       reading: financialReading,
+    },
+    housingContext: {
+      decisionUse: housingContext.decisionUse,
+      boundary: "Area context—not your budget",
+      originValue: formatMoney(housingContext.metric.originValue),
+      destinationValue: formatMoney(housingContext.metric.destinationValue),
+      originMoe: formatMoney(housingContext.metric.marginOfError90.origin),
+      destinationMoe: formatMoney(
+        housingContext.metric.marginOfError90.destination,
+      ),
+      delta: formatMoney(housingContext.metric.deltaValue),
+      reading:
+        "Seattle’s 2024 metro median was $64 lower in this ACS estimate. That small area-level difference does not predict what this household would pay.",
+      caveats: [...housingContext.caveats],
+      evidence: {
+        definition: housingContext.metric.definition,
+        dataset: housingContext.metric.source.dataset,
+        publisher: housingContext.metric.source.publisher,
+        tableId: housingContext.metric.source.tableId.toUpperCase(),
+        sourceUrl: housingContext.metric.source.sourceUrl,
+        observationPeriod: housingContext.metric.observationPeriod,
+        releasedOn: housingContext.metric.releasedOn,
+        verifiedOn: housingContext.metric.verifiedOn,
+        snapshotSha256: housingContext.snapshot.sha256,
+        rawSnapshotSha256: housingContext.snapshot.rawSnapshot.sha256,
+      },
     },
     priority: {
       label: "Typical one-way commute",

@@ -23,6 +23,14 @@ describe("research results view model", () => {
     expect(model.priority.originValue).toBe("30.7 min");
     expect(model.priority.destinationValue).toBe("30.0 min");
     expect(model.priority.classification).toBe("similar");
+    expect(model.housingContext.decisionUse).toBe("context_only");
+    expect(model.housingContext.boundary).toBe("Area context—not your budget");
+    expect(model.housingContext.originValue).toBe("$2,114");
+    expect(model.housingContext.destinationValue).toBe("$2,050");
+    expect(model.housingContext.delta).toBe("-$64");
+    expect(model.condition.label).toBe("No clear advantage yet");
+    expect(model.finances.origin.housing).toBe("$2,000");
+    expect(model.finances.destination.housing).toBe("$2,000");
   });
 
   it("exposes verifiable source lineage", () => {
@@ -33,5 +41,9 @@ describe("research results view model", () => {
     expect(model.evidence.snapshotSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(model.evidence.rawSnapshotSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(model.nextSteps).toHaveLength(1);
+    expect(model.housingContext.evidence.tableId).toBe("B25064");
+    expect(model.housingContext.evidence.snapshotSha256).toMatch(
+      /^[a-f0-9]{64}$/,
+    );
   });
 });

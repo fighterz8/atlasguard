@@ -84,3 +84,23 @@ export const APPROVED_ACS_COMMUTE_SOURCE = {
     },
   },
 } as const;
+
+export const APPROVED_ACS_RENT_SOURCE = {
+  id: "acs1.2024.median-gross-rent.la-seattle",
+  delineationVersion: APPROVED_ACS_COMMUTE_SOURCE.delineationVersion,
+  artifacts: {
+    acsGeographies: APPROVED_ACS_COMMUTE_SOURCE.artifacts.acsGeographies,
+    b25064: {
+      id: "acs1.2024.b25064",
+      sourceUrl:
+        "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/1YRData/acsdt1y2024-b25064.dat",
+      sha256:
+        "8624f9775add1e22ac3a015a753207e0d752bc4c967dda04c22cd9e17ac94b57",
+    },
+  },
+  geographies: APPROVED_ACS_COMMUTE_SOURCE.geographies,
+  extractedRows: {
+    origin: { estimateDollars: 2_114, marginOfError90Dollars: 13 },
+    destination: { estimateDollars: 2_050, marginOfError90Dollars: 25 },
+  },
+} as const;
