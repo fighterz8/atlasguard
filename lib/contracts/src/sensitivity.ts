@@ -17,6 +17,7 @@ export const SENSITIVITY_INPUT_PATHS = [
   "finances.destination.takeHomeIncome.monthlyCents",
   "finances.destination.housingCost.monthlyCents",
   "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
+  "finances.destination.retainedPropertyNet.monthlyCents",
 ] as const satisfies readonly FinancialInputPath[];
 
 export type SensitivityInputPath = (typeof SENSITIVITY_INPUT_PATHS)[number];
@@ -32,14 +33,20 @@ const pathKey = (path: SensitivityInputPath) =>
     ? "take_home"
     : path === "finances.destination.housingCost.monthlyCents"
       ? "housing"
-      : "recurring";
+      : path ===
+          "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+        ? "recurring"
+        : "retained_property_net";
 
 const assumptionFor = (scenario: ScenarioInput, path: SensitivityInputPath) =>
   path === "finances.destination.takeHomeIncome.monthlyCents"
     ? scenario.finances.destination.takeHomeIncome
     : path === "finances.destination.housingCost.monthlyCents"
       ? scenario.finances.destination.housingCost
-      : scenario.finances.destination.recurringExpensesExcludingHousing;
+      : path ===
+          "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+        ? scenario.finances.destination.recurringExpensesExcludingHousing
+        : scenario.finances.destination.retainedPropertyNet;
 
 const conditionAt = (
   scenario: ScenarioInput,
@@ -62,6 +69,10 @@ const conditionAt = (
     "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
     destination.recurringExpensesExcludingHousing.monthlyCents,
   );
+  const retainedPropertyNet = value(
+    "finances.destination.retainedPropertyNet.monthlyCents",
+    destination.retainedPropertyNet.monthlyCents,
+  );
   const originCushion = calculateMonthlyCushion(
     origin.takeHomeIncome.monthlyCents,
     origin.housingCost.monthlyCents,
@@ -72,7 +83,7 @@ const conditionAt = (
     takeHome,
     housing,
     recurring,
-    destination.retainedPropertyNet.monthlyCents,
+    retainedPropertyNet,
   );
   const financialClassification = classifySignedChange(
     destinationCushion - originCushion,
@@ -129,7 +140,10 @@ const transitionRightEdges = (
   const destination = scenario.finances.destination;
   const current = assumptionFor(scenario, path).monthlyCents;
   const coefficient =
-    path === "finances.destination.takeHomeIncome.monthlyCents" ? 1 : -1;
+    path === "finances.destination.takeHomeIncome.monthlyCents" ||
+    path === "finances.destination.retainedPropertyNet.monthlyCents"
+      ? 1
+      : -1;
   const originCushion = calculateMonthlyCushion(
     origin.takeHomeIncome.monthlyCents,
     origin.housingCost.monthlyCents,
@@ -168,8 +182,13 @@ const transitionRightEdges = (
     if (burdenEdge !== null) edges.push(burdenEdge);
   }
 
+  const minimum =
+    path === "finances.destination.retainedPropertyNet.monthlyCents"
+      ? -MAX_MONTHLY_CENTS
+      : 1;
+
   return [...new Set(edges)]
-    .filter((edge) => edge >= 1 && edge <= MAX_MONTHLY_CENTS)
+    .filter((edge) => edge >= minimum && edge <= MAX_MONTHLY_CENTS)
     .sort((left, right) => left - right);
 };
 
@@ -211,8 +230,12 @@ export const deriveFinancialSensitivity = (
         );
       }
       const range = assumption.plausibleRangeCents;
+      const thresholdId =
+        thresholdCents < 0
+          ? `negative_${Math.abs(thresholdCents)}`
+          : String(thresholdCents);
       breakpoints.push({
-        id: `breakpoint.destination_${pathKey(path)}.${target.value}.${thresholdCents}`,
+        id: `breakpoint.destination_${pathKey(path)}.${target.value}.${thresholdId}`,
         kind: "money",
         inputPath: path,
         operator: movesRight ? "at_or_above" : "at_or_below",
@@ -234,23 +257,35 @@ export const deriveFinancialSensitivity = (
   const hasPlausibleRanges = SENSITIVITY_INPUT_PATHS.some(
     (path) => assumptionFor(scenario, path).plausibleRangeCents !== null,
   );
-  const stability: DecisionProfile["stability"] = !hasPlausibleRanges
-    ? {
-        level: "not_evaluated",
-        breakpointIds: [],
-        reasonCodes: ["stability.no_plausible_ranges"],
-      }
-    : inRangeIds.length > 0
+  const hasIncompleteEstimateRanges = SENSITIVITY_INPUT_PATHS.some((path) => {
+    const assumption = assumptionFor(scenario, path);
+    return (
+      assumption.basis === "user_estimate" &&
+      assumption.plausibleRangeCents === null
+    );
+  });
+  const stability: DecisionProfile["stability"] =
+    !hasPlausibleRanges || hasIncompleteEstimateRanges
       ? {
-          level: "assumption_sensitive",
-          breakpointIds: inRangeIds,
-          reasonCodes: ["stability.in_range_condition_change"],
-        }
-      : {
-          level: "stable",
+          level: "not_evaluated",
           breakpointIds: [],
-          reasonCodes: ["stability.no_in_range_condition_change"],
-        };
+          reasonCodes: [
+            hasIncompleteEstimateRanges
+              ? "stability.incomplete_estimate_ranges"
+              : "stability.no_plausible_ranges",
+          ],
+        }
+      : inRangeIds.length > 0
+        ? {
+            level: "assumption_sensitive",
+            breakpointIds: inRangeIds,
+            reasonCodes: ["stability.in_range_condition_change"],
+          }
+        : {
+            level: "stable",
+            breakpointIds: [],
+            reasonCodes: ["stability.no_in_range_condition_change"],
+          };
 
   return { baselineCondition, breakpoints, stability };
 };

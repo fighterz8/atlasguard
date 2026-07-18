@@ -46,7 +46,7 @@ const breakpointFor = (
   );
 
 describe("deriveFinancialSensitivity", () => {
-  it("finds exact favorable rent, income, and expense thresholds", () => {
+  it("finds exact favorable rent, income, expense, and retained-property thresholds", () => {
     const result = deriveFinancialSensitivity(
       createScenario(),
       noPriorityChanges,
@@ -73,6 +73,13 @@ describe("deriveFinancialSensitivity", () => {
         "worth_a_closer_look",
       ),
     ).toMatchObject({ operator: "at_or_below", thresholdCents: 125_000 });
+    expect(
+      breakpointFor(
+        result,
+        "finances.destination.retainedPropertyNet.monthlyCents",
+        "worth_a_closer_look",
+      ),
+    ).toMatchObject({ operator: "at_or_above", thresholdCents: 25_000 });
   });
 
   it("finds the first cent that creates high financial risk", () => {
@@ -150,5 +157,56 @@ describe("deriveFinancialSensitivity", () => {
       reasonCodes: ["stability.no_plausible_ranges"],
     });
     expect(result.breakpoints.length).toBeGreaterThan(0);
+  });
+
+  it("does not overclaim stability from partial estimate ranges", () => {
+    const scenario = createScenario();
+    scenario.finances.destination.takeHomeIncome = {
+      monthlyCents: 500_000,
+      basis: "user_estimate",
+      plausibleRangeCents: { min: 475_000, max: 550_000 },
+    };
+    scenario.finances.destination.housingCost = {
+      monthlyCents: 200_000,
+      basis: "user_estimate",
+      plausibleRangeCents: null,
+    };
+
+    const result = deriveFinancialSensitivity(scenario, noPriorityChanges);
+
+    expect(result.stability).toEqual({
+      level: "not_evaluated",
+      breakpointIds: [],
+      reasonCodes: ["stability.incomplete_estimate_ranges"],
+    });
+  });
+
+  it("supports signed retained-property ranges and stable IDs", () => {
+    const scenario = createScenario();
+    scenario.finances.destination.retainedPropertyNet = {
+      monthlyCents: 0,
+      basis: "user_estimate",
+      plausibleRangeCents: { min: -50_000, max: 30_000 },
+    };
+
+    const result = deriveFinancialSensitivity(scenario, noPriorityChanges);
+
+    expect(result.stability.level).toBe("assumption_sensitive");
+    expect(
+      breakpointFor(
+        result,
+        "finances.destination.retainedPropertyNet.monthlyCents",
+        "worth_a_closer_look",
+      ),
+    ).toMatchObject({
+      id: "breakpoint.destination_retained_property_net.worth_a_closer_look.25000",
+      withinPlausibleRange: true,
+    });
+    expect(
+      result.breakpoints.some(
+        (breakpoint) =>
+          breakpoint.kind === "money" && breakpoint.thresholdCents < 0,
+      ),
+    ).toBe(true);
   });
 });

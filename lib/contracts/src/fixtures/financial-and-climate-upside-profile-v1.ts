@@ -238,6 +238,16 @@ export const financialAndClimateUpsideProfile = {
       evidenceRefs: ["input.destination.recurring"],
     },
     {
+      id: "breakpoint.destination_retained_property_net.meaningful_tradeoff.negative_55000",
+      kind: "money",
+      inputPath: "finances.destination.retainedPropertyNet.monthlyCents",
+      operator: "at_or_below",
+      thresholdCents: -55_000,
+      withinPlausibleRange: false,
+      changesConditionTo: "meaningful_tradeoff",
+      evidenceRefs: ["input.destination.retained"],
+    },
+    {
       id: "breakpoint.destination_take_home.meaningful_tradeoff.505000",
       kind: "money",
       inputPath: "finances.destination.takeHomeIncome.monthlyCents",
