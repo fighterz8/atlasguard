@@ -14,6 +14,7 @@ import {
   getPreviousStep,
   wizardSteps,
   type AssumptionBasis,
+  type ClimateHeatPreference,
   type PriorityImportance,
   type SupportedPlaceSlug,
   type WizardErrors,
@@ -51,6 +52,8 @@ const exampleDraft: WizardPrototypeDraft = {
     retainedPropertyNetBasis: "confirmed",
   },
   commuteImportance: "important",
+  climateHeatPreference: "fewer_hot_days",
+  climateHeatImportance: "important",
 };
 
 const errorFieldId = (path: string) =>
@@ -265,6 +268,16 @@ export function WizardPrototype({
     setDraft((current) => ({ ...current, commuteImportance: value }));
   };
 
+  const updateClimatePreference = (value: ClimateHeatPreference) => {
+    setDraft((current) => ({ ...current, climateHeatPreference: value }));
+  };
+
+  const updateClimateImportance = (
+    value: Exclude<PriorityImportance, "does_not_matter">,
+  ) => {
+    setDraft((current) => ({ ...current, climateHeatImportance: value }));
+  };
+
   const errorEntries = Object.entries(errors);
   const origin = getPlace(draft.originSlug);
   const destination = getPlace(draft.destinationSlug);
@@ -375,8 +388,12 @@ export function WizardPrototype({
                   ) : null}
                   {step === "priorities" ? (
                     <PrioritiesStep
-                      value={draft.commuteImportance}
-                      onChange={updatePriority}
+                      commuteImportance={draft.commuteImportance}
+                      climateHeatPreference={draft.climateHeatPreference}
+                      climateHeatImportance={draft.climateHeatImportance}
+                      onCommuteChange={updatePriority}
+                      onClimatePreferenceChange={updateClimatePreference}
+                      onClimateImportanceChange={updateClimateImportance}
                     />
                   ) : null}
                 </div>

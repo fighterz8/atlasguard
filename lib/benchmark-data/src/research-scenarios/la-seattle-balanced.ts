@@ -38,6 +38,11 @@ export const losAngelesToSeattleBalancedResearchScenario = {
   },
   priorities: [
     {
+      priorityId: "climate_heat",
+      preferredDirection: "lower",
+      weight: 0,
+    },
+    {
       priorityId: "commute_time",
       preferredDirection: "lower",
       weight: 5,

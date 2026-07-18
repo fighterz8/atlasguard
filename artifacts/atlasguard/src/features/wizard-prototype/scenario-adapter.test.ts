@@ -68,6 +68,11 @@ describe("Wizard scenario adapter", () => {
       },
       priorities: [
         {
+          priorityId: "climate_heat",
+          preferredDirection: "lower",
+          weight: 4,
+        },
+        {
           priorityId: "commute_time",
           preferredDirection: "lower",
           weight: 4,
@@ -90,7 +95,31 @@ describe("Wizard scenario adapter", () => {
 
       expect(result.success).toBe(true);
       if (result.success)
-        expect(result.scenario.priorities[0].weight).toBe(weight);
+        expect(
+          result.scenario.priorities.find(
+            ({ priorityId }) => priorityId === "commute_time",
+          )?.weight,
+        ).toBe(weight);
+    },
+  );
+
+  it.each([
+    ["fewer_hot_days", "lower", 4],
+    ["more_hot_days", "higher", 4],
+    ["does_not_matter", "lower", 0],
+  ] as const)(
+    "maps %s to an explicit climate direction and weight",
+    (preference, direction, weight) => {
+      const draft = validDraft();
+      draft.climateHeatPreference = preference;
+      const result = adaptWizardDraftToScenarioInput(draft);
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(
+        result.scenario.priorities.find(
+          ({ priorityId }) => priorityId === "climate_heat",
+        ),
+      ).toMatchObject({ preferredDirection: direction, weight });
     },
   );
 

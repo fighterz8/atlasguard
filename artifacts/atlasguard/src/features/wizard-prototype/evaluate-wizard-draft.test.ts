@@ -49,6 +49,15 @@ describe("Wizard deterministic evaluation", () => {
     expect(result.evaluation.decisionProfile.stability.level).not.toBe(
       "not_evaluated",
     );
+    expect(
+      result.evaluation.decisionProfile.priorityChanges.find(
+        ({ priorityId }) => priorityId === "climate_heat",
+      ),
+    ).toMatchObject({
+      weight: 4,
+      classification: "improves",
+      utilityDeltaBps: 1_560,
+    });
   });
 
   it("excludes commute without rejecting the verified benchmark", () => {
@@ -59,14 +68,20 @@ describe("Wizard deterministic evaluation", () => {
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(result.evaluation.scenarioInput.priorities).toEqual([
-      {
-        priorityId: "commute_time",
-        preferredDirection: "lower",
-        weight: 0,
-      },
-    ]);
-    expect(result.evaluation.decisionProfile.priorityChanges[0]).toMatchObject({
+    expect(
+      result.evaluation.scenarioInput.priorities.find(
+        ({ priorityId }) => priorityId === "commute_time",
+      ),
+    ).toEqual({
+      priorityId: "commute_time",
+      preferredDirection: "lower",
+      weight: 0,
+    });
+    expect(
+      result.evaluation.decisionProfile.priorityChanges.find(
+        ({ priorityId }) => priorityId === "commute_time",
+      ),
+    ).toMatchObject({
       priorityId: "commute_time",
       weight: 0,
       availability: "unavailable",
@@ -76,6 +91,32 @@ describe("Wizard deterministic evaluation", () => {
     expect(
       result.evaluation.decisionProfile.findings.omittedPriorities,
     ).toContain("commute_time");
+  });
+
+  it("reverses climate evidence when the user prefers more hot days", () => {
+    const draft = reviewedDraft();
+    draft.climateHeatPreference = "more_hot_days";
+    const result = evaluateWizardDraft(draft);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(
+      result.evaluation.decisionProfile.priorityChanges.find(
+        ({ priorityId }) => priorityId === "climate_heat",
+      ),
+    ).toMatchObject({ classification: "worsens", utilityDeltaBps: -1_560 });
+  });
+
+  it("excludes climate when the user says it does not matter", () => {
+    const draft = reviewedDraft();
+    draft.climateHeatPreference = "does_not_matter";
+    const result = evaluateWizardDraft(draft);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(
+      result.evaluation.decisionProfile.priorityChanges.find(
+        ({ priorityId }) => priorityId === "climate_heat",
+      ),
+    ).toMatchObject({ weight: 0, availability: "unavailable" });
   });
 
   it("returns validation errors without invoking a different data path", () => {

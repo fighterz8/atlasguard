@@ -1,39 +1,79 @@
-import { Route } from "lucide-react";
+import { Flame, Route } from "lucide-react";
 
 import { StatusBadge } from "../ux-system/status-badge";
-import { cn } from "../../lib/utils";
 
-import type { PriorityImportance } from "./model";
+import type { ClimateHeatPreference, PriorityImportance } from "./model";
+import {
+  PriorityChoiceGrid,
+  type PriorityChoiceOption,
+} from "./priority-choice-grid";
+
+type ActiveImportance = Exclude<PriorityImportance, "does_not_matter">;
 
 type PrioritiesStepProps = {
-  value: PriorityImportance;
-  onChange: (value: PriorityImportance) => void;
+  commuteImportance: PriorityImportance;
+  climateHeatPreference: ClimateHeatPreference;
+  climateHeatImportance: ActiveImportance;
+  onCommuteChange: (value: PriorityImportance) => void;
+  onClimatePreferenceChange: (value: ClimateHeatPreference) => void;
+  onClimateImportanceChange: (value: ActiveImportance) => void;
 };
 
-const options = [
+const importanceOptions: readonly PriorityChoiceOption<PriorityImportance>[] = [
   {
-    value: "must_have" as const,
+    value: "must_have",
     label: "Must-have",
     description: "A material loss here could block the move.",
   },
   {
-    value: "important" as const,
+    value: "important",
     label: "Important",
     description: "This should meaningfully influence the tradeoff.",
   },
   {
-    value: "nice_to_have" as const,
+    value: "nice_to_have",
     label: "Nice-to-have",
     description: "Useful context, but not a deciding factor.",
   },
   {
-    value: "does_not_matter" as const,
+    value: "does_not_matter",
     label: "Does not matter",
     description: "Exclude this priority from the decision.",
   },
 ];
 
-export function PrioritiesStep({ value, onChange }: PrioritiesStepProps) {
+const activeImportanceOptions = importanceOptions.filter(
+  (option): option is PriorityChoiceOption<ActiveImportance> =>
+    option.value !== "does_not_matter",
+);
+
+const climatePreferenceOptions: readonly PriorityChoiceOption<ClimateHeatPreference>[] =
+  [
+    {
+      value: "fewer_hot_days",
+      label: "Fewer hot days",
+      description: "Prefer fewer days above 90°F.",
+    },
+    {
+      value: "more_hot_days",
+      label: "More hot days",
+      description: "Prefer more days above 90°F.",
+    },
+    {
+      value: "does_not_matter",
+      label: "No preference",
+      description: "Leave this climate signal out of the decision.",
+    },
+  ];
+
+export function PrioritiesStep({
+  commuteImportance,
+  climateHeatPreference,
+  climateHeatImportance,
+  onCommuteChange,
+  onClimatePreferenceChange,
+  onClimateImportanceChange,
+}: PrioritiesStepProps) {
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
@@ -50,54 +90,60 @@ export function PrioritiesStep({ value, onChange }: PrioritiesStepProps) {
         <Route aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Tell MoveWise how much commute time should affect this comparison.
-        Choose “does not matter” to leave it out completely.
+        Set the direction and importance of each evidence-backed factor. “Does
+        not matter” removes that factor from the decision.
       </p>
 
       <fieldset className="mt-8">
         <legend className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-950">
+          <Route aria-hidden="true" className="h-5 w-5 text-teal-700" />
           Typical one-way commute
-          <StatusBadge tone="benchmark">Evidence available</StatusBadge>
+          <StatusBadge tone="benchmark">ACS evidence</StatusBadge>
         </legend>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          How much should the typical commute comparison affect this move?
+          How much should the regional commute comparison affect this move?
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {options.map((option) => (
-            <label
-              key={option.value}
-              className={cn(
-                "flex min-h-24 cursor-pointer gap-3 rounded-xl border bg-white p-4 transition-colors",
-                value === option.value
-                  ? "border-teal-700 bg-teal-50 shadow-sm"
-                  : "border-slate-200 hover:border-slate-300",
-              )}
-            >
-              <input
-                type="radio"
-                name="commute-importance"
-                value={option.value}
-                checked={value === option.value}
-                onChange={() => onChange(option.value)}
-                className="mt-1 h-4 w-4 shrink-0 accent-teal-700"
-              />
-              <span>
-                <span className="block text-sm font-semibold text-slate-950">
-                  {option.label}
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-slate-600">
-                  {option.description}
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
+        <PriorityChoiceGrid
+          name="commute-importance"
+          value={commuteImportance}
+          options={importanceOptions}
+          onChange={onCommuteChange}
+        />
       </fieldset>
 
-      <p className="mt-6 text-sm leading-6 text-slate-500">
-        More lifestyle factors will appear here as MoveWise adds reliable
-        comparison data for them.
-      </p>
+      <fieldset className="mt-9 border-t border-slate-200 pt-8">
+        <legend className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-950">
+          <Flame aria-hidden="true" className="h-5 w-5 text-amber-700" />
+          Days above 90°F
+          <StatusBadge tone="benchmark">NOAA evidence</StatusBadge>
+        </legend>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+          Choose the heat pattern you prefer. NOAA station normals are a local
+          proxy, so Results will show the urban-versus-airport range.
+        </p>
+        <PriorityChoiceGrid
+          name="climate-heat-preference"
+          value={climateHeatPreference}
+          options={climatePreferenceOptions}
+          onChange={onClimatePreferenceChange}
+          columns="three"
+        />
+
+        {climateHeatPreference !== "does_not_matter" ? (
+          <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-950">
+              How much should this heat preference count?
+            </p>
+            <PriorityChoiceGrid
+              name="climate-heat-importance"
+              value={climateHeatImportance}
+              options={activeImportanceOptions}
+              onChange={onClimateImportanceChange}
+              columns="three"
+            />
+          </div>
+        ) : null}
+      </fieldset>
     </div>
   );
 }

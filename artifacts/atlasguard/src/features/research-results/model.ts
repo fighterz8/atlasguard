@@ -1,5 +1,5 @@
 import {
-  loadLosAngelesToSeattleCommuteBenchmark,
+  loadLosAngelesToSeattleResearchBenchmark,
   loadLosAngelesToSeattleHousingContext,
   losAngelesToSeattleBalancedResearchScenario,
 } from "@workspace/benchmark-data";
@@ -48,6 +48,8 @@ const findingCopy: Record<string, string> = {
   financial_cushion_worsens: "Monthly financial cushion worsens materially.",
   commute_time_improves: "Typical commute time improves materially.",
   commute_time_worsens: "Typical commute time worsens materially.",
+  climate_heat_improves: "The hot-day pattern improves for your preference.",
+  climate_heat_worsens: "The hot-day pattern worsens for your preference.",
   negative_target_cushion:
     "The destination budget produces a negative monthly cushion.",
   target_housing_burden_at_or_above_50_percent:
@@ -140,7 +142,7 @@ const evaluateResearchScenario = (values = baselineWhatIfValues) =>
       losAngelesToSeattleBalancedResearchScenario,
       values,
     ),
-    loadLosAngelesToSeattleCommuteBenchmark(),
+    loadLosAngelesToSeattleResearchBenchmark("lower"),
   );
 
 export const createResearchResultsViewModel = (
@@ -148,19 +150,34 @@ export const createResearchResultsViewModel = (
 ) => {
   const profile = result.decisionProfile;
   const housingContext = loadLosAngelesToSeattleHousingContext();
-  const metric = profile.evidence.find(
-    (entry): entry is MetricEvidence => entry.kind === "benchmark_metric",
+  const commuteMetric = profile.evidence.find(
+    (entry): entry is MetricEvidence =>
+      entry.kind === "benchmark_metric" && entry.priorityId === "commute_time",
   );
-  const priority = profile.priorityChanges[0];
+  const climateMetric = profile.evidence.find(
+    (entry): entry is MetricEvidence =>
+      entry.kind === "benchmark_metric" && entry.priorityId === "climate_heat",
+  );
+  const priority = profile.priorityChanges.find(
+    ({ priorityId }) => priorityId === "commute_time",
+  );
+  const climatePriority = profile.priorityChanges.find(
+    ({ priorityId }) => priorityId === "climate_heat",
+  );
   if (
-    metric === undefined ||
+    commuteMetric === undefined ||
+    climateMetric === undefined ||
     priority === undefined ||
-    metric.originValue === null ||
-    metric.destinationValue === null ||
-    metric.deltaValue === null
+    climatePriority === undefined ||
+    commuteMetric.originValue === null ||
+    commuteMetric.destinationValue === null ||
+    commuteMetric.deltaValue === null ||
+    climateMetric.originValue === null ||
+    climateMetric.destinationValue === null ||
+    climateMetric.deltaValue === null
   ) {
     throw new Error(
-      "Research preview requires one promoted benchmark priority.",
+      "Research preview requires promoted commute and climate evidence.",
     );
   }
 
@@ -171,8 +188,19 @@ export const createResearchResultsViewModel = (
       : `The evaluated finances classify the monthly cushion change as ${financialChange.classification}.`;
   const priorityInterpretation =
     priority.classification === "similar"
-      ? `The ${Math.abs(metric.deltaValue).toFixed(1)}-minute difference is below the registered materiality threshold. “Similar” is more defensible than declaring a winner.`
+      ? `The ${Math.abs(commuteMetric.deltaValue).toFixed(1)}-minute difference is below the registered materiality threshold. “Similar” is more defensible than declaring a winner.`
       : `The registered transformation classifies this change as ${priority.classification}.`;
+  const selection = climateMetric.quality.selectionUncertainty;
+  if (selection === undefined) {
+    throw new Error(
+      "Climate evidence requires a verified station-selection range.",
+    );
+  }
+  const heatPreference =
+    climateMetric.transformation.preferredDirection === "lower"
+      ? "fewer hot days"
+      : "more hot days";
+  const climateInterpretation = `For a preference for ${heatPreference}, the registered transformation classifies the station-normal change as ${climatePriority.classification}. The station ranges are shown because these proxies are not metro-wide forecasts.`;
 
   if (
     housingContext.origin.cbsaCode !== profile.scenario.origin.cbsaCode ||
@@ -196,7 +224,7 @@ export const createResearchResultsViewModel = (
     confidence: {
       level: profile.confidence.level,
       explanation:
-        "Limited because this slice evaluates one ACS commute metric and does not report coverage as a promotion input.",
+        "Limited because ACS coverage is not promoted as a percentage and NOAA climate evidence uses mapped station proxies with reference-site selection uncertainty.",
     },
     stability: {
       level: profile.stability.level,
@@ -295,14 +323,32 @@ export const createResearchResultsViewModel = (
         ? null
         : {
             label: "Typical one-way commute",
-            originValue: `${metric.originValue?.toFixed(1)} min`,
-            destinationValue: `${metric.destinationValue?.toFixed(1)} min`,
-            originMoe: metric.quality.marginOfError?.origin ?? null,
-            destinationMoe: metric.quality.marginOfError?.destination ?? null,
+            originValue: `${commuteMetric.originValue.toFixed(1)} min`,
+            destinationValue: `${commuteMetric.destinationValue.toFixed(1)} min`,
+            originMoe: commuteMetric.quality.marginOfError?.origin ?? null,
+            destinationMoe:
+              commuteMetric.quality.marginOfError?.destination ?? null,
             classification: priority.classification,
             weight: priority.weight,
-            quality: metric.quality.grade.value,
+            quality: commuteMetric.quality.grade.value,
             interpretation: priorityInterpretation,
+          },
+    climate:
+      climatePriority.weight === 0
+        ? null
+        : {
+            label: "Days above 90°F",
+            preference: heatPreference,
+            originValue: `${climateMetric.originValue.toFixed(1)} days/year`,
+            destinationValue: `${climateMetric.destinationValue.toFixed(1)} days/year`,
+            originRange: `${selection.origin.min.toFixed(1)}–${selection.origin.max.toFixed(1)} days`,
+            destinationRange: `${selection.destination.min.toFixed(1)}–${selection.destination.max.toFixed(1)} days`,
+            originStation: climateMetric.geographies.origin.label,
+            destinationStation: climateMetric.geographies.destination.label,
+            classification: climatePriority.classification,
+            weight: climatePriority.weight,
+            quality: climateMetric.quality.grade.value,
+            interpretation: climateInterpretation,
           },
     findings: {
       drivers: profile.findings.drivers.map(findingText),
@@ -314,24 +360,39 @@ export const createResearchResultsViewModel = (
       (step) => nextStepCopy[step.code] ?? step.code.replaceAll("_", " "),
     ),
     evidence: {
-      definition: metric.definition,
-      dataset: metric.source.dataset,
-      publisher: metric.source.publisher,
-      sourceUrl: metric.source.sourceUrl,
-      termsUrl: metric.source.termsUrl,
-      observationPeriod: metric.observationPeriod,
-      releasedOn: metric.releasedOn,
-      verifiedOn: metric.verifiedOn,
-      originGeography: metric.geographies.origin.label,
-      destinationGeography: metric.geographies.destination.label,
-      originMoe: metric.quality.marginOfError?.origin ?? null,
-      destinationMoe: metric.quality.marginOfError?.destination ?? null,
-      transformationId: metric.transformation.id,
-      transformationVersion: metric.transformation.version,
+      definition: commuteMetric.definition,
+      dataset: commuteMetric.source.dataset,
+      publisher: commuteMetric.source.publisher,
+      sourceUrl: commuteMetric.source.sourceUrl,
+      termsUrl: commuteMetric.source.termsUrl,
+      observationPeriod: commuteMetric.observationPeriod,
+      releasedOn: commuteMetric.releasedOn,
+      verifiedOn: commuteMetric.verifiedOn,
+      originGeography: commuteMetric.geographies.origin.label,
+      destinationGeography: commuteMetric.geographies.destination.label,
+      originMoe: commuteMetric.quality.marginOfError?.origin ?? null,
+      destinationMoe: commuteMetric.quality.marginOfError?.destination ?? null,
+      transformationId: commuteMetric.transformation.id,
+      transformationVersion: commuteMetric.transformation.version,
       snapshotVersion: profile.scenario.benchmarkSnapshot.version,
       snapshotSha256: profile.scenario.benchmarkSnapshot.sha256,
       rawSnapshotSha256: profile.scenario.benchmarkSnapshot.rawSnapshot.sha256,
       delineationVersion: profile.scenario.benchmarkSnapshot.delineationVersion,
+    },
+    climateEvidence: {
+      definition: climateMetric.definition,
+      dataset: climateMetric.source.dataset,
+      publisher: climateMetric.source.publisher,
+      sourceUrl: climateMetric.source.sourceUrl,
+      termsUrl: climateMetric.source.termsUrl,
+      observationPeriod: climateMetric.observationPeriod,
+      releasedOn: climateMetric.releasedOn,
+      verifiedOn: climateMetric.verifiedOn,
+      originGeography: climateMetric.geographies.origin.label,
+      destinationGeography: climateMetric.geographies.destination.label,
+      selectionRationale: selection.rationale,
+      transformationId: climateMetric.transformation.id,
+      transformationVersion: climateMetric.transformation.version,
     },
   };
 };

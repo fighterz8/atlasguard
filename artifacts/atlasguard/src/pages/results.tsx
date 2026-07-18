@@ -2,6 +2,7 @@ import { ArrowLeft, CheckCircle2, RotateCcw } from "lucide-react";
 import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 
 import { EvidencePanel } from "@/features/research-results/evidence-panel";
+import { ClimatePanel } from "@/features/research-results/climate-panel";
 import { HousingContextPanel } from "@/features/research-results/housing-context-panel";
 import { MoneyPanel } from "@/features/research-results/money-panel";
 import {
@@ -109,7 +110,9 @@ export function ResearchResultsExperience({
 
           <section
             aria-labelledby="reading-heading"
-            className={model.priority ? "panel" : "panel lg:col-span-2"}
+            className={
+              model.priority || model.climate ? "panel" : "panel lg:col-span-2"
+            }
           >
             <p className="eyebrow">Key takeaways</p>
             <h2 id="reading-heading" className="section-heading">
@@ -141,9 +144,9 @@ export function ResearchResultsExperience({
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {model.finances.reading}
-                  {model.priority
-                    ? " The commute difference is not large enough to change this reading."
-                    : " Commute was excluded because you said it does not matter."}
+                  {model.priority || model.climate
+                    ? " No included supporting factor is large enough to change this reading."
+                    : " Commute and hot days were excluded because you said they do not matter."}
                 </p>
               </div>
             )}
@@ -161,12 +164,30 @@ export function ResearchResultsExperience({
             </section>
           ) : null}
 
+          {model.climate ? (
+            <section
+              aria-labelledby="climate-supporting-heading"
+              className="panel"
+            >
+              <p className="eyebrow">Supporting context</p>
+              <h2 id="climate-supporting-heading" className="section-heading">
+                Hot-day comparison
+              </h2>
+              <div className="mt-5">
+                <ClimatePanel route={model.route} climate={model.climate} />
+              </div>
+            </section>
+          ) : null}
+
           <HousingContextPanel
             route={model.route}
             housingContext={model.housingContext}
           />
 
-          <EvidencePanel evidence={model.evidence} />
+          <EvidencePanel
+            evidence={model.evidence}
+            climateEvidence={model.climateEvidence}
+          />
         </div>
 
         <footer className="mt-10 border-t border-slate-200 pt-6 text-xs leading-5 text-slate-500">

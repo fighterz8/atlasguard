@@ -194,6 +194,15 @@ export function adaptWizardDraftToScenarioInput(
     },
     priorities: [
       {
+        priorityId: "climate_heat",
+        preferredDirection:
+          draft.climateHeatPreference === "more_hot_days" ? "higher" : "lower",
+        weight:
+          draft.climateHeatPreference === "does_not_matter"
+            ? 0
+            : priorityWeight[draft.climateHeatImportance],
+      },
+      {
         priorityId: "commute_time",
         preferredDirection: "lower",
         weight: priorityWeight[draft.commuteImportance],

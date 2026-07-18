@@ -74,6 +74,10 @@ describe("research results view model", () => {
     expect(model.evidence.observationPeriod).toBe("2024 ACS 1-year estimates");
     expect(model.evidence.snapshotSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(model.evidence.rawSnapshotSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(model.climateEvidence.publisher).toContain("NOAA");
+    expect(model.climateEvidence.observationPeriod).toBe(
+      "1991-2020 climate normal",
+    );
     expect(model.nextSteps).toHaveLength(3);
     expect(model.housingContext.evidence.tableId).toBe("B25064");
     expect(model.housingContext.evidence.snapshotSha256).toMatch(
@@ -94,6 +98,14 @@ describe("research results view model", () => {
     expect(model.finances.destination.housing).toBe("$1,750");
     expect(model.finances.destination.retainedPropertyNet).toBe("-$100");
     expect(model.stability.level).not.toBe("not_evaluated");
+    expect(model.climate).toMatchObject({
+      preference: "fewer hot days",
+      originValue: "25.6 days/year",
+      destinationValue: "2.1 days/year",
+      originRange: "4.8–25.6 days",
+      destinationRange: "2.1–3.8 days",
+      classification: "improves",
+    });
   });
 
   it("omits the commute card when the user says it does not matter", () => {
@@ -133,6 +145,17 @@ describe("research results view model", () => {
     expect(
       createVerifiedWhatIfViewModel(evaluation.evaluation).controls,
     ).toHaveLength(3);
+  });
+
+  it("omits the climate card when the user declares no heat preference", () => {
+    const draft = reviewedDraft();
+    draft.climateHeatPreference = "does_not_matter";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+    expect(
+      createResearchResultsViewModel(evaluation.evaluation).climate,
+    ).toBeNull();
   });
 
   it("exposes exact favorable thresholds inside the declared ranges", () => {
@@ -177,6 +200,7 @@ describe("research results view model", () => {
 
   it("builds controls and thresholds from a reviewed user evaluation", () => {
     const draft = reviewedDraft();
+    draft.climateHeatPreference = "does_not_matter";
     draft.finances.targetTakeHome = "5000";
     draft.finances.targetHousing = "2000";
     draft.finances.targetExpenses = "1500";

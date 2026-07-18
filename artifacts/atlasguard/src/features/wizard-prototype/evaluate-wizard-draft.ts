@@ -1,4 +1,4 @@
-import { loadLosAngelesToSeattleCommuteBenchmark } from "@workspace/benchmark-data";
+import { loadLosAngelesToSeattleResearchBenchmark } from "@workspace/benchmark-data";
 import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 import { evaluateResearchMoveDecision } from "@workspace/decision-core";
 
@@ -14,12 +14,27 @@ export function evaluateWizardDraft(
 ): WizardEvaluationResult {
   const adapted = adaptWizardDraftToScenarioInput(draft);
   if (!adapted.success) return adapted;
+  const climatePriority = adapted.scenario.priorities.find(
+    ({ priorityId }) => priorityId === "climate_heat",
+  );
+  if (
+    climatePriority === undefined ||
+    (climatePriority.preferredDirection !== "lower" &&
+      climatePriority.preferredDirection !== "higher")
+  ) {
+    return {
+      success: false,
+      errors: { scenario: "Choose a supported hot-day preference." },
+    };
+  }
 
   return {
     success: true,
     evaluation: evaluateResearchMoveDecision(
       adapted.scenario,
-      loadLosAngelesToSeattleCommuteBenchmark(),
+      loadLosAngelesToSeattleResearchBenchmark(
+        climatePriority.preferredDirection,
+      ),
     ),
   };
 }

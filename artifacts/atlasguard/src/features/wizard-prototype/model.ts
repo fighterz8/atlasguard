@@ -11,6 +11,10 @@ export type PriorityImportance =
   | "important"
   | "nice_to_have"
   | "does_not_matter";
+export type ClimateHeatPreference =
+  | "fewer_hot_days"
+  | "more_hot_days"
+  | "does_not_matter";
 
 export const supportedPlaces = [
   {
@@ -54,6 +58,8 @@ export type WizardPrototypeDraft = {
     retainedPropertyNetBasis: AssumptionBasis;
   };
   commuteImportance: PriorityImportance;
+  climateHeatPreference: ClimateHeatPreference;
+  climateHeatImportance: Exclude<PriorityImportance, "does_not_matter">;
 };
 
 export type WizardErrors = Record<string, string>;
@@ -83,6 +89,8 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     retainedPropertyNetBasis: "confirmed",
   },
   commuteImportance: "important",
+  climateHeatPreference: "fewer_hot_days",
+  climateHeatImportance: "important",
 });
 
 export const getPlace = (slug: SupportedPlaceSlug | "") =>

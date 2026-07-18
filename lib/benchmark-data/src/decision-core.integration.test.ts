@@ -5,24 +5,43 @@ import {
 } from "@workspace/decision-core";
 import { describe, expect, it } from "vitest";
 
-import { loadLosAngelesToSeattleCommuteBenchmark } from "./la-seattle-commute";
+import { loadLosAngelesToSeattleResearchBenchmark } from "./la-seattle-research";
 import { losAngelesToSeattleBalancedResearchScenario } from "./research-scenarios/la-seattle-balanced";
 
 describe("real-data decision-engine integration", () => {
   it("produces a verified deterministic profile without upgrading confidence", () => {
-    const result = evaluateResearchMoveDecision(
+    const scenario = structuredClone(
       losAngelesToSeattleBalancedResearchScenario,
-      loadLosAngelesToSeattleCommuteBenchmark(),
     );
-    const change = result.decisionProfile.priorityChanges[0];
+    const climatePriority = scenario.priorities.find(
+      ({ priorityId }) => priorityId === "climate_heat",
+    );
+    if (climatePriority === undefined)
+      throw new Error("Missing climate priority.");
+    climatePriority.weight = 2;
+    const result = evaluateResearchMoveDecision(
+      scenario,
+      loadLosAngelesToSeattleResearchBenchmark("lower"),
+    );
+    const commute = result.decisionProfile.priorityChanges.find(
+      ({ priorityId }) => priorityId === "commute_time",
+    );
+    const climate = result.decisionProfile.priorityChanges.find(
+      ({ priorityId }) => priorityId === "climate_heat",
+    );
 
     expect(result.resultMode).toBe("deterministic");
     expect(result.releaseStatus).toBe("research_only");
     expect(result.decisionProfile.scenario.origin.cbsaCode).toBe("31080");
     expect(result.decisionProfile.scenario.destination.cbsaCode).toBe("42660");
-    expect(change.priorityId).toBe("commute_time");
-    expect(change.utilityDeltaBps).toBe(99);
-    expect(change.classification).toBe("similar");
+    expect(commute).toMatchObject({
+      utilityDeltaBps: 99,
+      classification: "similar",
+    });
+    expect(climate).toMatchObject({
+      utilityDeltaBps: 1_560,
+      classification: "improves",
+    });
     expect(result.decisionProfile.confidence.level).toBe("limited");
   });
 
@@ -30,7 +49,7 @@ describe("real-data decision-engine integration", () => {
     expect(() =>
       evaluateMoveDecision(
         losAngelesToSeattleBalancedResearchScenario,
-        loadLosAngelesToSeattleCommuteBenchmark(),
+        loadLosAngelesToSeattleResearchBenchmark("lower"),
       ),
     ).toThrow(BenchmarkAdmissionError);
   });
