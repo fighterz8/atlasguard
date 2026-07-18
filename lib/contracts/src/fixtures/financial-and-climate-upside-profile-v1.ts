@@ -1,6 +1,9 @@
 import type { MetricEvidence, ScenarioInputEvidence } from "../benchmark";
 import type { DecisionProfile } from "../decision-profile";
-import { PHASE0_BENCHMARK_SNAPSHOT_SHA256 } from "./financial-and-climate-upside-benchmark-v1";
+import {
+  financialAndClimateUpsideBenchmark,
+  PHASE0_BENCHMARK_SNAPSHOT_SHA256,
+} from "./financial-and-climate-upside-benchmark-v1";
 
 const benchmarkEvidence = (
   values: Pick<
@@ -103,31 +106,9 @@ export const financialAndClimateUpsideProfile = {
   inputFingerprintSha256:
     "690863de15801f840d768c90544d38573c1f27623aed038ddc0b12476a342b81",
   scenario: {
-    origin: {
-      slug: "fixture-river",
-      cbsaCode: "00001",
-      label: "River Metro",
-      selectedPlace: {
-        city: "River City",
-        stateCode: "RV",
-      },
-    },
-    destination: {
-      slug: "fixture-pine",
-      cbsaCode: "00002",
-      label: "Pine Metro",
-      selectedPlace: {
-        city: "Pine City",
-        stateCode: "PN",
-      },
-    },
-    benchmarkSnapshot: {
-      id: "fixture.phase0.2026-07-17",
-      version: "1.0.0",
-      sha256: PHASE0_BENCHMARK_SNAPSHOT_SHA256,
-      delineationVersion: "fixture-2026",
-      verifiedOn: "2026-07-17",
-    },
+    origin: financialAndClimateUpsideBenchmark.origin,
+    destination: financialAndClimateUpsideBenchmark.destination,
+    benchmarkSnapshot: financialAndClimateUpsideBenchmark.snapshot,
     decisionRuleVersion: "1.0.0",
   },
   financialPosition: {

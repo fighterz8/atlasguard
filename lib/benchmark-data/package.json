@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/benchmark-data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/contracts": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@workspace/decision-core": "workspace:*"
+  }
+}

@@ -422,2043 +422,697 @@ export interface ScenarioInput {
   priorities: ScenarioInputPrioritiesItem[];
 }
 
-export type EvaluationResultSchemaVersion =
-  (typeof EvaluationResultSchemaVersion)[keyof typeof EvaluationResultSchemaVersion];
-
-export const EvaluationResultSchemaVersion = {
-  "100": "1.0.0",
-} as const;
-
-export type EvaluationResultResultMode =
-  (typeof EvaluationResultResultMode)[keyof typeof EvaluationResultResultMode];
-
-export const EvaluationResultResultMode = {
-  deterministic: "deterministic",
-} as const;
-
-export type EvaluationResultScenarioInputSchemaVersion =
-  (typeof EvaluationResultScenarioInputSchemaVersion)[keyof typeof EvaluationResultScenarioInputSchemaVersion];
-
-export const EvaluationResultScenarioInputSchemaVersion = {
-  "100": "1.0.0",
-} as const;
-
-export type EvaluationResultScenarioInputFinancesOriginTakeHomeIncomeBasis =
-  (typeof EvaluationResultScenarioInputFinancesOriginTakeHomeIncomeBasis)[keyof typeof EvaluationResultScenarioInputFinancesOriginTakeHomeIncomeBasis];
-
-export const EvaluationResultScenarioInputFinancesOriginTakeHomeIncomeBasis = {
-  confirmed: "confirmed",
-  user_estimate: "user_estimate",
-  assumed_same_as_origin: "assumed_same_as_origin",
-} as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesOriginTakeHomeIncomePlausibleRangeCents =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-
-export type EvaluationResultScenarioInputFinancesOriginTakeHomeIncome = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyCents: number;
-  basis: EvaluationResultScenarioInputFinancesOriginTakeHomeIncomeBasis;
-  /** @nullable */
-  plausibleRangeCents: EvaluationResultScenarioInputFinancesOriginTakeHomeIncomePlausibleRangeCents;
-};
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesOriginGrossIncome = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyCents: number;
-  basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
-  /** @nullable */
-  plausibleRangeCents: {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-} | null;
-
-export type EvaluationResultScenarioInputFinancesOriginHousingCostBasis =
-  (typeof EvaluationResultScenarioInputFinancesOriginHousingCostBasis)[keyof typeof EvaluationResultScenarioInputFinancesOriginHousingCostBasis];
-
-export const EvaluationResultScenarioInputFinancesOriginHousingCostBasis = {
-  confirmed: "confirmed",
-  user_estimate: "user_estimate",
-  assumed_same_as_origin: "assumed_same_as_origin",
-} as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesOriginHousingCostPlausibleRangeCents =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-
-export type EvaluationResultScenarioInputFinancesOriginHousingCost = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyCents: number;
-  basis: EvaluationResultScenarioInputFinancesOriginHousingCostBasis;
-  /** @nullable */
-  plausibleRangeCents: EvaluationResultScenarioInputFinancesOriginHousingCostPlausibleRangeCents;
-};
-
-export type EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousingBasis =
-  (typeof EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousingBasis)[keyof typeof EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousingBasis];
-
-export const EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousingBasis =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousingPlausibleRangeCents =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-
-export type EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousing =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    monthlyCents: number;
-    basis: EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousingBasis;
-    /** @nullable */
-    plausibleRangeCents: EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousingPlausibleRangeCents;
-  };
-
-export type EvaluationResultScenarioInputFinancesOrigin = {
-  takeHomeIncome: EvaluationResultScenarioInputFinancesOriginTakeHomeIncome;
-  /** @nullable */
-  grossIncome: EvaluationResultScenarioInputFinancesOriginGrossIncome;
-  housingCost: EvaluationResultScenarioInputFinancesOriginHousingCost;
-  recurringExpensesExcludingHousing: EvaluationResultScenarioInputFinancesOriginRecurringExpensesExcludingHousing;
-};
-
-export type EvaluationResultScenarioInputFinancesDestinationTakeHomeIncomeBasis =
-  (typeof EvaluationResultScenarioInputFinancesDestinationTakeHomeIncomeBasis)[keyof typeof EvaluationResultScenarioInputFinancesDestinationTakeHomeIncomeBasis];
-
-export const EvaluationResultScenarioInputFinancesDestinationTakeHomeIncomeBasis =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesDestinationTakeHomeIncomePlausibleRangeCents =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-
-export type EvaluationResultScenarioInputFinancesDestinationTakeHomeIncome = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyCents: number;
-  basis: EvaluationResultScenarioInputFinancesDestinationTakeHomeIncomeBasis;
-  /** @nullable */
-  plausibleRangeCents: EvaluationResultScenarioInputFinancesDestinationTakeHomeIncomePlausibleRangeCents;
-};
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesDestinationGrossIncome = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyCents: number;
-  basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
-  /** @nullable */
-  plausibleRangeCents: {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-} | null;
-
-export type EvaluationResultScenarioInputFinancesDestinationHousingCostBasis =
-  (typeof EvaluationResultScenarioInputFinancesDestinationHousingCostBasis)[keyof typeof EvaluationResultScenarioInputFinancesDestinationHousingCostBasis];
-
-export const EvaluationResultScenarioInputFinancesDestinationHousingCostBasis =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesDestinationHousingCostPlausibleRangeCents =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-
-export type EvaluationResultScenarioInputFinancesDestinationHousingCost = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyCents: number;
-  basis: EvaluationResultScenarioInputFinancesDestinationHousingCostBasis;
-  /** @nullable */
-  plausibleRangeCents: EvaluationResultScenarioInputFinancesDestinationHousingCostPlausibleRangeCents;
-};
-
-export type EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousingBasis =
-  (typeof EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousingBasis)[keyof typeof EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousingBasis];
-
-export const EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousingBasis =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousingPlausibleRangeCents =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-
-export type EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousing =
-  {
-    /**
-     * A non-negative monthly amount in integer US-dollar cents.
-     * @minimum 0
-     * @maximum 10000000000
-     */
-    monthlyCents: number;
-    basis: EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousingBasis;
-    /** @nullable */
-    plausibleRangeCents: EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousingPlausibleRangeCents;
-  };
-
-export type EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNetBasis =
-  (typeof EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNetBasis)[keyof typeof EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNetBasis];
-
-export const EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNetBasis =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNetPlausibleRangeCents =
-  {
-    /**
-     * A signed monthly amount in integer US-dollar cents.
-     * @minimum -10000000000
-     * @maximum 10000000000
-     */
-    min: number;
-    /**
-     * A signed monthly amount in integer US-dollar cents.
-     * @minimum -10000000000
-     * @maximum 10000000000
-     */
-    max: number;
-  } | null;
-
-export type EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNet =
-  {
-    /**
-     * A signed monthly amount in integer US-dollar cents.
-     * @minimum -10000000000
-     * @maximum 10000000000
-     */
-    monthlyCents: number;
-    basis: EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNetBasis;
-    /** @nullable */
-    plausibleRangeCents: EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNetPlausibleRangeCents;
-  };
-
-export type EvaluationResultScenarioInputFinancesDestination = {
-  takeHomeIncome: EvaluationResultScenarioInputFinancesDestinationTakeHomeIncome;
-  /** @nullable */
-  grossIncome: EvaluationResultScenarioInputFinancesDestinationGrossIncome;
-  housingCost: EvaluationResultScenarioInputFinancesDestinationHousingCost;
-  recurringExpensesExcludingHousing: EvaluationResultScenarioInputFinancesDestinationRecurringExpensesExcludingHousing;
-  retainedPropertyNet: EvaluationResultScenarioInputFinancesDestinationRetainedPropertyNet;
-};
-
-export type EvaluationResultScenarioInputFinances = {
-  origin: EvaluationResultScenarioInputFinancesOrigin;
-  destination: EvaluationResultScenarioInputFinancesDestination;
-};
-
-export type EvaluationResultScenarioInputPrioritiesItemPriorityId =
-  (typeof EvaluationResultScenarioInputPrioritiesItemPriorityId)[keyof typeof EvaluationResultScenarioInputPrioritiesItemPriorityId];
-
-export const EvaluationResultScenarioInputPrioritiesItemPriorityId = {
-  climate_heat: "climate_heat",
-  climate_cold: "climate_cold",
-  climate_precipitation: "climate_precipitation",
-  climate_snow: "climate_snow",
-  climate_seasonality: "climate_seasonality",
-  commute_time: "commute_time",
-} as const;
-
-export type EvaluationResultScenarioInputPrioritiesItemPreferredDirection =
-  (typeof EvaluationResultScenarioInputPrioritiesItemPreferredDirection)[keyof typeof EvaluationResultScenarioInputPrioritiesItemPreferredDirection];
-
-export const EvaluationResultScenarioInputPrioritiesItemPreferredDirection = {
-  lower: "lower",
-  higher: "higher",
-} as const;
-
-export const EvaluationResultScenarioInputPrioritiesItemWeight = {
-  NUMBER_0: 0,
-  NUMBER_1: 1,
-  NUMBER_2: 2,
-  NUMBER_3: 3,
-  NUMBER_4: 4,
-  NUMBER_5: 5,
-} as const;
-export type EvaluationResultScenarioInputPrioritiesItem = {
-  priorityId: EvaluationResultScenarioInputPrioritiesItemPriorityId;
-  preferredDirection: EvaluationResultScenarioInputPrioritiesItemPreferredDirection;
-  weight: (typeof EvaluationResultScenarioInputPrioritiesItemWeight)[keyof typeof EvaluationResultScenarioInputPrioritiesItemWeight];
-};
-
-export type EvaluationResultScenarioInput = {
-  schemaVersion: EvaluationResultScenarioInputSchemaVersion;
-  /**
-   * @minLength 1
-   * @maxLength 120
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  originMetroSlug: string;
-  /**
-   * @minLength 1
-   * @maxLength 120
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  destinationMetroSlug: string;
-  finances: EvaluationResultScenarioInputFinances;
-  /** @maxItems 6 */
-  priorities: EvaluationResultScenarioInputPrioritiesItem[];
-};
-
-export type EvaluationResultBenchmarkComparisonSnapshot = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-  version: string;
-  /** @pattern ^[a-f0-9]{64}$ */
-  sha256: string;
-  /**
-   * @minLength 1
-   * @maxLength 80
-   */
-  delineationVersion: string;
-  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
-  verifiedOn: string;
-};
-
-export type EvaluationResultBenchmarkComparisonOriginSelectedPlace = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  city: string;
-  /** @pattern ^[A-Z]{2}$ */
-  stateCode: string;
-};
-
-export type EvaluationResultBenchmarkComparisonOrigin = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  slug: string;
-  /** @pattern ^\d{5}$ */
-  cbsaCode: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   */
-  label: string;
-  selectedPlace: EvaluationResultBenchmarkComparisonOriginSelectedPlace;
-};
-
-export type EvaluationResultBenchmarkComparisonDestinationSelectedPlace = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  city: string;
-  /** @pattern ^[A-Z]{2}$ */
-  stateCode: string;
-};
-
-export type EvaluationResultBenchmarkComparisonDestination = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  slug: string;
-  /** @pattern ^\d{5}$ */
-  cbsaCode: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   */
-  label: string;
-  selectedPlace: EvaluationResultBenchmarkComparisonDestinationSelectedPlace;
-};
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemPriorityId =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemPriorityId)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemPriorityId];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemPriorityId = {
-  climate_heat: "climate_heat",
-  climate_cold: "climate_cold",
-  climate_precipitation: "climate_precipitation",
-  climate_snow: "climate_snow",
-  climate_seasonality: "climate_seasonality",
-  commute_time: "commute_time",
-} as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceKind =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceKind)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceKind];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceKind = {
-  benchmark_metric: "benchmark_metric",
-} as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidencePriorityId =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidencePriorityId)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidencePriorityId];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidencePriorityId =
-  {
-    climate_heat: "climate_heat",
-    climate_cold: "climate_cold",
-    climate_precipitation: "climate_precipitation",
-    climate_snow: "climate_snow",
-    climate_seasonality: "climate_seasonality",
-    commute_time: "commute_time",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceUnit =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceUnit)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceUnit];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceUnit = {
-  basis_points: "basis_points",
-  count: "count",
-  days: "days",
-  degrees_fahrenheit: "degrees_fahrenheit",
-  index: "index",
-  inches: "inches",
-  minutes: "minutes",
-  percent: "percent",
-  usd_cents: "usd_cents",
-} as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceSource = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   */
-  dataset: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   */
-  publisher: string;
-  sourceUrl: string;
-  /** @nullable */
-  termsUrl: string | null;
-};
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginKind =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginKind)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginKind];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginKind =
-  {
-    cbsa: "cbsa",
-    county: "county",
-    place: "place",
-    state: "state",
-    station: "station",
-    national: "national",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginMatchQuality =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginMatchQuality)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginMatchQuality];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginMatchQuality =
-  {
-    exact: "exact",
-    mapped_proxy: "mapped_proxy",
-    mismatch: "mismatch",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOrigin =
-  {
-    kind: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginKind;
+export type EvaluationResult = {
+  schemaVersion: "1.0.0";
+  resultMode: "deterministic";
+  releaseStatus: "research_only" | "user_facing";
+  scenarioInput: {
+    schemaVersion: "1.0.0";
     /**
      * @minLength 1
-     * @maxLength 40
+     * @maxLength 120
+     * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
      */
-    code: string;
+    originMetroSlug: string;
     /**
      * @minLength 1
-     * @maxLength 160
+     * @maxLength 120
+     * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
      */
-    label: string;
-    matchQuality: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOriginMatchQuality;
-  };
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationKind =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationKind)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationKind];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationKind =
-  {
-    cbsa: "cbsa",
-    county: "county",
-    place: "place",
-    state: "state",
-    station: "station",
-    national: "national",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationMatchQuality =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationMatchQuality)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationMatchQuality];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationMatchQuality =
-  {
-    exact: "exact",
-    mapped_proxy: "mapped_proxy",
-    mismatch: "mismatch",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestination =
-  {
-    kind: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationKind;
-    /**
-     * @minLength 1
-     * @maxLength 40
-     */
-    code: string;
-    /**
-     * @minLength 1
-     * @maxLength 160
-     */
-    label: string;
-    matchQuality: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestinationMatchQuality;
-  };
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographies =
-  {
-    origin: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesOrigin;
-    destination: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographiesDestination;
-  };
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformationPreferredDirection =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformationPreferredDirection)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformationPreferredDirection];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformationPreferredDirection =
-  {
-    lower: "lower",
-    higher: "higher",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformationOutputs =
-  {
-    /**
-     * @minimum 0
-     * @maximum 10000
-     * @nullable
-     */
-    originUtilityBps: number | null;
-    /**
-     * @minimum 0
-     * @maximum 10000
-     * @nullable
-     */
-    destinationUtilityBps: number | null;
-    /**
-     * @minimum 0
-     * @maximum 10000
-     * @nullable
-     */
-    originUncertaintyBps: number | null;
-    /**
-     * @minimum 0
-     * @maximum 10000
-     * @nullable
-     */
-    destinationUncertaintyBps: number | null;
-  };
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformation =
-  {
-    /**
-     * @minLength 1
-     * @maxLength 160
-     * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-     */
-    id: string;
-    /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-    version: string;
-    preferredDirection: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformationPreferredDirection;
-    outputs: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformationOutputs;
-  };
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceMaterialityPolicy =
-  {
-    /**
-     * @minimum 1
-     * @maximum 10000
-     */
-    utilityDeltaBps: number;
-    /**
-     * @minLength 1
-     * @maxLength 500
-     */
-    rationale: string;
-  };
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityFreshness =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityFreshness)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityFreshness];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityFreshness =
-  {
-    current: "current",
-    stale: "stale",
-    unknown: "unknown",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityMissingness =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityMissingness)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityMissingness];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityMissingness =
-  {
-    complete: "complete",
-    partial: "partial",
-    unavailable: "unavailable",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityMarginOfError =
-  {
-    /**
-     * @minimum 0
-     * @nullable
-     */
-    origin: number | null;
-    /**
-     * @minimum 0
-     * @nullable
-     */
-    destination: number | null;
-  } | null;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradeValue =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradeValue)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradeValue];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradeValue =
-  {
-    high: "high",
-    moderate: "moderate",
-    limited: "limited",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradePolicyVersion =
-  (typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradePolicyVersion)[keyof typeof EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradePolicyVersion];
-
-export const EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradePolicyVersion =
-  {
-    "100": "1.0.0",
-  } as const;
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGrade =
-  {
-    value: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradeValue;
-    policyVersion: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGradePolicyVersion;
-  };
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQuality = {
-  freshness: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityFreshness;
-  missingness: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityMissingness;
-  /** @nullable */
-  marginOfError: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityMarginOfError;
-  /**
-   * @minimum 0
-   * @maximum 10000
-   * @nullable
-   */
-  coverageBps: number | null;
-  grade: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQualityGrade;
-};
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItemEvidence = {
-  kind: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceKind;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  metricId: string;
-  /**
-   * @minLength 1
-   * @maxLength 500
-   */
-  definition: string;
-  priorityId: EvaluationResultBenchmarkComparisonPrioritiesItemEvidencePriorityId;
-  unit: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceUnit;
-  /** @nullable */
-  originValue: number | null;
-  /** @nullable */
-  destinationValue: number | null;
-  /** @nullable */
-  deltaValue: number | null;
-  source: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceSource;
-  /**
-   * @minLength 1
-   * @maxLength 80
-   */
-  observationPeriod: string;
-  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
-  releasedOn: string;
-  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
-  verifiedOn: string;
-  geographies: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceGeographies;
-  /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-  snapshotVersion: string;
-  /** @pattern ^[a-f0-9]{64}$ */
-  snapshotSha256: string;
-  transformation: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceTransformation;
-  materialityPolicy: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceMaterialityPolicy;
-  quality: EvaluationResultBenchmarkComparisonPrioritiesItemEvidenceQuality;
-};
-
-export type EvaluationResultBenchmarkComparisonPrioritiesItem = {
-  priorityId: EvaluationResultBenchmarkComparisonPrioritiesItemPriorityId;
-  /**
-   * @minimum 0
-   * @maximum 10000
-   * @nullable
-   */
-  originUtilityBps: number | null;
-  /**
-   * @minimum 0
-   * @maximum 10000
-   * @nullable
-   */
-  destinationUtilityBps: number | null;
-  /**
-   * @minimum 1
-   * @maximum 10000
-   */
-  materialityThresholdBps: number;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  transformationId: string;
-  /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-  transformationVersion: string;
-  evidence: EvaluationResultBenchmarkComparisonPrioritiesItemEvidence;
-};
-
-export type EvaluationResultBenchmarkComparison = {
-  snapshot: EvaluationResultBenchmarkComparisonSnapshot;
-  origin: EvaluationResultBenchmarkComparisonOrigin;
-  destination: EvaluationResultBenchmarkComparisonDestination;
-  /** @maxItems 6 */
-  priorities: EvaluationResultBenchmarkComparisonPrioritiesItem[];
-};
-
-export type EvaluationResultDecisionProfileSchemaVersion =
-  (typeof EvaluationResultDecisionProfileSchemaVersion)[keyof typeof EvaluationResultDecisionProfileSchemaVersion];
-
-export const EvaluationResultDecisionProfileSchemaVersion = {
-  "100": "1.0.0",
-} as const;
-
-export type EvaluationResultDecisionProfileScenarioOriginSelectedPlace = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  city: string;
-  /** @pattern ^[A-Z]{2}$ */
-  stateCode: string;
-};
-
-export type EvaluationResultDecisionProfileScenarioOrigin = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  slug: string;
-  /** @pattern ^\d{5}$ */
-  cbsaCode: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   */
-  label: string;
-  selectedPlace: EvaluationResultDecisionProfileScenarioOriginSelectedPlace;
-};
-
-export type EvaluationResultDecisionProfileScenarioDestinationSelectedPlace = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  city: string;
-  /** @pattern ^[A-Z]{2}$ */
-  stateCode: string;
-};
-
-export type EvaluationResultDecisionProfileScenarioDestination = {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  slug: string;
-  /** @pattern ^\d{5}$ */
-  cbsaCode: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   */
-  label: string;
-  selectedPlace: EvaluationResultDecisionProfileScenarioDestinationSelectedPlace;
-};
-
-export type EvaluationResultDecisionProfileScenarioBenchmarkSnapshot = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-  version: string;
-  /** @pattern ^[a-f0-9]{64}$ */
-  sha256: string;
-  /**
-   * @minLength 1
-   * @maxLength 80
-   */
-  delineationVersion: string;
-  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
-  verifiedOn: string;
-};
-
-export type EvaluationResultDecisionProfileScenarioDecisionRuleVersion =
-  (typeof EvaluationResultDecisionProfileScenarioDecisionRuleVersion)[keyof typeof EvaluationResultDecisionProfileScenarioDecisionRuleVersion];
-
-export const EvaluationResultDecisionProfileScenarioDecisionRuleVersion = {
-  "100": "1.0.0",
-} as const;
-
-export type EvaluationResultDecisionProfileScenario = {
-  origin: EvaluationResultDecisionProfileScenarioOrigin;
-  destination: EvaluationResultDecisionProfileScenarioDestination;
-  benchmarkSnapshot: EvaluationResultDecisionProfileScenarioBenchmarkSnapshot;
-  decisionRuleVersion: EvaluationResultDecisionProfileScenarioDecisionRuleVersion;
-};
-
-export type EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisTakeHomeIncome =
-  (typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisTakeHomeIncome)[keyof typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisTakeHomeIncome];
-
-export const EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisTakeHomeIncome =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisGrossIncome =
-
-    | (typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisGrossIncome)[keyof typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisGrossIncome]
-    | null;
-
-export const EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisGrossIncome =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisHousingCost =
-  (typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisHousingCost)[keyof typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisHousingCost];
-
-export const EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisHousingCost =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRecurringExpenses =
-  (typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRecurringExpenses)[keyof typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRecurringExpenses];
-
-export const EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRecurringExpenses =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRetainedPropertyNet =
-  (typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRetainedPropertyNet)[keyof typeof EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRetainedPropertyNet];
-
-export const EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRetainedPropertyNet =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasis =
-  {
-    takeHomeIncome: EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisTakeHomeIncome;
-    /** @nullable */
-    grossIncome: EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisGrossIncome;
-    housingCost: EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisHousingCost;
-    recurringExpenses: EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRecurringExpenses;
-    retainedPropertyNet: EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasisRetainedPropertyNet;
-  };
-
-export type EvaluationResultDecisionProfileFinancialPositionOrigin = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyTakeHomeIncomeCents: number;
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   * @exclusiveMinimum 0
-   * @nullable
-   */
-  monthlyGrossIncomeCents: number | null;
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyHousingCostCents: number;
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyRecurringExpensesCents: number;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   */
-  monthlyRetainedPropertyNetCents: number;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   */
-  monthlyCushionCents: number;
-  /**
-   * @minimum 0
-   * @maximum 9007199254740991
-   * @nullable
-   */
-  housingBurdenBps: number | null;
-  assumptionBasis: EvaluationResultDecisionProfileFinancialPositionOriginAssumptionBasis;
-};
-
-export type EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisTakeHomeIncome =
-  (typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisTakeHomeIncome)[keyof typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisTakeHomeIncome];
-
-export const EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisTakeHomeIncome =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-/**
- * @nullable
- */
-export type EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisGrossIncome =
-
-    | (typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisGrossIncome)[keyof typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisGrossIncome]
-    | null;
-
-export const EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisGrossIncome =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisHousingCost =
-  (typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisHousingCost)[keyof typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisHousingCost];
-
-export const EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisHousingCost =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRecurringExpenses =
-  (typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRecurringExpenses)[keyof typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRecurringExpenses];
-
-export const EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRecurringExpenses =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-    assumed_same_as_origin: "assumed_same_as_origin",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRetainedPropertyNet =
-  (typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRetainedPropertyNet)[keyof typeof EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRetainedPropertyNet];
-
-export const EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRetainedPropertyNet =
-  {
-    confirmed: "confirmed",
-    user_estimate: "user_estimate",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasis =
-  {
-    takeHomeIncome: EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisTakeHomeIncome;
-    /** @nullable */
-    grossIncome: EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisGrossIncome;
-    housingCost: EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisHousingCost;
-    recurringExpenses: EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRecurringExpenses;
-    retainedPropertyNet: EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasisRetainedPropertyNet;
-  };
-
-export type EvaluationResultDecisionProfileFinancialPositionDestination = {
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyTakeHomeIncomeCents: number;
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   * @exclusiveMinimum 0
-   * @nullable
-   */
-  monthlyGrossIncomeCents: number | null;
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyHousingCostCents: number;
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  monthlyRecurringExpensesCents: number;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   */
-  monthlyRetainedPropertyNetCents: number;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   */
-  monthlyCushionCents: number;
-  /**
-   * @minimum 0
-   * @maximum 9007199254740991
-   * @nullable
-   */
-  housingBurdenBps: number | null;
-  assumptionBasis: EvaluationResultDecisionProfileFinancialPositionDestinationAssumptionBasis;
-};
-
-export type EvaluationResultDecisionProfileFinancialPositionChangeClassification =
-  (typeof EvaluationResultDecisionProfileFinancialPositionChangeClassification)[keyof typeof EvaluationResultDecisionProfileFinancialPositionChangeClassification];
-
-export const EvaluationResultDecisionProfileFinancialPositionChangeClassification =
-  {
-    improves: "improves",
-    similar: "similar",
-    worsens: "worsens",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionChange = {
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   */
-  monthlyCushionDeltaCents: number;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   * @nullable
-   */
-  cushionDeltaBpsOfOriginTakeHome: number | null;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   * @nullable
-   */
-  housingBurdenDeltaBps: number | null;
-  /**
-   * A non-negative monthly amount in integer US-dollar cents.
-   * @minimum 0
-   * @maximum 10000000000
-   */
-  materialityThresholdCents: number;
-  classification: EvaluationResultDecisionProfileFinancialPositionChangeClassification;
-};
-
-export type EvaluationResultDecisionProfileFinancialPositionBlockerCodesItem =
-  (typeof EvaluationResultDecisionProfileFinancialPositionBlockerCodesItem)[keyof typeof EvaluationResultDecisionProfileFinancialPositionBlockerCodesItem];
-
-export const EvaluationResultDecisionProfileFinancialPositionBlockerCodesItem =
-  {
-    negative_target_cushion: "negative_target_cushion",
-    target_housing_burden_at_or_above_50_percent:
-      "target_housing_burden_at_or_above_50_percent",
-  } as const;
-
-export type EvaluationResultDecisionProfileFinancialPositionRiskCodesItem =
-  (typeof EvaluationResultDecisionProfileFinancialPositionRiskCodesItem)[keyof typeof EvaluationResultDecisionProfileFinancialPositionRiskCodesItem];
-
-export const EvaluationResultDecisionProfileFinancialPositionRiskCodesItem = {
-  target_income_not_confirmed: "target_income_not_confirmed",
-  target_gross_income_unknown: "target_gross_income_unknown",
-  target_gross_income_not_confirmed: "target_gross_income_not_confirmed",
-  target_housing_not_confirmed: "target_housing_not_confirmed",
-  target_expenses_not_confirmed: "target_expenses_not_confirmed",
-  retained_property_net_not_confirmed: "retained_property_net_not_confirmed",
-} as const;
-
-export type EvaluationResultDecisionProfileFinancialPosition = {
-  origin: EvaluationResultDecisionProfileFinancialPositionOrigin;
-  destination: EvaluationResultDecisionProfileFinancialPositionDestination;
-  change: EvaluationResultDecisionProfileFinancialPositionChange;
-  blockerCodes: EvaluationResultDecisionProfileFinancialPositionBlockerCodesItem[];
-  riskCodes: EvaluationResultDecisionProfileFinancialPositionRiskCodesItem[];
-};
-
-export type EvaluationResultDecisionProfilePriorityChangesItemPriorityId =
-  (typeof EvaluationResultDecisionProfilePriorityChangesItemPriorityId)[keyof typeof EvaluationResultDecisionProfilePriorityChangesItemPriorityId];
-
-export const EvaluationResultDecisionProfilePriorityChangesItemPriorityId = {
-  climate_heat: "climate_heat",
-  climate_cold: "climate_cold",
-  climate_precipitation: "climate_precipitation",
-  climate_snow: "climate_snow",
-  climate_seasonality: "climate_seasonality",
-  commute_time: "commute_time",
-} as const;
-
-export const EvaluationResultDecisionProfilePriorityChangesItemWeight = {
-  NUMBER_0: 0,
-  NUMBER_1: 1,
-  NUMBER_2: 2,
-  NUMBER_3: 3,
-  NUMBER_4: 4,
-  NUMBER_5: 5,
-} as const;
-export type EvaluationResultDecisionProfilePriorityChangesItemPreferredDirection =
-  (typeof EvaluationResultDecisionProfilePriorityChangesItemPreferredDirection)[keyof typeof EvaluationResultDecisionProfilePriorityChangesItemPreferredDirection];
-
-export const EvaluationResultDecisionProfilePriorityChangesItemPreferredDirection =
-  {
-    lower: "lower",
-    higher: "higher",
-  } as const;
-
-export type EvaluationResultDecisionProfilePriorityChangesItemAvailability =
-  (typeof EvaluationResultDecisionProfilePriorityChangesItemAvailability)[keyof typeof EvaluationResultDecisionProfilePriorityChangesItemAvailability];
-
-export const EvaluationResultDecisionProfilePriorityChangesItemAvailability = {
-  available: "available",
-  unavailable: "unavailable",
-} as const;
-
-export type EvaluationResultDecisionProfilePriorityChangesItemClassification =
-  (typeof EvaluationResultDecisionProfilePriorityChangesItemClassification)[keyof typeof EvaluationResultDecisionProfilePriorityChangesItemClassification];
-
-export const EvaluationResultDecisionProfilePriorityChangesItemClassification =
-  {
-    improves: "improves",
-    similar: "similar",
-    worsens: "worsens",
-    unavailable: "unavailable",
-  } as const;
-
-export type EvaluationResultDecisionProfilePriorityChangesItem = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  priorityId: EvaluationResultDecisionProfilePriorityChangesItemPriorityId;
-  weight: (typeof EvaluationResultDecisionProfilePriorityChangesItemWeight)[keyof typeof EvaluationResultDecisionProfilePriorityChangesItemWeight];
-  preferredDirection: EvaluationResultDecisionProfilePriorityChangesItemPreferredDirection;
-  availability: EvaluationResultDecisionProfilePriorityChangesItemAvailability;
-  /**
-   * @minimum 0
-   * @maximum 10000
-   * @nullable
-   */
-  originUtilityBps: number | null;
-  /**
-   * @minimum 0
-   * @maximum 10000
-   * @nullable
-   */
-  destinationUtilityBps: number | null;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   * @nullable
-   */
-  utilityDeltaBps: number | null;
-  /**
-   * @minimum -9007199254740991
-   * @maximum 9007199254740991
-   * @nullable
-   */
-  weightedContribution: number | null;
-  /**
-   * @minimum 1
-   * @maximum 10000
-   * @nullable
-   */
-  materialityThresholdBps: number | null;
-  classification: EvaluationResultDecisionProfilePriorityChangesItemClassification;
-  material: boolean;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  transformationId: string;
-  /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-  transformationVersion: string;
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileConditionValue =
-  (typeof EvaluationResultDecisionProfileConditionValue)[keyof typeof EvaluationResultDecisionProfileConditionValue];
-
-export const EvaluationResultDecisionProfileConditionValue = {
-  worth_a_closer_look: "worth_a_closer_look",
-  promising_if: "promising_if",
-  meaningful_tradeoff: "meaningful_tradeoff",
-  high_financial_risk_under_assumptions:
-    "high_financial_risk_under_assumptions",
-} as const;
-
-export type EvaluationResultDecisionProfileCondition = {
-  value: EvaluationResultDecisionProfileConditionValue;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  ruleId: string;
-  /** @minItems 1 */
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileConfidenceLevel =
-  (typeof EvaluationResultDecisionProfileConfidenceLevel)[keyof typeof EvaluationResultDecisionProfileConfidenceLevel];
-
-export const EvaluationResultDecisionProfileConfidenceLevel = {
-  high: "high",
-  moderate: "moderate",
-  limited: "limited",
-} as const;
-
-export type EvaluationResultDecisionProfileConfidenceMissingPriorityIdsItem =
-  (typeof EvaluationResultDecisionProfileConfidenceMissingPriorityIdsItem)[keyof typeof EvaluationResultDecisionProfileConfidenceMissingPriorityIdsItem];
-
-export const EvaluationResultDecisionProfileConfidenceMissingPriorityIdsItem = {
-  climate_heat: "climate_heat",
-  climate_cold: "climate_cold",
-  climate_precipitation: "climate_precipitation",
-  climate_snow: "climate_snow",
-  climate_seasonality: "climate_seasonality",
-  commute_time: "commute_time",
-} as const;
-
-export type EvaluationResultDecisionProfileConfidence = {
-  level: EvaluationResultDecisionProfileConfidenceLevel;
-  /** @minItems 1 */
-  ruleIds: string[];
-  evidenceRefs: string[];
-  missingPriorityIds: EvaluationResultDecisionProfileConfidenceMissingPriorityIdsItem[];
-};
-
-export type EvaluationResultDecisionProfileStabilityLevel =
-  (typeof EvaluationResultDecisionProfileStabilityLevel)[keyof typeof EvaluationResultDecisionProfileStabilityLevel];
-
-export const EvaluationResultDecisionProfileStabilityLevel = {
-  not_evaluated: "not_evaluated",
-  stable: "stable",
-  assumption_sensitive: "assumption_sensitive",
-} as const;
-
-export type EvaluationResultDecisionProfileStability = {
-  level: EvaluationResultDecisionProfileStabilityLevel;
-  breakpointIds: string[];
-  /** @minItems 1 */
-  reasonCodes: string[];
-};
-
-export type EvaluationResultDecisionProfileBreakpointsItem =
-  | {
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      id: string;
-      kind: "money";
-      inputPath:
-        | "finances.origin.takeHomeIncome.monthlyCents"
-        | "finances.origin.grossIncome.monthlyCents"
-        | "finances.origin.housingCost.monthlyCents"
-        | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.takeHomeIncome.monthlyCents"
-        | "finances.destination.grossIncome.monthlyCents"
-        | "finances.destination.housingCost.monthlyCents"
-        | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.retainedPropertyNet.monthlyCents";
-      operator: "at_or_below" | "at_or_above";
-      /**
-       * @minimum -9007199254740991
-       * @maximum 9007199254740991
-       */
-      thresholdCents: number;
-      withinPlausibleRange: boolean;
-      changesConditionTo:
-        | "worth_a_closer_look"
-        | "meaningful_tradeoff"
-        | "high_financial_risk_under_assumptions";
-      /** @minItems 1 */
-      evidenceRefs: string[];
-    }
-  | {
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      id: string;
-      kind: "priority_weight";
-      priorityId:
-        | "climate_heat"
-        | "climate_cold"
-        | "climate_precipitation"
-        | "climate_snow"
-        | "climate_seasonality"
-        | "commute_time";
-      operator: "at_or_below" | "at_or_above";
-      thresholdWeight: 0 | 1 | 2 | 3 | 4 | 5;
-      withinPlausibleRange: boolean;
-      changesConditionTo:
-        | "worth_a_closer_look"
-        | "meaningful_tradeoff"
-        | "high_financial_risk_under_assumptions";
-      /** @minItems 1 */
-      evidenceRefs: string[];
-    };
-
-export type EvaluationResultDecisionProfileFindingsDriversItemSubject =
-  | {
-      kind: "financial";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      metricId: string;
-    }
-  | {
-      kind: "priority";
-      priorityId:
-        | "climate_heat"
-        | "climate_cold"
-        | "climate_precipitation"
-        | "climate_snow"
-        | "climate_seasonality"
-        | "commute_time";
-    }
-  | {
-      kind: "assumption";
-      inputPath:
-        | "finances.origin.takeHomeIncome.monthlyCents"
-        | "finances.origin.grossIncome.monthlyCents"
-        | "finances.origin.housingCost.monthlyCents"
-        | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.takeHomeIncome.monthlyCents"
-        | "finances.destination.grossIncome.monthlyCents"
-        | "finances.destination.housingCost.monthlyCents"
-        | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.retainedPropertyNet.monthlyCents";
-    };
-
-export type EvaluationResultDecisionProfileFindingsDriversItem = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  code: string;
-  subject: EvaluationResultDecisionProfileFindingsDriversItemSubject;
-  material: boolean;
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileFindingsTradeoffsItemSubject =
-  | {
-      kind: "financial";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      metricId: string;
-    }
-  | {
-      kind: "priority";
-      priorityId:
-        | "climate_heat"
-        | "climate_cold"
-        | "climate_precipitation"
-        | "climate_snow"
-        | "climate_seasonality"
-        | "commute_time";
-    }
-  | {
-      kind: "assumption";
-      inputPath:
-        | "finances.origin.takeHomeIncome.monthlyCents"
-        | "finances.origin.grossIncome.monthlyCents"
-        | "finances.origin.housingCost.monthlyCents"
-        | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.takeHomeIncome.monthlyCents"
-        | "finances.destination.grossIncome.monthlyCents"
-        | "finances.destination.housingCost.monthlyCents"
-        | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.retainedPropertyNet.monthlyCents";
-    };
-
-export type EvaluationResultDecisionProfileFindingsTradeoffsItem = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  code: string;
-  subject: EvaluationResultDecisionProfileFindingsTradeoffsItemSubject;
-  material: boolean;
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileFindingsBlockersItemSubject =
-  | {
-      kind: "financial";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      metricId: string;
-    }
-  | {
-      kind: "priority";
-      priorityId:
-        | "climate_heat"
-        | "climate_cold"
-        | "climate_precipitation"
-        | "climate_snow"
-        | "climate_seasonality"
-        | "commute_time";
-    }
-  | {
-      kind: "assumption";
-      inputPath:
-        | "finances.origin.takeHomeIncome.monthlyCents"
-        | "finances.origin.grossIncome.monthlyCents"
-        | "finances.origin.housingCost.monthlyCents"
-        | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.takeHomeIncome.monthlyCents"
-        | "finances.destination.grossIncome.monthlyCents"
-        | "finances.destination.housingCost.monthlyCents"
-        | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.retainedPropertyNet.monthlyCents";
-    };
-
-export type EvaluationResultDecisionProfileFindingsBlockersItem = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  code: string;
-  subject: EvaluationResultDecisionProfileFindingsBlockersItemSubject;
-  material: boolean;
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileFindingsCaveatsItemSubject =
-  | {
-      kind: "financial";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      metricId: string;
-    }
-  | {
-      kind: "priority";
-      priorityId:
-        | "climate_heat"
-        | "climate_cold"
-        | "climate_precipitation"
-        | "climate_snow"
-        | "climate_seasonality"
-        | "commute_time";
-    }
-  | {
-      kind: "assumption";
-      inputPath:
-        | "finances.origin.takeHomeIncome.monthlyCents"
-        | "finances.origin.grossIncome.monthlyCents"
-        | "finances.origin.housingCost.monthlyCents"
-        | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.takeHomeIncome.monthlyCents"
-        | "finances.destination.grossIncome.monthlyCents"
-        | "finances.destination.housingCost.monthlyCents"
-        | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.retainedPropertyNet.monthlyCents";
-    };
-
-export type EvaluationResultDecisionProfileFindingsCaveatsItem = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  code: string;
-  subject: EvaluationResultDecisionProfileFindingsCaveatsItemSubject;
-  material: boolean;
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileFindingsAssumptionsItemSubject =
-  | {
-      kind: "financial";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      metricId: string;
-    }
-  | {
-      kind: "priority";
-      priorityId:
-        | "climate_heat"
-        | "climate_cold"
-        | "climate_precipitation"
-        | "climate_snow"
-        | "climate_seasonality"
-        | "commute_time";
-    }
-  | {
-      kind: "assumption";
-      inputPath:
-        | "finances.origin.takeHomeIncome.monthlyCents"
-        | "finances.origin.grossIncome.monthlyCents"
-        | "finances.origin.housingCost.monthlyCents"
-        | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.takeHomeIncome.monthlyCents"
-        | "finances.destination.grossIncome.monthlyCents"
-        | "finances.destination.housingCost.monthlyCents"
-        | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.retainedPropertyNet.monthlyCents";
-    };
-
-export type EvaluationResultDecisionProfileFindingsAssumptionsItem = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  code: string;
-  subject: EvaluationResultDecisionProfileFindingsAssumptionsItemSubject;
-  material: boolean;
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileFindingsOmittedPrioritiesItem =
-  (typeof EvaluationResultDecisionProfileFindingsOmittedPrioritiesItem)[keyof typeof EvaluationResultDecisionProfileFindingsOmittedPrioritiesItem];
-
-export const EvaluationResultDecisionProfileFindingsOmittedPrioritiesItem = {
-  climate_heat: "climate_heat",
-  climate_cold: "climate_cold",
-  climate_precipitation: "climate_precipitation",
-  climate_snow: "climate_snow",
-  climate_seasonality: "climate_seasonality",
-  commute_time: "commute_time",
-} as const;
-
-export type EvaluationResultDecisionProfileFindings = {
-  drivers: EvaluationResultDecisionProfileFindingsDriversItem[];
-  tradeoffs: EvaluationResultDecisionProfileFindingsTradeoffsItem[];
-  blockers: EvaluationResultDecisionProfileFindingsBlockersItem[];
-  caveats: EvaluationResultDecisionProfileFindingsCaveatsItem[];
-  assumptions: EvaluationResultDecisionProfileFindingsAssumptionsItem[];
-  omittedPriorities: EvaluationResultDecisionProfileFindingsOmittedPrioritiesItem[];
-};
-
-export type EvaluationResultDecisionProfileNextStepsItem = {
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  id: string;
-  /**
-   * @minLength 1
-   * @maxLength 160
-   * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-   */
-  code: string;
-  /** @minItems 1 */
-  evidenceRefs: string[];
-};
-
-export type EvaluationResultDecisionProfileEvidenceItem =
-  | {
-      kind: "benchmark_metric";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      id: string;
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      metricId: string;
-      /**
-       * @minLength 1
-       * @maxLength 500
-       */
-      definition: string;
-      priorityId:
-        | "climate_heat"
-        | "climate_cold"
-        | "climate_precipitation"
-        | "climate_snow"
-        | "climate_seasonality"
-        | "commute_time";
-      unit:
-        | "basis_points"
-        | "count"
-        | "days"
-        | "degrees_fahrenheit"
-        | "index"
-        | "inches"
-        | "minutes"
-        | "percent"
-        | "usd_cents";
-      /** @nullable */
-      originValue: number | null;
-      /** @nullable */
-      destinationValue: number | null;
-      /** @nullable */
-      deltaValue: number | null;
-      source: {
-        /**
-         * @minLength 1
-         * @maxLength 160
-         */
-        dataset: string;
-        /**
-         * @minLength 1
-         * @maxLength 160
-         */
-        publisher: string;
-        sourceUrl: string;
+    destinationMetroSlug: string;
+    finances: {
+      origin: {
+        takeHomeIncome: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        };
         /** @nullable */
-        termsUrl: string | null;
+        grossIncome: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        } | null;
+        housingCost: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        };
+        recurringExpensesExcludingHousing: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        };
+      };
+      destination: {
+        takeHomeIncome: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        };
+        /** @nullable */
+        grossIncome: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        } | null;
+        housingCost: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        };
+        recurringExpensesExcludingHousing: {
+          /**
+           * A non-negative monthly amount in integer US-dollar cents.
+           * @minimum 0
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A non-negative monthly amount in integer US-dollar cents.
+             * @minimum 0
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        };
+        retainedPropertyNet: {
+          /**
+           * A signed monthly amount in integer US-dollar cents.
+           * @minimum -10000000000
+           * @maximum 10000000000
+           */
+          monthlyCents: number;
+          basis: "confirmed" | "user_estimate";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * A signed monthly amount in integer US-dollar cents.
+             * @minimum -10000000000
+             * @maximum 10000000000
+             */
+            min: number;
+            /**
+             * A signed monthly amount in integer US-dollar cents.
+             * @minimum -10000000000
+             * @maximum 10000000000
+             */
+            max: number;
+          } | null;
+        };
+      };
+    };
+    /** @maxItems 6 */
+    priorities: {
+      priorityId:
+        | "climate_heat"
+        | "climate_cold"
+        | "climate_precipitation"
+        | "climate_snow"
+        | "climate_seasonality"
+        | "commute_time";
+      preferredDirection: "lower" | "higher";
+      weight: 0 | 1 | 2 | 3 | 4 | 5;
+    }[];
+  };
+  benchmarkComparison: {
+    snapshot: {
+      /**
+       * @minLength 1
+       * @maxLength 160
+       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+       */
+      id: string;
+      /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+      version: string;
+      /** @pattern ^[a-f0-9]{64}$ */
+      sha256: string;
+      admissionStatus: "research_only" | "user_facing";
+      rawSnapshot: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        /** @pattern ^[a-f0-9]{64}$ */
+        sha256: string;
+      };
+      /** @minItems 1 */
+      sourceArtifacts: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        sourceUrl: string;
+        /** @pattern ^[a-f0-9]{64}$ */
+        sha256: string;
+      }[];
+      derivation: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+        version: string;
       };
       /**
        * @minLength 1
        * @maxLength 80
        */
-      observationPeriod: string;
-      /** @pattern ^\d{4}-\d{2}-\d{2}$ */
-      releasedOn: string;
+      delineationVersion: string;
       /** @pattern ^\d{4}-\d{2}-\d{2}$ */
       verifiedOn: string;
-      geographies: {
-        origin: {
-          kind: "cbsa" | "county" | "place" | "state" | "station" | "national";
-          /**
-           * @minLength 1
-           * @maxLength 40
-           */
-          code: string;
-          /**
-           * @minLength 1
-           * @maxLength 160
-           */
-          label: string;
-          matchQuality: "exact" | "mapped_proxy" | "mismatch";
-        };
-        destination: {
-          kind: "cbsa" | "county" | "place" | "state" | "station" | "national";
-          /**
-           * @minLength 1
-           * @maxLength 40
-           */
-          code: string;
-          /**
-           * @minLength 1
-           * @maxLength 160
-           */
-          label: string;
-          matchQuality: "exact" | "mapped_proxy" | "mismatch";
-        };
+    };
+    origin: {
+      /**
+       * @minLength 1
+       * @maxLength 120
+       * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+       */
+      slug: string;
+      /** @pattern ^\d{5}$ */
+      cbsaCode: string;
+      /**
+       * @minLength 1
+       * @maxLength 160
+       */
+      label: string;
+      selectedPlace: {
+        /**
+         * @minLength 1
+         * @maxLength 120
+         */
+        city: string;
+        /** @pattern ^[A-Z]{2}$ */
+        stateCode: string;
       };
+      selectedPlaceMapping: {
+        method: "official_cbsa_title_match" | "synthetic_fixture";
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        sourceArtifactId: string;
+        sourceUrl: string;
+        /** @pattern ^[a-f0-9]{64}$ */
+        sourceArtifactSha256: string;
+        /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+        verifiedOn: string;
+      };
+    };
+    destination: {
+      /**
+       * @minLength 1
+       * @maxLength 120
+       * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+       */
+      slug: string;
+      /** @pattern ^\d{5}$ */
+      cbsaCode: string;
+      /**
+       * @minLength 1
+       * @maxLength 160
+       */
+      label: string;
+      selectedPlace: {
+        /**
+         * @minLength 1
+         * @maxLength 120
+         */
+        city: string;
+        /** @pattern ^[A-Z]{2}$ */
+        stateCode: string;
+      };
+      selectedPlaceMapping: {
+        method: "official_cbsa_title_match" | "synthetic_fixture";
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        sourceArtifactId: string;
+        sourceUrl: string;
+        /** @pattern ^[a-f0-9]{64}$ */
+        sourceArtifactSha256: string;
+        /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+        verifiedOn: string;
+      };
+    };
+    /** @maxItems 6 */
+    priorities: {
+      priorityId:
+        | "climate_heat"
+        | "climate_cold"
+        | "climate_precipitation"
+        | "climate_snow"
+        | "climate_seasonality"
+        | "commute_time";
+      /**
+       * @minimum 0
+       * @maximum 10000
+       * @nullable
+       */
+      originUtilityBps: number | null;
+      /**
+       * @minimum 0
+       * @maximum 10000
+       * @nullable
+       */
+      destinationUtilityBps: number | null;
+      /**
+       * @minimum 1
+       * @maximum 10000
+       */
+      materialityThresholdBps: number;
+      /**
+       * @minLength 1
+       * @maxLength 160
+       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+       */
+      transformationId: string;
       /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-      snapshotVersion: string;
-      /** @pattern ^[a-f0-9]{64}$ */
-      snapshotSha256: string;
-      transformation: {
+      transformationVersion: string;
+      evidence: {
+        kind: "benchmark_metric";
         /**
          * @minLength 1
          * @maxLength 160
          * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
          */
         id: string;
-        /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
-        version: string;
-        preferredDirection: "lower" | "higher";
-        outputs: {
-          /**
-           * @minimum 0
-           * @maximum 10000
-           * @nullable
-           */
-          originUtilityBps: number | null;
-          /**
-           * @minimum 0
-           * @maximum 10000
-           * @nullable
-           */
-          destinationUtilityBps: number | null;
-          /**
-           * @minimum 0
-           * @maximum 10000
-           * @nullable
-           */
-          originUncertaintyBps: number | null;
-          /**
-           * @minimum 0
-           * @maximum 10000
-           * @nullable
-           */
-          destinationUncertaintyBps: number | null;
-        };
-      };
-      materialityPolicy: {
         /**
-         * @minimum 1
-         * @maximum 10000
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
          */
-        utilityDeltaBps: number;
+        metricId: string;
         /**
          * @minLength 1
          * @maxLength 500
          */
-        rationale: string;
-      };
-      quality: {
-        freshness: "current" | "stale" | "unknown";
-        missingness: "complete" | "partial" | "unavailable";
+        definition: string;
+        priorityId:
+          | "climate_heat"
+          | "climate_cold"
+          | "climate_precipitation"
+          | "climate_snow"
+          | "climate_seasonality"
+          | "commute_time";
+        unit:
+          | "basis_points"
+          | "count"
+          | "days"
+          | "degrees_fahrenheit"
+          | "index"
+          | "inches"
+          | "minutes"
+          | "percent"
+          | "usd_cents";
         /** @nullable */
-        marginOfError: {
+        originValue: number | null;
+        /** @nullable */
+        destinationValue: number | null;
+        /** @nullable */
+        deltaValue: number | null;
+        source: {
           /**
-           * @minimum 0
-           * @nullable
+           * @minLength 1
+           * @maxLength 160
            */
-          origin: number | null;
+          dataset: string;
           /**
-           * @minimum 0
-           * @nullable
+           * @minLength 1
+           * @maxLength 160
            */
-          destination: number | null;
-        } | null;
+          publisher: string;
+          sourceUrl: string;
+          /** @nullable */
+          termsUrl: string | null;
+        };
         /**
-         * @minimum 0
-         * @maximum 10000
-         * @nullable
+         * @minLength 1
+         * @maxLength 80
          */
-        coverageBps: number | null;
-        grade: {
-          value: "high" | "moderate" | "limited";
-          policyVersion: "1.0.0";
+        observationPeriod: string;
+        /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+        releasedOn: string;
+        /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+        verifiedOn: string;
+        geographies: {
+          origin: {
+            kind:
+              | "cbsa"
+              | "county"
+              | "place"
+              | "state"
+              | "station"
+              | "national";
+            /**
+             * @minLength 1
+             * @maxLength 40
+             */
+            code: string;
+            /**
+             * @minLength 1
+             * @maxLength 160
+             */
+            label: string;
+            matchQuality: "exact" | "mapped_proxy" | "mismatch";
+          };
+          destination: {
+            kind:
+              | "cbsa"
+              | "county"
+              | "place"
+              | "state"
+              | "station"
+              | "national";
+            /**
+             * @minLength 1
+             * @maxLength 40
+             */
+            code: string;
+            /**
+             * @minLength 1
+             * @maxLength 160
+             */
+            label: string;
+            matchQuality: "exact" | "mapped_proxy" | "mismatch";
+          };
+        };
+        /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+        snapshotVersion: string;
+        /** @pattern ^[a-f0-9]{64}$ */
+        snapshotSha256: string;
+        transformation: {
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+          version: string;
+          preferredDirection: "lower" | "higher";
+          outputs: {
+            /**
+             * @minimum 0
+             * @maximum 10000
+             * @nullable
+             */
+            originUtilityBps: number | null;
+            /**
+             * @minimum 0
+             * @maximum 10000
+             * @nullable
+             */
+            destinationUtilityBps: number | null;
+            /**
+             * @minimum 0
+             * @maximum 10000
+             * @nullable
+             */
+            originUncertaintyBps: number | null;
+            /**
+             * @minimum 0
+             * @maximum 10000
+             * @nullable
+             */
+            destinationUncertaintyBps: number | null;
+          };
+        };
+        materialityPolicy: {
+          /**
+           * @minimum 1
+           * @maximum 10000
+           */
+          utilityDeltaBps: number;
+          /**
+           * @minLength 1
+           * @maxLength 500
+           */
+          rationale: string;
+        };
+        quality: {
+          freshness: "current" | "stale" | "unknown";
+          missingness: "complete" | "partial" | "unavailable";
+          /** @nullable */
+          marginOfError: {
+            /**
+             * @minimum 0
+             * @nullable
+             */
+            origin: number | null;
+            /**
+             * @minimum 0
+             * @nullable
+             */
+            destination: number | null;
+          } | null;
+          /**
+           * @minimum 0
+           * @maximum 10000
+           * @nullable
+           */
+          coverageBps: number | null;
+          grade: {
+            value: "high" | "moderate" | "limited";
+            policyVersion: "1.0.0";
+          };
         };
       };
-    }
-  | {
-      kind: "scenario_input";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      id: string;
-      inputPath:
-        | "finances.origin.takeHomeIncome.monthlyCents"
-        | "finances.origin.grossIncome.monthlyCents"
-        | "finances.origin.housingCost.monthlyCents"
-        | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.takeHomeIncome.monthlyCents"
-        | "finances.destination.grossIncome.monthlyCents"
-        | "finances.destination.housingCost.monthlyCents"
-        | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
-        | "finances.destination.retainedPropertyNet.monthlyCents";
-      unit: "usd_cents";
-      /**
-       * @minimum -9007199254740991
-       * @maximum 9007199254740991
-       */
-      value: number;
-      assumptionBasis: "confirmed" | "user_estimate" | "assumed_same_as_origin";
-      /** @nullable */
-      plausibleRangeCents: {
+    }[];
+  };
+  decisionProfile: {
+    schemaVersion: "1.0.0";
+    /** @pattern ^[a-f0-9]{64}$ */
+    inputFingerprintSha256: string;
+    scenario: {
+      origin: {
         /**
-         * @minimum -9007199254740991
-         * @maximum 9007199254740991
+         * @minLength 1
+         * @maxLength 120
+         * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
          */
-        min: number;
+        slug: string;
+        /** @pattern ^\d{5}$ */
+        cbsaCode: string;
         /**
-         * @minimum -9007199254740991
-         * @maximum 9007199254740991
+         * @minLength 1
+         * @maxLength 160
          */
-        max: number;
-      } | null;
-    }
-  | {
-      kind: "derived";
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      id: string;
-      /**
-       * @minLength 1
-       * @maxLength 160
-       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
-       */
-      metricId: string;
-      unit:
-        | "basis_points"
-        | "count"
-        | "days"
-        | "degrees_fahrenheit"
-        | "index"
-        | "inches"
-        | "minutes"
-        | "percent"
-        | "usd_cents";
-      value: number;
-      formula: {
+        label: string;
+        selectedPlace: {
+          /**
+           * @minLength 1
+           * @maxLength 120
+           */
+          city: string;
+          /** @pattern ^[A-Z]{2}$ */
+          stateCode: string;
+        };
+        selectedPlaceMapping: {
+          method: "official_cbsa_title_match" | "synthetic_fixture";
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          sourceArtifactId: string;
+          sourceUrl: string;
+          /** @pattern ^[a-f0-9]{64}$ */
+          sourceArtifactSha256: string;
+          /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+          verifiedOn: string;
+        };
+      };
+      destination: {
+        /**
+         * @minLength 1
+         * @maxLength 120
+         * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+         */
+        slug: string;
+        /** @pattern ^\d{5}$ */
+        cbsaCode: string;
+        /**
+         * @minLength 1
+         * @maxLength 160
+         */
+        label: string;
+        selectedPlace: {
+          /**
+           * @minLength 1
+           * @maxLength 120
+           */
+          city: string;
+          /** @pattern ^[A-Z]{2}$ */
+          stateCode: string;
+        };
+        selectedPlaceMapping: {
+          method: "official_cbsa_title_match" | "synthetic_fixture";
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          sourceArtifactId: string;
+          sourceUrl: string;
+          /** @pattern ^[a-f0-9]{64}$ */
+          sourceArtifactSha256: string;
+          /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+          verifiedOn: string;
+        };
+      };
+      benchmarkSnapshot: {
         /**
          * @minLength 1
          * @maxLength 160
@@ -2467,35 +1121,916 @@ export type EvaluationResultDecisionProfileEvidenceItem =
         id: string;
         /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
         version: string;
+        /** @pattern ^[a-f0-9]{64}$ */
+        sha256: string;
+        admissionStatus: "research_only" | "user_facing";
+        rawSnapshot: {
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          /** @pattern ^[a-f0-9]{64}$ */
+          sha256: string;
+        };
+        /** @minItems 1 */
+        sourceArtifacts: {
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          sourceUrl: string;
+          /** @pattern ^[a-f0-9]{64}$ */
+          sha256: string;
+        }[];
+        derivation: {
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+          version: string;
+        };
+        /**
+         * @minLength 1
+         * @maxLength 80
+         */
+        delineationVersion: string;
+        /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+        verifiedOn: string;
       };
-      /** @minItems 1 */
-      inputRefs: string[];
+      decisionRuleVersion: "1.0.0";
     };
-
-export type EvaluationResultDecisionProfile = {
-  schemaVersion: EvaluationResultDecisionProfileSchemaVersion;
-  /** @pattern ^[a-f0-9]{64}$ */
-  inputFingerprintSha256: string;
-  scenario: EvaluationResultDecisionProfileScenario;
-  financialPosition: EvaluationResultDecisionProfileFinancialPosition;
-  priorityChanges: EvaluationResultDecisionProfilePriorityChangesItem[];
-  condition: EvaluationResultDecisionProfileCondition;
-  confidence: EvaluationResultDecisionProfileConfidence;
-  stability: EvaluationResultDecisionProfileStability;
-  breakpoints: EvaluationResultDecisionProfileBreakpointsItem[];
-  findings: EvaluationResultDecisionProfileFindings;
-  /** @minItems 1 */
-  nextSteps: EvaluationResultDecisionProfileNextStepsItem[];
-  evidence: EvaluationResultDecisionProfileEvidenceItem[];
+    financialPosition: {
+      origin: {
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         */
+        monthlyTakeHomeIncomeCents: number;
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         * @exclusiveMinimum 0
+         * @nullable
+         */
+        monthlyGrossIncomeCents: number | null;
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         */
+        monthlyHousingCostCents: number;
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         */
+        monthlyRecurringExpensesCents: number;
+        /**
+         * @minimum -9007199254740991
+         * @maximum 9007199254740991
+         */
+        monthlyRetainedPropertyNetCents: number;
+        /**
+         * @minimum -9007199254740991
+         * @maximum 9007199254740991
+         */
+        monthlyCushionCents: number;
+        /**
+         * @minimum 0
+         * @maximum 9007199254740991
+         * @nullable
+         */
+        housingBurdenBps: number | null;
+        assumptionBasis: {
+          takeHomeIncome:
+            | "confirmed"
+            | "user_estimate"
+            | "assumed_same_as_origin";
+          /** @nullable */
+          grossIncome:
+            | "confirmed"
+            | "user_estimate"
+            | "assumed_same_as_origin"
+            | null;
+          housingCost: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          recurringExpenses:
+            | "confirmed"
+            | "user_estimate"
+            | "assumed_same_as_origin";
+          retainedPropertyNet: "confirmed" | "user_estimate";
+        };
+      };
+      destination: {
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         */
+        monthlyTakeHomeIncomeCents: number;
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         * @exclusiveMinimum 0
+         * @nullable
+         */
+        monthlyGrossIncomeCents: number | null;
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         */
+        monthlyHousingCostCents: number;
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         */
+        monthlyRecurringExpensesCents: number;
+        /**
+         * @minimum -9007199254740991
+         * @maximum 9007199254740991
+         */
+        monthlyRetainedPropertyNetCents: number;
+        /**
+         * @minimum -9007199254740991
+         * @maximum 9007199254740991
+         */
+        monthlyCushionCents: number;
+        /**
+         * @minimum 0
+         * @maximum 9007199254740991
+         * @nullable
+         */
+        housingBurdenBps: number | null;
+        assumptionBasis: {
+          takeHomeIncome:
+            | "confirmed"
+            | "user_estimate"
+            | "assumed_same_as_origin";
+          /** @nullable */
+          grossIncome:
+            | "confirmed"
+            | "user_estimate"
+            | "assumed_same_as_origin"
+            | null;
+          housingCost: "confirmed" | "user_estimate" | "assumed_same_as_origin";
+          recurringExpenses:
+            | "confirmed"
+            | "user_estimate"
+            | "assumed_same_as_origin";
+          retainedPropertyNet: "confirmed" | "user_estimate";
+        };
+      };
+      change: {
+        /**
+         * @minimum -9007199254740991
+         * @maximum 9007199254740991
+         */
+        monthlyCushionDeltaCents: number;
+        /**
+         * @minimum -9007199254740991
+         * @maximum 9007199254740991
+         * @nullable
+         */
+        cushionDeltaBpsOfOriginTakeHome: number | null;
+        /**
+         * @minimum -9007199254740991
+         * @maximum 9007199254740991
+         * @nullable
+         */
+        housingBurdenDeltaBps: number | null;
+        /**
+         * A non-negative monthly amount in integer US-dollar cents.
+         * @minimum 0
+         * @maximum 10000000000
+         */
+        materialityThresholdCents: number;
+        classification: "improves" | "similar" | "worsens";
+      };
+      blockerCodes: (
+        | "negative_target_cushion"
+        | "target_housing_burden_at_or_above_50_percent"
+      )[];
+      riskCodes: (
+        | "target_income_not_confirmed"
+        | "target_gross_income_unknown"
+        | "target_gross_income_not_confirmed"
+        | "target_housing_not_confirmed"
+        | "target_expenses_not_confirmed"
+        | "retained_property_net_not_confirmed"
+      )[];
+    };
+    priorityChanges: {
+      /**
+       * @minLength 1
+       * @maxLength 160
+       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+       */
+      id: string;
+      priorityId:
+        | "climate_heat"
+        | "climate_cold"
+        | "climate_precipitation"
+        | "climate_snow"
+        | "climate_seasonality"
+        | "commute_time";
+      weight: 0 | 1 | 2 | 3 | 4 | 5;
+      preferredDirection: "lower" | "higher";
+      availability: "available" | "unavailable";
+      /**
+       * @minimum 0
+       * @maximum 10000
+       * @nullable
+       */
+      originUtilityBps: number | null;
+      /**
+       * @minimum 0
+       * @maximum 10000
+       * @nullable
+       */
+      destinationUtilityBps: number | null;
+      /**
+       * @minimum -9007199254740991
+       * @maximum 9007199254740991
+       * @nullable
+       */
+      utilityDeltaBps: number | null;
+      /**
+       * @minimum -9007199254740991
+       * @maximum 9007199254740991
+       * @nullable
+       */
+      weightedContribution: number | null;
+      /**
+       * @minimum 1
+       * @maximum 10000
+       * @nullable
+       */
+      materialityThresholdBps: number | null;
+      classification: "improves" | "similar" | "worsens" | "unavailable";
+      material: boolean;
+      /**
+       * @minLength 1
+       * @maxLength 160
+       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+       */
+      transformationId: string;
+      /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+      transformationVersion: string;
+      evidenceRefs: string[];
+    }[];
+    condition: {
+      value:
+        | "worth_a_closer_look"
+        | "promising_if"
+        | "meaningful_tradeoff"
+        | "high_financial_risk_under_assumptions";
+      /**
+       * @minLength 1
+       * @maxLength 160
+       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+       */
+      ruleId: string;
+      /** @minItems 1 */
+      evidenceRefs: string[];
+    };
+    confidence: {
+      level: "high" | "moderate" | "limited";
+      /** @minItems 1 */
+      ruleIds: string[];
+      evidenceRefs: string[];
+      missingPriorityIds: (
+        | "climate_heat"
+        | "climate_cold"
+        | "climate_precipitation"
+        | "climate_snow"
+        | "climate_seasonality"
+        | "commute_time"
+      )[];
+    };
+    stability: {
+      level: "not_evaluated" | "stable" | "assumption_sensitive";
+      breakpointIds: string[];
+      /** @minItems 1 */
+      reasonCodes: string[];
+    };
+    breakpoints: (
+      | {
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          kind: "money";
+          inputPath:
+            | "finances.origin.takeHomeIncome.monthlyCents"
+            | "finances.origin.grossIncome.monthlyCents"
+            | "finances.origin.housingCost.monthlyCents"
+            | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
+            | "finances.destination.takeHomeIncome.monthlyCents"
+            | "finances.destination.grossIncome.monthlyCents"
+            | "finances.destination.housingCost.monthlyCents"
+            | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+            | "finances.destination.retainedPropertyNet.monthlyCents";
+          operator: "at_or_below" | "at_or_above";
+          /**
+           * @minimum -9007199254740991
+           * @maximum 9007199254740991
+           */
+          thresholdCents: number;
+          withinPlausibleRange: boolean;
+          changesConditionTo:
+            | "worth_a_closer_look"
+            | "meaningful_tradeoff"
+            | "high_financial_risk_under_assumptions";
+          /** @minItems 1 */
+          evidenceRefs: string[];
+        }
+      | {
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          kind: "priority_weight";
+          priorityId:
+            | "climate_heat"
+            | "climate_cold"
+            | "climate_precipitation"
+            | "climate_snow"
+            | "climate_seasonality"
+            | "commute_time";
+          operator: "at_or_below" | "at_or_above";
+          thresholdWeight: 0 | 1 | 2 | 3 | 4 | 5;
+          withinPlausibleRange: boolean;
+          changesConditionTo:
+            | "worth_a_closer_look"
+            | "meaningful_tradeoff"
+            | "high_financial_risk_under_assumptions";
+          /** @minItems 1 */
+          evidenceRefs: string[];
+        }
+    )[];
+    findings: {
+      drivers: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        code: string;
+        subject:
+          | {
+              kind: "financial";
+              /**
+               * @minLength 1
+               * @maxLength 160
+               * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+               */
+              metricId: string;
+            }
+          | {
+              kind: "priority";
+              priorityId:
+                | "climate_heat"
+                | "climate_cold"
+                | "climate_precipitation"
+                | "climate_snow"
+                | "climate_seasonality"
+                | "commute_time";
+            }
+          | {
+              kind: "assumption";
+              inputPath:
+                | "finances.origin.takeHomeIncome.monthlyCents"
+                | "finances.origin.grossIncome.monthlyCents"
+                | "finances.origin.housingCost.monthlyCents"
+                | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.takeHomeIncome.monthlyCents"
+                | "finances.destination.grossIncome.monthlyCents"
+                | "finances.destination.housingCost.monthlyCents"
+                | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.retainedPropertyNet.monthlyCents";
+            };
+        material: boolean;
+        evidenceRefs: string[];
+      }[];
+      tradeoffs: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        code: string;
+        subject:
+          | {
+              kind: "financial";
+              /**
+               * @minLength 1
+               * @maxLength 160
+               * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+               */
+              metricId: string;
+            }
+          | {
+              kind: "priority";
+              priorityId:
+                | "climate_heat"
+                | "climate_cold"
+                | "climate_precipitation"
+                | "climate_snow"
+                | "climate_seasonality"
+                | "commute_time";
+            }
+          | {
+              kind: "assumption";
+              inputPath:
+                | "finances.origin.takeHomeIncome.monthlyCents"
+                | "finances.origin.grossIncome.monthlyCents"
+                | "finances.origin.housingCost.monthlyCents"
+                | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.takeHomeIncome.monthlyCents"
+                | "finances.destination.grossIncome.monthlyCents"
+                | "finances.destination.housingCost.monthlyCents"
+                | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.retainedPropertyNet.monthlyCents";
+            };
+        material: boolean;
+        evidenceRefs: string[];
+      }[];
+      blockers: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        code: string;
+        subject:
+          | {
+              kind: "financial";
+              /**
+               * @minLength 1
+               * @maxLength 160
+               * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+               */
+              metricId: string;
+            }
+          | {
+              kind: "priority";
+              priorityId:
+                | "climate_heat"
+                | "climate_cold"
+                | "climate_precipitation"
+                | "climate_snow"
+                | "climate_seasonality"
+                | "commute_time";
+            }
+          | {
+              kind: "assumption";
+              inputPath:
+                | "finances.origin.takeHomeIncome.monthlyCents"
+                | "finances.origin.grossIncome.monthlyCents"
+                | "finances.origin.housingCost.monthlyCents"
+                | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.takeHomeIncome.monthlyCents"
+                | "finances.destination.grossIncome.monthlyCents"
+                | "finances.destination.housingCost.monthlyCents"
+                | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.retainedPropertyNet.monthlyCents";
+            };
+        material: boolean;
+        evidenceRefs: string[];
+      }[];
+      caveats: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        code: string;
+        subject:
+          | {
+              kind: "financial";
+              /**
+               * @minLength 1
+               * @maxLength 160
+               * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+               */
+              metricId: string;
+            }
+          | {
+              kind: "priority";
+              priorityId:
+                | "climate_heat"
+                | "climate_cold"
+                | "climate_precipitation"
+                | "climate_snow"
+                | "climate_seasonality"
+                | "commute_time";
+            }
+          | {
+              kind: "assumption";
+              inputPath:
+                | "finances.origin.takeHomeIncome.monthlyCents"
+                | "finances.origin.grossIncome.monthlyCents"
+                | "finances.origin.housingCost.monthlyCents"
+                | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.takeHomeIncome.monthlyCents"
+                | "finances.destination.grossIncome.monthlyCents"
+                | "finances.destination.housingCost.monthlyCents"
+                | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.retainedPropertyNet.monthlyCents";
+            };
+        material: boolean;
+        evidenceRefs: string[];
+      }[];
+      assumptions: {
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        id: string;
+        /**
+         * @minLength 1
+         * @maxLength 160
+         * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+         */
+        code: string;
+        subject:
+          | {
+              kind: "financial";
+              /**
+               * @minLength 1
+               * @maxLength 160
+               * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+               */
+              metricId: string;
+            }
+          | {
+              kind: "priority";
+              priorityId:
+                | "climate_heat"
+                | "climate_cold"
+                | "climate_precipitation"
+                | "climate_snow"
+                | "climate_seasonality"
+                | "commute_time";
+            }
+          | {
+              kind: "assumption";
+              inputPath:
+                | "finances.origin.takeHomeIncome.monthlyCents"
+                | "finances.origin.grossIncome.monthlyCents"
+                | "finances.origin.housingCost.monthlyCents"
+                | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.takeHomeIncome.monthlyCents"
+                | "finances.destination.grossIncome.monthlyCents"
+                | "finances.destination.housingCost.monthlyCents"
+                | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+                | "finances.destination.retainedPropertyNet.monthlyCents";
+            };
+        material: boolean;
+        evidenceRefs: string[];
+      }[];
+      omittedPriorities: (
+        | "climate_heat"
+        | "climate_cold"
+        | "climate_precipitation"
+        | "climate_snow"
+        | "climate_seasonality"
+        | "commute_time"
+      )[];
+    };
+    /** @minItems 1 */
+    nextSteps: {
+      /**
+       * @minLength 1
+       * @maxLength 160
+       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+       */
+      id: string;
+      /**
+       * @minLength 1
+       * @maxLength 160
+       * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+       */
+      code: string;
+      /** @minItems 1 */
+      evidenceRefs: string[];
+    }[];
+    evidence: (
+      | {
+          kind: "benchmark_metric";
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          metricId: string;
+          /**
+           * @minLength 1
+           * @maxLength 500
+           */
+          definition: string;
+          priorityId:
+            | "climate_heat"
+            | "climate_cold"
+            | "climate_precipitation"
+            | "climate_snow"
+            | "climate_seasonality"
+            | "commute_time";
+          unit:
+            | "basis_points"
+            | "count"
+            | "days"
+            | "degrees_fahrenheit"
+            | "index"
+            | "inches"
+            | "minutes"
+            | "percent"
+            | "usd_cents";
+          /** @nullable */
+          originValue: number | null;
+          /** @nullable */
+          destinationValue: number | null;
+          /** @nullable */
+          deltaValue: number | null;
+          source: {
+            /**
+             * @minLength 1
+             * @maxLength 160
+             */
+            dataset: string;
+            /**
+             * @minLength 1
+             * @maxLength 160
+             */
+            publisher: string;
+            sourceUrl: string;
+            /** @nullable */
+            termsUrl: string | null;
+          };
+          /**
+           * @minLength 1
+           * @maxLength 80
+           */
+          observationPeriod: string;
+          /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+          releasedOn: string;
+          /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+          verifiedOn: string;
+          geographies: {
+            origin: {
+              kind:
+                | "cbsa"
+                | "county"
+                | "place"
+                | "state"
+                | "station"
+                | "national";
+              /**
+               * @minLength 1
+               * @maxLength 40
+               */
+              code: string;
+              /**
+               * @minLength 1
+               * @maxLength 160
+               */
+              label: string;
+              matchQuality: "exact" | "mapped_proxy" | "mismatch";
+            };
+            destination: {
+              kind:
+                | "cbsa"
+                | "county"
+                | "place"
+                | "state"
+                | "station"
+                | "national";
+              /**
+               * @minLength 1
+               * @maxLength 40
+               */
+              code: string;
+              /**
+               * @minLength 1
+               * @maxLength 160
+               */
+              label: string;
+              matchQuality: "exact" | "mapped_proxy" | "mismatch";
+            };
+          };
+          /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+          snapshotVersion: string;
+          /** @pattern ^[a-f0-9]{64}$ */
+          snapshotSha256: string;
+          transformation: {
+            /**
+             * @minLength 1
+             * @maxLength 160
+             * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+             */
+            id: string;
+            /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+            version: string;
+            preferredDirection: "lower" | "higher";
+            outputs: {
+              /**
+               * @minimum 0
+               * @maximum 10000
+               * @nullable
+               */
+              originUtilityBps: number | null;
+              /**
+               * @minimum 0
+               * @maximum 10000
+               * @nullable
+               */
+              destinationUtilityBps: number | null;
+              /**
+               * @minimum 0
+               * @maximum 10000
+               * @nullable
+               */
+              originUncertaintyBps: number | null;
+              /**
+               * @minimum 0
+               * @maximum 10000
+               * @nullable
+               */
+              destinationUncertaintyBps: number | null;
+            };
+          };
+          materialityPolicy: {
+            /**
+             * @minimum 1
+             * @maximum 10000
+             */
+            utilityDeltaBps: number;
+            /**
+             * @minLength 1
+             * @maxLength 500
+             */
+            rationale: string;
+          };
+          quality: {
+            freshness: "current" | "stale" | "unknown";
+            missingness: "complete" | "partial" | "unavailable";
+            /** @nullable */
+            marginOfError: {
+              /**
+               * @minimum 0
+               * @nullable
+               */
+              origin: number | null;
+              /**
+               * @minimum 0
+               * @nullable
+               */
+              destination: number | null;
+            } | null;
+            /**
+             * @minimum 0
+             * @maximum 10000
+             * @nullable
+             */
+            coverageBps: number | null;
+            grade: {
+              value: "high" | "moderate" | "limited";
+              policyVersion: "1.0.0";
+            };
+          };
+        }
+      | {
+          kind: "scenario_input";
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          inputPath:
+            | "finances.origin.takeHomeIncome.monthlyCents"
+            | "finances.origin.grossIncome.monthlyCents"
+            | "finances.origin.housingCost.monthlyCents"
+            | "finances.origin.recurringExpensesExcludingHousing.monthlyCents"
+            | "finances.destination.takeHomeIncome.monthlyCents"
+            | "finances.destination.grossIncome.monthlyCents"
+            | "finances.destination.housingCost.monthlyCents"
+            | "finances.destination.recurringExpensesExcludingHousing.monthlyCents"
+            | "finances.destination.retainedPropertyNet.monthlyCents";
+          unit: "usd_cents";
+          /**
+           * @minimum -9007199254740991
+           * @maximum 9007199254740991
+           */
+          value: number;
+          assumptionBasis:
+            | "confirmed"
+            | "user_estimate"
+            | "assumed_same_as_origin";
+          /** @nullable */
+          plausibleRangeCents: {
+            /**
+             * @minimum -9007199254740991
+             * @maximum 9007199254740991
+             */
+            min: number;
+            /**
+             * @minimum -9007199254740991
+             * @maximum 9007199254740991
+             */
+            max: number;
+          } | null;
+        }
+      | {
+          kind: "derived";
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          id: string;
+          /**
+           * @minLength 1
+           * @maxLength 160
+           * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+           */
+          metricId: string;
+          unit:
+            | "basis_points"
+            | "count"
+            | "days"
+            | "degrees_fahrenheit"
+            | "index"
+            | "inches"
+            | "minutes"
+            | "percent"
+            | "usd_cents";
+          value: number;
+          formula: {
+            /**
+             * @minLength 1
+             * @maxLength 160
+             * @pattern ^[a-z0-9]+(?:[._:-][a-z0-9]+)*$
+             */
+            id: string;
+            /** @pattern ^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$ */
+            version: string;
+          };
+          /** @minItems 1 */
+          inputRefs: string[];
+        }
+    )[];
+  };
+} & {
+  releaseStatus: "user_facing";
+  [key: string]: unknown;
 };
-
-export interface EvaluationResult {
-  schemaVersion: EvaluationResultSchemaVersion;
-  resultMode: EvaluationResultResultMode;
-  scenarioInput: EvaluationResultScenarioInput;
-  benchmarkComparison: EvaluationResultBenchmarkComparison;
-  decisionProfile: EvaluationResultDecisionProfile;
-}
 
 export type HealthStatusStatus =
   (typeof HealthStatusStatus)[keyof typeof HealthStatusStatus];

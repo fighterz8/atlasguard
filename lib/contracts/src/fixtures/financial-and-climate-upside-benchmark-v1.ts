@@ -1,7 +1,7 @@
 import type { BenchmarkComparison, MetricEvidence } from "../benchmark";
 
 export const PHASE0_BENCHMARK_SNAPSHOT_SHA256 =
-  "76c4055687097dbbed9c1c8112180abd9e69fa10dd93131ff21f4e5fbb169f36";
+  "e20589118a673953a297467b76da8dcf6cf2d4d5f0329230510b3e3cbe78967b";
 
 const benchmarkEvidence = (
   values: Pick<
@@ -88,6 +88,24 @@ export const financialAndClimateUpsideBenchmark = {
     id: "fixture.phase0.2026-07-17",
     version: "1.0.0",
     sha256: PHASE0_BENCHMARK_SNAPSHOT_SHA256,
+    admissionStatus: "user_facing",
+    rawSnapshot: {
+      id: "fixture.phase0.raw",
+      sha256:
+        "31750ccceae09ee6fe5252e100876b1302e66c445506da765e3172042100d063",
+    },
+    sourceArtifacts: [
+      {
+        id: "fixture.phase0.source",
+        sourceUrl: "https://example.com/movewise/phase-0-benchmark",
+        sha256:
+          "31750ccceae09ee6fe5252e100876b1302e66c445506da765e3172042100d063",
+      },
+    ],
+    derivation: {
+      id: "fixture.phase0.derivation",
+      version: "1.0.0",
+    },
     delineationVersion: "fixture-2026",
     verifiedOn: "2026-07-17",
   },
@@ -99,6 +117,14 @@ export const financialAndClimateUpsideBenchmark = {
       city: "River City",
       stateCode: "RV",
     },
+    selectedPlaceMapping: {
+      method: "synthetic_fixture",
+      sourceArtifactId: "fixture.phase0.source",
+      sourceUrl: "https://example.com/movewise/phase-0-benchmark",
+      sourceArtifactSha256:
+        "31750ccceae09ee6fe5252e100876b1302e66c445506da765e3172042100d063",
+      verifiedOn: "2026-07-17",
+    },
   },
   destination: {
     slug: "fixture-pine",
@@ -107,6 +133,14 @@ export const financialAndClimateUpsideBenchmark = {
     selectedPlace: {
       city: "Pine City",
       stateCode: "PN",
+    },
+    selectedPlaceMapping: {
+      method: "synthetic_fixture",
+      sourceArtifactId: "fixture.phase0.source",
+      sourceUrl: "https://example.com/movewise/phase-0-benchmark",
+      sourceArtifactSha256:
+        "31750ccceae09ee6fe5252e100876b1302e66c445506da765e3172042100d063",
+      verifiedOn: "2026-07-17",
     },
   },
   priorities: [

@@ -31,6 +31,7 @@ import type {
   ScenarioInputEvidence,
   VerifiedBenchmarkComparison,
   VerifiedEvaluationResult,
+  VerifiedResearchEvaluationResult,
 } from "@workspace/contracts";
 
 type FinancialSide = "origin" | "destination";
@@ -118,6 +119,23 @@ export class MoveDecisionPreflightError extends Error {
     this.name = "MoveDecisionPreflightError";
     this.code = code;
     this.details = details;
+  }
+}
+
+export class BenchmarkAdmissionError extends Error {
+  readonly expectedStatus: "research_only" | "user_facing";
+  readonly actualStatus: "research_only" | "user_facing";
+
+  constructor(
+    expectedStatus: "research_only" | "user_facing",
+    actualStatus: "research_only" | "user_facing",
+  ) {
+    super(
+      `Benchmark admission status ${actualStatus} cannot be used for a ${expectedStatus} evaluation.`,
+    );
+    this.name = "BenchmarkAdmissionError";
+    this.expectedStatus = expectedStatus;
+    this.actualStatus = actualStatus;
   }
 }
 
@@ -648,7 +666,14 @@ const buildProfile = (
     scenario: {
       origin: benchmark.origin,
       destination: benchmark.destination,
-      benchmarkSnapshot: benchmark.snapshot,
+      benchmarkSnapshot: {
+        ...benchmark.snapshot,
+        rawSnapshot: { ...benchmark.snapshot.rawSnapshot },
+        sourceArtifacts: benchmark.snapshot.sourceArtifacts.map((artifact) => ({
+          ...artifact,
+        })),
+        derivation: { ...benchmark.snapshot.derivation },
+      },
       decisionRuleVersion: DECISION_RULE_VERSION,
     },
     financialPosition,
@@ -710,10 +735,17 @@ const buildProfile = (
  * assumptions and a checksum-verified benchmark snapshot. Every returned
  * result crosses the full semantic trust boundary before reaching callers.
  */
-export const evaluateMoveDecision = (
+const evaluateMoveDecisionWithStatus = (
   input: ScenarioInput,
   benchmark: VerifiedBenchmarkComparison,
-): VerifiedEvaluationResult => {
+  releaseStatus: "research_only" | "user_facing",
+): VerifiedEvaluationResult | VerifiedResearchEvaluationResult => {
+  if (benchmark.snapshot.admissionStatus !== releaseStatus) {
+    throw new BenchmarkAdmissionError(
+      releaseStatus,
+      benchmark.snapshot.admissionStatus,
+    );
+  }
   const scenario = ScenarioInputSchema.parse(input);
   assertBenchmarkMatchesScenario(scenario, benchmark);
   const decisionProfile = buildProfile(scenario, benchmark);
@@ -727,8 +759,29 @@ export const evaluateMoveDecision = (
   return verifyEvaluationResult({
     schemaVersion: DECISION_PROFILE_SCHEMA_VERSION,
     resultMode: "deterministic",
+    releaseStatus,
     scenarioInput: scenario,
     benchmarkComparison: canonicalBenchmark,
     decisionProfile,
   });
 };
+
+export const evaluateMoveDecision = (
+  input: ScenarioInput,
+  benchmark: VerifiedBenchmarkComparison,
+): VerifiedEvaluationResult =>
+  evaluateMoveDecisionWithStatus(
+    input,
+    benchmark,
+    "user_facing",
+  ) as VerifiedEvaluationResult;
+
+export const evaluateResearchMoveDecision = (
+  input: ScenarioInput,
+  benchmark: VerifiedBenchmarkComparison,
+): VerifiedResearchEvaluationResult =>
+  evaluateMoveDecisionWithStatus(
+    input,
+    benchmark,
+    "research_only",
+  ) as VerifiedResearchEvaluationResult;

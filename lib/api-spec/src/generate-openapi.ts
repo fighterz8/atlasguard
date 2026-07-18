@@ -13,7 +13,7 @@ extendZodWithOpenApi(z);
 
 // The OpenAPI extension must be installed before canonical schemas are
 // constructed, so load the contracts package after extending Zod.
-const { EvaluationResultSchema, ScenarioInputSchema } =
+const { UserFacingEvaluationResultSchema, ScenarioInputSchema } =
   await import("@workspace/contracts");
 
 const registry = new OpenAPIRegistry();
@@ -24,7 +24,7 @@ const ScenarioInputTransportSchema = registry.register(
 );
 const EvaluationResultTransportSchema = registry.register(
   "EvaluationResult",
-  EvaluationResultSchema,
+  UserFacingEvaluationResultSchema,
 );
 const HealthStatusSchema = registry.register(
   "HealthStatus",

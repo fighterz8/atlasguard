@@ -27,18 +27,77 @@ export const ResolvedMetroRefSchema = z
         stateCode: z.string().regex(/^[A-Z]{2}$/),
       })
       .strict(),
+    selectedPlaceMapping: z
+      .object({
+        method: z.enum(["official_cbsa_title_match", "synthetic_fixture"]),
+        sourceArtifactId: StableIdSchema,
+        sourceUrl: z.string().url(),
+        sourceArtifactSha256: Sha256Schema,
+        verifiedOn: IsoDateSchema,
+      })
+      .strict(),
   })
-  .strict();
+  .strict()
+  .superRefine((metro, context) => {
+    if (
+      metro.selectedPlaceMapping.method === "official_cbsa_title_match" &&
+      !metro.label.includes(metro.selectedPlace.city)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "An official CBSA-title mapping must name the selected city in the CBSA title.",
+        path: ["selectedPlaceMapping", "method"],
+      });
+    }
+  });
 
 export const BenchmarkSnapshotRefSchema = z
   .object({
     id: StableIdSchema,
     version: VersionSchema,
     sha256: Sha256Schema,
+    admissionStatus: z.enum(["research_only", "user_facing"]),
+    rawSnapshot: z
+      .object({
+        id: StableIdSchema,
+        sha256: Sha256Schema,
+      })
+      .strict(),
+    sourceArtifacts: z
+      .array(
+        z
+          .object({
+            id: StableIdSchema,
+            sourceUrl: z.string().url(),
+            sha256: Sha256Schema,
+          })
+          .strict(),
+      )
+      .min(1),
+    derivation: z
+      .object({
+        id: StableIdSchema,
+        version: VersionSchema,
+      })
+      .strict(),
     delineationVersion: z.string().trim().min(1).max(80),
     verifiedOn: IsoDateSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((snapshot, context) => {
+    const sourceIds = new Set<string>();
+    snapshot.sourceArtifacts.forEach((artifact, index) => {
+      if (sourceIds.has(artifact.id)) {
+        context.addIssue({
+          code: "custom",
+          message: "Snapshot source-artifact IDs must be unique.",
+          path: ["sourceArtifacts", index, "id"],
+        });
+      }
+      sourceIds.add(artifact.id);
+    });
+  });
 
 export const MetricUnitSchema = z.enum([
   "basis_points",
@@ -548,6 +607,29 @@ export const BenchmarkComparisonSchema = z
   .superRefine((comparison, context) => {
     const seenPriorities = new Set<string>();
     const seenEvidence = new Set<string>();
+    const sourceArtifactsById = new Map(
+      comparison.snapshot.sourceArtifacts.map((artifact) => [
+        artifact.id,
+        artifact,
+      ]),
+    );
+
+    (["origin", "destination"] as const).forEach((side) => {
+      const mapping = comparison[side].selectedPlaceMapping;
+      const artifact = sourceArtifactsById.get(mapping.sourceArtifactId);
+      if (
+        artifact === undefined ||
+        artifact.sourceUrl !== mapping.sourceUrl ||
+        artifact.sha256 !== mapping.sourceArtifactSha256
+      ) {
+        context.addIssue({
+          code: "custom",
+          message:
+            "Selected-place mapping must reference an exact snapshot source artifact.",
+          path: [side, "selectedPlaceMapping"],
+        });
+      }
+    });
 
     comparison.priorities.forEach((priority, index) => {
       if (seenPriorities.has(priority.priorityId)) {
@@ -567,6 +649,20 @@ export const BenchmarkComparisonSchema = z
         });
       }
       seenEvidence.add(priority.evidence.id);
+
+      if (
+        !comparison.snapshot.sourceArtifacts.some(
+          (artifact) =>
+            artifact.sourceUrl === priority.evidence.source.sourceUrl,
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message:
+            "Metric evidence source URL must belong to the snapshot source-artifact lineage.",
+          path: ["priorities", index, "evidence", "source", "sourceUrl"],
+        });
+      }
 
       if (
         priority.evidence.snapshotVersion !== comparison.snapshot.version ||

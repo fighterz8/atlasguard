@@ -629,6 +629,19 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
 
+  lib/benchmark-data:
+    dependencies:
+      '@workspace/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@workspace/decision-core':
+        specifier: workspace:*
+        version: link:../decision-core
+
   lib/contracts:
     dependencies:
       '@noble/hashes':
@@ -670,6 +683,10 @@ importers:
         version: link:../contracts
 
   scripts:
+    dependencies:
+      '@workspace/benchmark-data':
+        specifier: workspace:*
+        version: link:../lib/benchmark-data
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

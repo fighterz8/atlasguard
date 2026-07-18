@@ -97,6 +97,7 @@ export const EvaluationResultSchema = z
   .object({
     schemaVersion: z.literal(DECISION_PROFILE_SCHEMA_VERSION),
     resultMode: z.literal("deterministic"),
+    releaseStatus: z.enum(["research_only", "user_facing"]),
     scenarioInput: ScenarioInputSchema,
     benchmarkComparison: BenchmarkComparisonSchema,
     decisionProfile: DecisionProfileSchema,
@@ -104,6 +105,14 @@ export const EvaluationResultSchema = z
   .strict()
   .superRefine((result, context) => {
     const { scenarioInput, benchmarkComparison, decisionProfile } = result;
+    if (result.releaseStatus !== benchmarkComparison.snapshot.admissionStatus) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Evaluation release status must match benchmark admission status.",
+        path: ["releaseStatus"],
+      });
+    }
     const expectedFingerprint = fingerprintScenarioInput(scenarioInput);
     if (decisionProfile.inputFingerprintSha256 !== expectedFingerprint) {
       context.addIssue({
@@ -330,6 +339,10 @@ export const EvaluationResultSchema = z
     }
   });
 
+export const UserFacingEvaluationResultSchema = EvaluationResultSchema.and(
+  z.object({ releaseStatus: z.literal("user_facing") }).passthrough(),
+);
+
 type DeepReadonly<T> = T extends (...args: never[]) => unknown
   ? T
   : T extends readonly (infer Item)[]
@@ -342,8 +355,23 @@ declare const verifiedEvaluationResultBrand: unique symbol;
 
 export type EvaluationResult = z.infer<typeof EvaluationResultSchema>;
 
+export type UserFacingEvaluationResult = EvaluationResult & {
+  releaseStatus: "user_facing";
+};
+
+export type ResearchEvaluationResult = EvaluationResult & {
+  releaseStatus: "research_only";
+};
+
 export type VerifiedEvaluationResult = DeepReadonly<
-  Omit<EvaluationResult, "benchmarkComparison">
+  Omit<UserFacingEvaluationResult, "benchmarkComparison">
+> & {
+  readonly benchmarkComparison: VerifiedBenchmarkComparison;
+  readonly [verifiedEvaluationResultBrand]: true;
+};
+
+export type VerifiedResearchEvaluationResult = DeepReadonly<
+  Omit<ResearchEvaluationResult, "benchmarkComparison">
 > & {
   readonly benchmarkComparison: VerifiedBenchmarkComparison;
   readonly [verifiedEvaluationResultBrand]: true;
@@ -359,7 +387,7 @@ const deepFreeze = <Value>(value: Value): DeepReadonly<Value> => {
 
 export const verifyEvaluationResult = (
   input: unknown,
-): VerifiedEvaluationResult => {
+): VerifiedEvaluationResult | VerifiedResearchEvaluationResult => {
   const parsed = EvaluationResultSchema.parse(input);
   const benchmarkComparison = verifyBenchmarkComparison(
     parsed.benchmarkComparison,
@@ -368,7 +396,7 @@ export const verifyEvaluationResult = (
   return deepFreeze({
     ...parsed,
     benchmarkComparison,
-  }) as VerifiedEvaluationResult;
+  }) as VerifiedEvaluationResult | VerifiedResearchEvaluationResult;
 };
 
 export type ResultMode = z.infer<typeof ResultModeSchema>;

@@ -12,6 +12,7 @@ import {
 import {
   EvaluationResultSchema,
   ResultModeSchema,
+  UserFacingEvaluationResultSchema,
   verifyEvaluationResult,
 } from "./evaluation-result";
 import { financialAndClimateUpsideBenchmark } from "./fixtures/financial-and-climate-upside-benchmark-v1";
@@ -28,6 +29,7 @@ const cloneProfile = () =>
 const cloneEvaluationResult = () => ({
   schemaVersion: "1.0.0" as const,
   resultMode: "deterministic" as const,
+  releaseStatus: "user_facing" as const,
   scenarioInput: ScenarioInputSchema.parse(financialAndClimateUpsideInput),
   benchmarkComparison: BenchmarkComparisonSchema.parse(
     financialAndClimateUpsideBenchmark,
@@ -697,6 +699,18 @@ describe("EvaluationResultSchema", () => {
     expect(
       EvaluationResultSchema.safeParse(cloneEvaluationResult()).success,
     ).toBe(true);
+  });
+
+  it("structurally excludes research results from the transport schema", () => {
+    const result = {
+      ...cloneEvaluationResult(),
+      releaseStatus: "research_only" as const,
+    };
+
+    expect(UserFacingEvaluationResultSchema.safeParse(result).success).toBe(
+      false,
+    );
+    expect(EvaluationResultSchema.safeParse(result).success).toBe(false);
   });
 
   it("accepts null optional gross income without throwing in refinements", () => {
