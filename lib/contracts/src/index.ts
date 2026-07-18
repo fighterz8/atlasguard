@@ -6,4 +6,5 @@ export * from "./decision-rules";
 export * from "./evaluation-result";
 export * from "./primitives";
 export * from "./scenario-input";
+export * from "./sensitivity";
 export * from "./utility-transforms";
