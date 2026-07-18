@@ -343,6 +343,15 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/benchmark-data':
+        specifier: workspace:*
+        version: link:../../lib/benchmark-data
+      '@workspace/contracts':
+        specifier: workspace:*
+        version: link:../../lib/contracts
+      '@workspace/decision-core':
+        specifier: workspace:*
+        version: link:../../lib/decision-core
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1

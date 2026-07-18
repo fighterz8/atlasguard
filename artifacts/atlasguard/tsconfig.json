@@ -17,6 +17,15 @@
   "references": [
     {
       "path": "../../lib/api-client-react"
+    },
+    {
+      "path": "../../lib/benchmark-data"
+    },
+    {
+      "path": "../../lib/contracts"
+    },
+    {
+      "path": "../../lib/decision-core"
     }
   ]
 }
