@@ -40,9 +40,11 @@ export type WizardPrototypeDraft = {
     targetHousing: string;
     currentExpenses: string;
     targetExpenses: string;
+    retainedPropertyNet: string;
     targetTakeHomeBasis: AssumptionBasis;
     targetHousingBasis: AssumptionBasis;
     targetExpensesBasis: AssumptionBasis;
+    retainedPropertyNetBasis: AssumptionBasis;
   };
   commuteImportance: PriorityImportance;
 };
@@ -59,9 +61,11 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     targetHousing: "",
     currentExpenses: "",
     targetExpenses: "",
+    retainedPropertyNet: "",
     targetTakeHomeBasis: "user_estimate",
     targetHousingBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
+    retainedPropertyNetBasis: "user_estimate",
   },
   commuteImportance: "important",
 });
@@ -95,6 +99,24 @@ const validateMoney = (
   }
 };
 
+const validateSignedMoney = (
+  errors: WizardErrors,
+  key: keyof WizardPrototypeDraft["finances"],
+  value: string,
+  label: string,
+) => {
+  const normalized = value.trim().replaceAll(",", "");
+  if (normalized === "") {
+    errors[`finances.${key}`] = `${label} is required.`;
+    return;
+  }
+
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || !Number.isInteger(amount)) {
+    errors[`finances.${key}`] = `${label} must be a whole-dollar amount.`;
+  }
+};
+
 export function validateWizardStep(
   step: WizardStepId,
   draft: WizardPrototypeDraft,
@@ -111,6 +133,14 @@ export function validateWizardStep(
     if (draft.originSlug !== "" && draft.originSlug === draft.destinationSlug) {
       errors.destinationSlug =
         "Origin and destination must be different locations.";
+    } else if (
+      draft.originSlug !== "" &&
+      draft.destinationSlug !== "" &&
+      (draft.originSlug !== "los-angeles-ca" ||
+        draft.destinationSlug !== "seattle-wa")
+    ) {
+      errors.destinationSlug =
+        "This research slice currently supports Los Angeles to Seattle only.";
     }
   }
 
@@ -156,6 +186,12 @@ export function validateWizardStep(
       draft.finances.targetExpenses,
       "Target recurring expenses",
       true,
+    );
+    validateSignedMoney(
+      errors,
+      "retainedPropertyNet",
+      draft.finances.retainedPropertyNet,
+      "Retained-property monthly net",
     );
   }
 
@@ -255,6 +291,13 @@ export function createReviewRows(draft: WizardPrototypeDraft) {
       label: "Target recurring expenses",
       value: formatMoney(draft.finances.targetExpenses),
       basis: draft.finances.targetExpensesBasis,
+      source: "manual_entry" as const,
+    },
+    {
+      group: "Money",
+      label: "Retained-property monthly net",
+      value: formatMoney(draft.finances.retainedPropertyNet),
+      basis: draft.finances.retainedPropertyNetBasis,
       source: "manual_entry" as const,
     },
     {

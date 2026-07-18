@@ -15,11 +15,13 @@ type ValueKey =
   | "currentHousing"
   | "targetHousing"
   | "currentExpenses"
-  | "targetExpenses";
+  | "targetExpenses"
+  | "retainedPropertyNet";
 type BasisKey =
   | "targetTakeHomeBasis"
   | "targetHousingBasis"
-  | "targetExpensesBasis";
+  | "targetExpensesBasis"
+  | "retainedPropertyNetBasis";
 
 type MoneyStepProps = {
   finances: WizardPrototypeDraft["finances"];
@@ -234,6 +236,19 @@ export function MoneyStep({
                 onBasisChange={onBasisChange}
               />
             ))}
+            <MoneyField
+              id="retainedPropertyNet"
+              label="Retained-property monthly net"
+              description="Enter 0 if none. Use a positive amount for net income or a negative amount for an ongoing cost."
+              value={finances.retainedPropertyNet}
+              basis={finances.retainedPropertyNetBasis}
+              basisKey="retainedPropertyNetBasis"
+              error={errors["finances.retainedPropertyNet"]}
+              onValueChange={(value) =>
+                onValueChange("retainedPropertyNet", value)
+              }
+              onBasisChange={onBasisChange}
+            />
           </div>
         </section>
       </div>

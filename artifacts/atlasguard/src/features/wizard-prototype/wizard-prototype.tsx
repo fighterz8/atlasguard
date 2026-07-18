@@ -31,9 +31,11 @@ const exampleDraft: WizardPrototypeDraft = {
     targetHousing: "2000",
     currentExpenses: "1500",
     targetExpenses: "1500",
+    retainedPropertyNet: "0",
     targetTakeHomeBasis: "user_estimate",
     targetHousingBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
+    retainedPropertyNetBasis: "user_estimate",
   },
   commuteImportance: "important",
 };

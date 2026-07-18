@@ -20,6 +20,7 @@ const validDraft = () => ({
     targetHousing: "1750",
     currentExpenses: "1500",
     targetExpenses: "1500",
+    retainedPropertyNet: "0",
   },
 });
 
@@ -39,6 +40,22 @@ describe("Wizard prototype model", () => {
     expect(validateWizardStep("move", same).destinationSlug).toBe(
       "Origin and destination must be different locations.",
     );
+
+    const reverse = {
+      ...empty,
+      originSlug: "seattle-wa" as const,
+      destinationSlug: "los-angeles-ca" as const,
+    };
+    expect(validateWizardStep("move", reverse).destinationSlug).toBe(
+      "This research slice currently supports Los Angeles to Seattle only.",
+    );
+  });
+
+  it("accepts a signed retained-property monthly net", () => {
+    const draft = validDraft();
+    draft.finances.retainedPropertyNet = "-450";
+
+    expect(validateWizardStep("money", draft)).toEqual({});
   });
 
   it("reports specific money-field errors", () => {
@@ -84,6 +101,13 @@ describe("Wizard prototype model", () => {
       label: "Destination",
       value: "Seattle, WA",
       basis: "manual_entry",
+      source: "manual_entry",
+    });
+    expect(rows).toContainEqual({
+      group: "Money",
+      label: "Retained-property monthly net",
+      value: "$0/month",
+      basis: "user_estimate",
       source: "manual_entry",
     });
   });
