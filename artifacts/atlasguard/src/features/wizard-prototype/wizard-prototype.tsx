@@ -52,7 +52,9 @@ export function WizardPrototype({
   initialDraft,
   onEvaluate,
 }: WizardPrototypeProps) {
-  const [step, setStep] = useState<WizardStepId>("move");
+  const [step, setStep] = useState<WizardStepId>(
+    initialDraft ? "review" : "move",
+  );
   const [draft, setDraft] = useState<WizardPrototypeDraft>(() =>
     initialDraft ? structuredClone(initialDraft) : createInitialWizardDraft(),
   );
