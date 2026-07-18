@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run typecheck:libs && pnpm --filter @workspace/atlasguard run typecheck && PORT=5173 BASE_PATH=/ pnpm --filter @workspace/atlasguard run build",
+  "outputDirectory": "artifacts/atlasguard/dist/public",
+  "rewrites": [
+    {
+      "source": "/research/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}

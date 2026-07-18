@@ -10,7 +10,7 @@
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
-    "format:check": "prettier --check package.json tsconfig.json scripts/package.json \".github/workflows/*.yml\" \"artifacts/api-server/src/**/*.{ts,tsx}\" \"artifacts/atlasguard/src/App.tsx\" \"artifacts/atlasguard/src/index.css\" \"artifacts/atlasguard/src/pages/results.tsx\" \"artifacts/atlasguard/src/features/research-results/**/*.{ts,tsx}\" \"docs/decisions/**/*.md\" \"docs/movewise/**/*.md\" \"lib/api-spec/**/*.{ts,yaml}\" \"lib/benchmark-data/package.json\" \"lib/benchmark-data/src/**/*.{ts,tsx}\" \"lib/contracts/src/**/*.{ts,tsx}\" \"lib/decision-core/src/**/*.{ts,tsx}\" \"scripts/src/**/*.ts\"",
+    "format:check": "prettier --check package.json tsconfig.json vercel.json scripts/package.json \".github/workflows/*.yml\" \"artifacts/api-server/src/**/*.{ts,tsx}\" \"artifacts/atlasguard/index.html\" \"artifacts/atlasguard/src/App.tsx\" \"artifacts/atlasguard/src/index.css\" \"artifacts/atlasguard/src/pages/results.tsx\" \"artifacts/atlasguard/src/features/research-results/**/*.{ts,tsx}\" \"docs/decisions/**/*.md\" \"docs/movewise/**/*.md\" \"lib/api-spec/**/*.{ts,yaml}\" \"lib/benchmark-data/package.json\" \"lib/benchmark-data/src/**/*.{ts,tsx}\" \"lib/contracts/src/**/*.{ts,tsx}\" \"lib/decision-core/src/**/*.{ts,tsx}\" \"scripts/src/**/*.ts\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck:libs": "tsc --build",

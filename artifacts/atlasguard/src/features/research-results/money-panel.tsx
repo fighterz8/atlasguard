@@ -28,21 +28,27 @@ export function MoneyPanel({ route, finances }: MoneyPanelProps) {
         These fixed values prove the calculation and layout only. They are not
         metro benchmarks or a suggested budget.
       </p>
-      <div className="mt-6 overflow-x-auto">
-        <table className="w-full min-w-[34rem] text-left text-sm">
+      <div className="mt-6">
+        <table className="w-full table-fixed text-left text-sm">
           <caption className="sr-only">
             Illustrative monthly finances for {route.originCity} and{" "}
             {route.destinationCity}
           </caption>
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
-              <th scope="col" className="pb-3 font-medium">
+              <th scope="col" className="w-[46%] pb-3 pr-2 font-medium">
                 Monthly
               </th>
-              <th scope="col" className="pb-3 text-right font-medium">
+              <th
+                scope="col"
+                className="w-[27%] pb-3 text-right text-xs font-medium sm:text-sm"
+              >
                 {route.originCity}
               </th>
-              <th scope="col" className="pb-3 text-right font-medium">
+              <th
+                scope="col"
+                className="w-[27%] pb-3 text-right text-xs font-medium sm:text-sm"
+              >
                 {route.destinationCity}
               </th>
             </tr>
@@ -50,7 +56,10 @@ export function MoneyPanel({ route, finances }: MoneyPanelProps) {
           <tbody>
             {rows.map(([label, key]) => (
               <tr key={key} className="border-b border-slate-100 last:border-0">
-                <th scope="row" className="py-3 font-medium text-slate-700">
+                <th
+                  scope="row"
+                  className="py-3 pr-2 font-medium text-slate-700"
+                >
                   {label}
                 </th>
                 <td className="py-3 text-right tabular-nums text-slate-950">
