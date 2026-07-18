@@ -7,6 +7,7 @@ import type {
   WizardErrors,
   WizardPrototypeDraft,
 } from "./model";
+import { PlausibleRangeFields, type RangeKey } from "./plausible-range-fields";
 
 type FinanceKey = keyof WizardPrototypeDraft["finances"];
 type ValueKey =
@@ -26,7 +27,7 @@ type BasisKey =
 type MoneyStepProps = {
   finances: WizardPrototypeDraft["finances"];
   errors: WizardErrors;
-  onValueChange: (key: ValueKey, value: string) => void;
+  onValueChange: (key: ValueKey | RangeKey, value: string) => void;
   onBasisChange: (key: BasisKey, value: AssumptionBasis) => void;
 };
 
@@ -40,6 +41,14 @@ type MoneyFieldProps = {
   basisKey?: BasisKey;
   onValueChange: (value: string) => void;
   onBasisChange?: (key: BasisKey, value: AssumptionBasis) => void;
+  range?: {
+    minKey: RangeKey;
+    maxKey: RangeKey;
+    finances: WizardPrototypeDraft["finances"];
+    errors: WizardErrors;
+    signed?: boolean;
+    onChange: (key: RangeKey, value: string) => void;
+  };
 };
 
 function MoneyField({
@@ -52,6 +61,7 @@ function MoneyField({
   basisKey,
   onValueChange,
   onBasisChange,
+  range,
 }: MoneyFieldProps) {
   const descriptionId = `${id}-description`;
   const errorId = `${id}-error`;
@@ -113,6 +123,9 @@ function MoneyField({
           {error}
         </p>
       ) : null}
+      {basis === "user_estimate" && range ? (
+        <PlausibleRangeFields label={label} {...range} />
+      ) : null}
     </div>
   );
 }
@@ -127,6 +140,8 @@ const fieldPairs = [
     target: {
       id: "targetTakeHome" as const,
       basisKey: "targetTakeHomeBasis" as const,
+      minKey: "targetTakeHomeRangeMin" as const,
+      maxKey: "targetTakeHomeRangeMax" as const,
       label: "Target take-home income",
       description: "Use a real offer or a clearly labeled estimate.",
     },
@@ -140,6 +155,8 @@ const fieldPairs = [
     target: {
       id: "targetHousing" as const,
       basisKey: "targetHousingBasis" as const,
+      minKey: "targetHousingRangeMin" as const,
+      maxKey: "targetHousingRangeMax" as const,
       label: "Expected target housing",
       description: "Your expected cost—not the regional median.",
     },
@@ -153,6 +170,8 @@ const fieldPairs = [
     target: {
       id: "targetExpenses" as const,
       basisKey: "targetExpensesBasis" as const,
+      minKey: "targetExpensesRangeMin" as const,
+      maxKey: "targetExpensesRangeMax" as const,
       label: "Expected target expenses",
       description: "Your estimated recurring costs excluding housing.",
     },
@@ -234,6 +253,13 @@ export function MoneyStep({
                 error={errors[`finances.${target.id}`]}
                 onValueChange={(value) => onValueChange(target.id, value)}
                 onBasisChange={onBasisChange}
+                range={{
+                  minKey: target.minKey,
+                  maxKey: target.maxKey,
+                  finances,
+                  errors,
+                  onChange: onValueChange,
+                }}
               />
             ))}
             <MoneyField
@@ -248,6 +274,14 @@ export function MoneyStep({
                 onValueChange("retainedPropertyNet", value)
               }
               onBasisChange={onBasisChange}
+              range={{
+                minKey: "retainedPropertyNetRangeMin",
+                maxKey: "retainedPropertyNetRangeMax",
+                finances,
+                errors,
+                signed: true,
+                onChange: onValueChange,
+              }}
             />
           </div>
         </section>
@@ -263,4 +297,4 @@ export function MoneyStep({
   );
 }
 
-export type { BasisKey, FinanceKey, ValueKey };
+export type { BasisKey, FinanceKey, RangeKey, ValueKey };

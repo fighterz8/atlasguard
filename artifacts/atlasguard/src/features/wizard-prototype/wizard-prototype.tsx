@@ -14,7 +14,12 @@ import {
   type WizardPrototypeDraft,
   type WizardStepId,
 } from "./model";
-import { MoneyStep, type BasisKey, type ValueKey } from "./money-step";
+import {
+  MoneyStep,
+  type BasisKey,
+  type RangeKey,
+  type ValueKey,
+} from "./money-step";
 import { MoveStep } from "./move-step";
 import { PrioritiesStep } from "./priorities-step";
 import { PrototypeShell } from "./prototype-shell";
@@ -151,7 +156,7 @@ export function WizardPrototype({
     clearError(key);
   };
 
-  const updateFinanceValue = (key: ValueKey, value: string) => {
+  const updateFinanceValue = (key: ValueKey | RangeKey, value: string) => {
     setDraft((current) => ({
       ...current,
       finances: { ...current.finances, [key]: value },
@@ -159,11 +164,53 @@ export function WizardPrototype({
     clearError(`finances.${key}`);
   };
 
+  const rangeKeysByBasis: Record<
+    BasisKey,
+    { value: ValueKey; min: RangeKey; max: RangeKey }
+  > = {
+    targetTakeHomeBasis: {
+      value: "targetTakeHome",
+      min: "targetTakeHomeRangeMin",
+      max: "targetTakeHomeRangeMax",
+    },
+    targetHousingBasis: {
+      value: "targetHousing",
+      min: "targetHousingRangeMin",
+      max: "targetHousingRangeMax",
+    },
+    targetExpensesBasis: {
+      value: "targetExpenses",
+      min: "targetExpensesRangeMin",
+      max: "targetExpensesRangeMax",
+    },
+    retainedPropertyNetBasis: {
+      value: "retainedPropertyNet",
+      min: "retainedPropertyNetRangeMin",
+      max: "retainedPropertyNetRangeMax",
+    },
+  };
+
   const updateBasis = (key: BasisKey, value: AssumptionBasis) => {
+    const rangeKeys = rangeKeysByBasis[key];
     setDraft((current) => ({
       ...current,
-      finances: { ...current.finances, [key]: value },
+      finances: {
+        ...current.finances,
+        [key]: value,
+        ...(value === "confirmed"
+          ? { [rangeKeys.min]: "", [rangeKeys.max]: "" }
+          : {}),
+      },
     }));
+    if (value === "confirmed") {
+      setErrors((current) => {
+        const next = { ...current };
+        delete next[`finances.${rangeKeys.value}`];
+        delete next[`finances.${rangeKeys.min}`];
+        delete next[`finances.${rangeKeys.max}`];
+        return next;
+      });
+    }
   };
 
   const updatePriority = (value: PriorityImportance) => {
