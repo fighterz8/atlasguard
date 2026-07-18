@@ -1,6 +1,7 @@
 import { ArrowUpRight, CheckCircle2, Info, MoveRight } from "lucide-react";
 
 import { EvidencePanel } from "@/features/research-results/evidence-panel";
+import { HousingContextPanel } from "@/features/research-results/housing-context-panel";
 import { MoneyPanel } from "@/features/research-results/money-panel";
 import { createResearchResultsViewModel } from "@/features/research-results/model";
 import { PriorityPanel } from "@/features/research-results/priority-panel";
@@ -64,6 +65,10 @@ export default function ResultsPage() {
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <MoneyPanel route={model.route} finances={model.finances} />
           <PriorityPanel route={model.route} priority={model.priority} />
+          <HousingContextPanel
+            route={model.route}
+            housingContext={model.housingContext}
+          />
 
           <section aria-labelledby="reading-heading" className="panel">
             <p className="eyebrow">Why this result</p>
@@ -132,8 +137,8 @@ export default function ResultsPage() {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-400/15 text-xs font-semibold text-teal-200">
                   {model.nextSteps.length + 1}
                 </span>
-                Add verified housing, cost-of-living, and climate evidence
-                before comparing a real move.
+                Add verified cost-of-living and climate evidence before
+                comparing a real move.
               </li>
             </ol>
             <p className="mt-6 flex items-center gap-2 text-xs text-slate-400">
