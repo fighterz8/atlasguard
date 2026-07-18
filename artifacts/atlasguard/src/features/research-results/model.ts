@@ -3,7 +3,11 @@ import {
   loadLosAngelesToSeattleHousingContext,
   losAngelesToSeattleBalancedResearchScenario,
 } from "@workspace/benchmark-data";
-import type { Finding, MetricEvidence } from "@workspace/contracts";
+import type {
+  Finding,
+  MetricEvidence,
+  ScenarioInput,
+} from "@workspace/contracts";
 import { evaluateResearchMoveDecision } from "@workspace/decision-core";
 
 const dollars = new Intl.NumberFormat("en-US", {
@@ -68,11 +72,59 @@ const nextStepCopy: Record<string, string> = {
   verify_retained_property_net: "Verify the retained-property monthly impact.",
 };
 
-export const createResearchResultsViewModel = () => {
-  const result = evaluateResearchMoveDecision(
-    losAngelesToSeattleBalancedResearchScenario,
+export type ResearchWhatIfValues = Readonly<{
+  takeHomeIncomeCents: number;
+  housingCostCents: number;
+  recurringExpensesCents: number;
+}>;
+
+const baselineWhatIfValues: ResearchWhatIfValues = {
+  takeHomeIncomeCents:
+    losAngelesToSeattleBalancedResearchScenario.finances.destination
+      .takeHomeIncome.monthlyCents,
+  housingCostCents:
+    losAngelesToSeattleBalancedResearchScenario.finances.destination.housingCost
+      .monthlyCents,
+  recurringExpensesCents:
+    losAngelesToSeattleBalancedResearchScenario.finances.destination
+      .recurringExpensesExcludingHousing.monthlyCents,
+};
+
+const scenarioWithWhatIfValues = (
+  values: ResearchWhatIfValues,
+): ScenarioInput => ({
+  ...losAngelesToSeattleBalancedResearchScenario,
+  finances: {
+    ...losAngelesToSeattleBalancedResearchScenario.finances,
+    destination: {
+      ...losAngelesToSeattleBalancedResearchScenario.finances.destination,
+      takeHomeIncome: {
+        ...losAngelesToSeattleBalancedResearchScenario.finances.destination
+          .takeHomeIncome,
+        monthlyCents: values.takeHomeIncomeCents,
+      },
+      housingCost: {
+        ...losAngelesToSeattleBalancedResearchScenario.finances.destination
+          .housingCost,
+        monthlyCents: values.housingCostCents,
+      },
+      recurringExpensesExcludingHousing: {
+        ...losAngelesToSeattleBalancedResearchScenario.finances.destination
+          .recurringExpensesExcludingHousing,
+        monthlyCents: values.recurringExpensesCents,
+      },
+    },
+  },
+});
+
+const evaluateResearchScenario = (values = baselineWhatIfValues) =>
+  evaluateResearchMoveDecision(
+    scenarioWithWhatIfValues(values),
     loadLosAngelesToSeattleCommuteBenchmark(),
   );
+
+export const createResearchResultsViewModel = () => {
+  const result = evaluateResearchScenario();
   const profile = result.decisionProfile;
   const housingContext = loadLosAngelesToSeattleHousingContext();
   const metric = profile.evidence.find(
@@ -128,7 +180,11 @@ export const createResearchResultsViewModel = () => {
     stability: {
       level: profile.stability.level,
       explanation:
-        "Not evaluated. Income, housing, and expense breakpoints are not implemented in this slice.",
+        profile.stability.level === "assumption_sensitive"
+          ? "At least one exact condition-changing threshold falls inside the declared estimate ranges."
+          : profile.stability.level === "stable"
+            ? "No condition-changing threshold falls inside the declared estimate ranges."
+            : "Plausible ranges are required before stability can be evaluated.",
     },
     finances: {
       origin: {
@@ -235,6 +291,101 @@ export const createResearchResultsViewModel = () => {
       rawSnapshotSha256: profile.scenario.benchmarkSnapshot.rawSnapshot.sha256,
       delineationVersion: profile.scenario.benchmarkSnapshot.delineationVersion,
     },
+  };
+};
+
+const whatIfControlDefinitions = [
+  {
+    id: "takeHomeIncomeCents",
+    label: "Destination take-home income",
+    assumption:
+      losAngelesToSeattleBalancedResearchScenario.finances.destination
+        .takeHomeIncome,
+  },
+  {
+    id: "housingCostCents",
+    label: "Destination housing",
+    assumption:
+      losAngelesToSeattleBalancedResearchScenario.finances.destination
+        .housingCost,
+  },
+  {
+    id: "recurringExpensesCents",
+    label: "Other recurring expenses",
+    assumption:
+      losAngelesToSeattleBalancedResearchScenario.finances.destination
+        .recurringExpensesExcludingHousing,
+  },
+] as const;
+
+export const createResearchWhatIfViewModel = (
+  values: ResearchWhatIfValues = baselineWhatIfValues,
+) => {
+  const baseline = evaluateResearchScenario();
+  const current = evaluateResearchScenario(values);
+  const profile = current.decisionProfile;
+  const thresholdLabels: Record<string, string> = {
+    "finances.destination.takeHomeIncome.monthlyCents": "Take-home income",
+    "finances.destination.housingCost.monthlyCents": "Housing",
+    "finances.destination.recurringExpensesExcludingHousing.monthlyCents":
+      "Recurring expenses",
+  };
+  const thresholdOrder: Record<string, number> = {
+    "finances.destination.takeHomeIncome.monthlyCents": 0,
+    "finances.destination.housingCost.monthlyCents": 1,
+    "finances.destination.recurringExpensesExcludingHousing.monthlyCents": 2,
+  };
+
+  return {
+    values,
+    baselineValues: baselineWhatIfValues,
+    changed: JSON.stringify(values) !== JSON.stringify(baselineWhatIfValues),
+    controls: whatIfControlDefinitions.map((control) => {
+      const range = control.assumption.plausibleRangeCents;
+      if (range === null) {
+        throw new Error(`What-if control ${control.id} requires a range.`);
+      }
+      return {
+        id: control.id,
+        label: control.label,
+        minCents: range.min,
+        maxCents: range.max,
+        valueCents: values[control.id],
+        value: formatMoney(values[control.id]),
+        min: formatMoney(range.min),
+        max: formatMoney(range.max),
+      };
+    }),
+    result: {
+      condition: conditionCopy[profile.condition.value],
+      monthlyCushion: formatMoney(
+        profile.financialPosition.destination.monthlyCushionCents,
+      ),
+      cushionDelta: formatMoney(
+        profile.financialPosition.change.monthlyCushionDeltaCents,
+      ),
+      classification: profile.financialPosition.change.classification,
+    },
+    baselineCondition: conditionCopy[baseline.decisionProfile.condition.value],
+    thresholds: baseline.decisionProfile.breakpoints
+      .filter((breakpoint) => breakpoint.kind === "money")
+      .filter(
+        (breakpoint) =>
+          breakpoint.withinPlausibleRange &&
+          breakpoint.changesConditionTo === "worth_a_closer_look",
+      )
+      .sort(
+        (left, right) =>
+          (thresholdOrder[left.inputPath] ?? Number.MAX_SAFE_INTEGER) -
+          (thresholdOrder[right.inputPath] ?? Number.MAX_SAFE_INTEGER),
+      )
+      .map((breakpoint) => ({
+        id: breakpoint.id,
+        label: thresholdLabels[breakpoint.inputPath] ?? breakpoint.inputPath,
+        operator:
+          breakpoint.operator === "at_or_above" ? "at least" : "at or below",
+        threshold: formatMoney(breakpoint.thresholdCents),
+      })),
   };
 };
 

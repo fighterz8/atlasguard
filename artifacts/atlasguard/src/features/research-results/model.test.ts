@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createResearchResultsViewModel } from "./model";
+import {
+  createResearchResultsViewModel,
+  createResearchWhatIfViewModel,
+} from "./model";
 
 describe("research results view model", () => {
   it("renders only the canonical research evaluation", () => {
@@ -11,7 +14,7 @@ describe("research results view model", () => {
     expect(model.route.destinationCity).toBe("Seattle");
     expect(model.condition.label).toBe("No clear advantage yet");
     expect(model.confidence.level).toBe("limited");
-    expect(model.stability.level).toBe("not_evaluated");
+    expect(model.stability.level).toBe("assumption_sensitive");
   });
 
   it("keeps illustrative finances separate from the benchmark metric", () => {
@@ -40,10 +43,49 @@ describe("research results view model", () => {
     expect(model.evidence.observationPeriod).toBe("2024 ACS 1-year estimates");
     expect(model.evidence.snapshotSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(model.evidence.rawSnapshotSha256).toMatch(/^[a-f0-9]{64}$/);
-    expect(model.nextSteps).toHaveLength(1);
+    expect(model.nextSteps).toHaveLength(3);
     expect(model.housingContext.evidence.tableId).toBe("B25064");
     expect(model.housingContext.evidence.snapshotSha256).toMatch(
       /^[a-f0-9]{64}$/,
     );
+  });
+
+  it("exposes exact favorable thresholds inside the declared ranges", () => {
+    const model = createResearchWhatIfViewModel();
+
+    expect(model.controls).toHaveLength(3);
+    expect(model.changed).toBe(false);
+    expect(model.result.condition.label).toBe("No clear advantage yet");
+    expect(model.thresholds).toEqual([
+      expect.objectContaining({
+        label: "Take-home income",
+        operator: "at least",
+        threshold: "$5,250",
+      }),
+      expect.objectContaining({
+        label: "Housing",
+        operator: "at or below",
+        threshold: "$1,750",
+      }),
+      expect.objectContaining({
+        label: "Recurring expenses",
+        operator: "at or below",
+        threshold: "$1,250",
+      }),
+    ]);
+  });
+
+  it("reevaluates the canonical decision when an assumption changes", () => {
+    const model = createResearchWhatIfViewModel({
+      takeHomeIncomeCents: 500_000,
+      housingCostCents: 175_000,
+      recurringExpensesCents: 150_000,
+    });
+
+    expect(model.changed).toBe(true);
+    expect(model.result.condition.label).toBe("Worth a closer look");
+    expect(model.result.monthlyCushion).toBe("$1,750");
+    expect(model.result.cushionDelta).toBe("$250");
+    expect(model.result.classification).toBe("improves");
   });
 });

@@ -7,6 +7,7 @@ import { createResearchResultsViewModel } from "@/features/research-results/mode
 import { PriorityPanel } from "@/features/research-results/priority-panel";
 import { ResearchBanner } from "@/features/research-results/research-banner";
 import { SummaryPanel } from "@/features/research-results/summary-panel";
+import { WhatIfPanel } from "@/features/research-results/what-if-panel";
 
 export default function ResultsPage() {
   const model = createResearchResultsViewModel();
@@ -56,7 +57,9 @@ export default function ResultsPage() {
               className="mt-0.5 h-5 w-5 shrink-0 text-amber-700"
             />
             <div>
-              <strong>Stability: not evaluated.</strong>{" "}
+              <strong>
+                Stability: {model.stability.level.replaceAll("_", " ")}.
+              </strong>{" "}
               {model.stability.explanation}
             </div>
           </div>
@@ -69,6 +72,7 @@ export default function ResultsPage() {
             route={model.route}
             housingContext={model.housingContext}
           />
+          <WhatIfPanel />
 
           <section aria-labelledby="reading-heading" className="panel">
             <p className="eyebrow">Why this result</p>
@@ -143,7 +147,8 @@ export default function ResultsPage() {
             </ol>
             <p className="mt-6 flex items-center gap-2 text-xs text-slate-400">
               <MoveRight aria-hidden="true" className="h-4 w-4" />
-              What-if thresholds are deliberately not simulated yet.
+              What-if changes use exact deterministic boundaries—not a
+              probability forecast.
             </p>
           </section>
 

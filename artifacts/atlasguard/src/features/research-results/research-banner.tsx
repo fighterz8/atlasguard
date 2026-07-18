@@ -13,9 +13,9 @@ export function ResearchBanner() {
             Research preview · not a recommendation
           </p>
           <p className="mt-0.5 text-xs leading-5 text-amber-900 sm:text-sm">
-            One verified commute benchmark and fixed illustrative finances are
-            shown to test the results experience. They are not your data and
-            cannot answer whether you should move.
+            One verified commute benchmark and illustrative financial
+            assumptions are shown to test the results experience. They are not
+            your data and cannot answer whether you should move.
           </p>
         </div>
       </div>

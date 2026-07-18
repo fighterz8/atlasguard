@@ -25,8 +25,9 @@ export function MoneyPanel({ route, finances }: MoneyPanelProps) {
         <WalletCards aria-hidden="true" className="h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-600">
-        These fixed values prove the calculation and layout only. They are not
-        metro benchmarks or a suggested budget.
+        These illustrative values prove the calculation and layout only. The
+        destination estimates include declared ranges for What-if testing; none
+        are metro benchmarks or a suggested budget.
       </p>
       <div className="mt-6">
         <table className="w-full table-fixed text-left text-sm">
