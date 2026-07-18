@@ -56,6 +56,39 @@ const exampleDraft: WizardPrototypeDraft = {
 const errorFieldId = (path: string) =>
   path.startsWith("finances.") ? path.replace("finances.", "") : path;
 
+const rangeKeysByBasis: Record<
+  BasisKey,
+  { value: ValueKey; min: RangeKey; max: RangeKey }
+> = {
+  targetTakeHomeBasis: {
+    value: "targetTakeHome",
+    min: "targetTakeHomeRangeMin",
+    max: "targetTakeHomeRangeMax",
+  },
+  targetHousingBasis: {
+    value: "targetHousing",
+    min: "targetHousingRangeMin",
+    max: "targetHousingRangeMax",
+  },
+  targetExpensesBasis: {
+    value: "targetExpenses",
+    min: "targetExpensesRangeMin",
+    max: "targetExpensesRangeMax",
+  },
+  retainedPropertyNetBasis: {
+    value: "retainedPropertyNet",
+    min: "retainedPropertyNetRangeMin",
+    max: "retainedPropertyNetRangeMax",
+  },
+};
+
+const valueKeyByRange = Object.fromEntries(
+  Object.values(rangeKeysByBasis).flatMap(({ value, min, max }) => [
+    [min, value],
+    [max, value],
+  ]),
+) as Record<RangeKey, ValueKey>;
+
 type WizardPrototypeProps = {
   initialDraft?: WizardPrototypeDraft;
   onEvaluate?: (draft: WizardPrototypeDraft) => WizardErrors;
@@ -162,32 +195,9 @@ export function WizardPrototype({
       finances: { ...current.finances, [key]: value },
     }));
     clearError(`finances.${key}`);
-  };
-
-  const rangeKeysByBasis: Record<
-    BasisKey,
-    { value: ValueKey; min: RangeKey; max: RangeKey }
-  > = {
-    targetTakeHomeBasis: {
-      value: "targetTakeHome",
-      min: "targetTakeHomeRangeMin",
-      max: "targetTakeHomeRangeMax",
-    },
-    targetHousingBasis: {
-      value: "targetHousing",
-      min: "targetHousingRangeMin",
-      max: "targetHousingRangeMax",
-    },
-    targetExpensesBasis: {
-      value: "targetExpenses",
-      min: "targetExpensesRangeMin",
-      max: "targetExpensesRangeMax",
-    },
-    retainedPropertyNetBasis: {
-      value: "retainedPropertyNet",
-      min: "retainedPropertyNetRangeMin",
-      max: "retainedPropertyNetRangeMax",
-    },
+    if (key in valueKeyByRange) {
+      clearError(`finances.${valueKeyByRange[key as RangeKey]}`);
+    }
   };
 
   const updateBasis = (key: BasisKey, value: AssumptionBasis) => {

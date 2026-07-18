@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createResearchResultsViewModel,
   createResearchWhatIfViewModel,
+  createVerifiedWhatIfViewModel,
 } from "./model";
 import { evaluateWizardDraft } from "../wizard-prototype/evaluate-wizard-draft";
 import {
@@ -23,6 +24,14 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
     currentExpenses: "1500",
     targetExpenses: "1250",
     retainedPropertyNet: "-100",
+    targetTakeHomeRangeMin: "5000",
+    targetTakeHomeRangeMax: "5500",
+    targetHousingRangeMin: "1500",
+    targetHousingRangeMax: "2000",
+    targetExpensesRangeMin: "1000",
+    targetExpensesRangeMax: "1500",
+    retainedPropertyNetRangeMin: "-300",
+    retainedPropertyNetRangeMax: "100",
   },
   commuteImportance: "important",
 });
@@ -84,7 +93,7 @@ describe("research results view model", () => {
     expect(model.finances.destination.takeHome).toBe("$5,250");
     expect(model.finances.destination.housing).toBe("$1,750");
     expect(model.finances.destination.retainedPropertyNet).toBe("-$100");
-    expect(model.stability.level).toBe("not_evaluated");
+    expect(model.stability.level).not.toBe("not_evaluated");
   });
 
   it("exposes exact favorable thresholds inside the declared ranges", () => {
@@ -117,6 +126,7 @@ describe("research results view model", () => {
       takeHomeIncomeCents: 500_000,
       housingCostCents: 175_000,
       recurringExpensesCents: 150_000,
+      retainedPropertyNetCents: 0,
     });
 
     expect(model.changed).toBe(true);
@@ -124,5 +134,32 @@ describe("research results view model", () => {
     expect(model.result.monthlyCushion).toBe("$1,750");
     expect(model.result.cushionDelta).toBe("$250");
     expect(model.result.classification).toBe("improves");
+  });
+
+  it("builds controls and thresholds from a reviewed user evaluation", () => {
+    const draft = reviewedDraft();
+    draft.finances.targetTakeHome = "5000";
+    draft.finances.targetHousing = "2000";
+    draft.finances.targetExpenses = "1500";
+    draft.finances.retainedPropertyNet = "0";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const baseline = createVerifiedWhatIfViewModel(evaluation.evaluation);
+    expect(baseline.controls).toHaveLength(4);
+    expect(baseline.controls.map((control) => control.label)).toContain(
+      "Retained-property monthly net",
+    );
+    expect(baseline.thresholds.length).toBeGreaterThan(0);
+
+    const updated = createVerifiedWhatIfViewModel(evaluation.evaluation, {
+      ...baseline.values,
+      housingCostCents: 175_000,
+    });
+    expect(updated.changed).toBe(true);
+    expect(updated.result.condition.label).not.toBe(
+      baseline.result.condition.label,
+    );
   });
 });

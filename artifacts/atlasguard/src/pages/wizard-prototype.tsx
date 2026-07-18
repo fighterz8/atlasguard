@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 
 import { createResearchResultsViewModel } from "@/features/research-results/model";
 import { evaluateWizardDraft } from "@/features/wizard-prototype/evaluate-wizard-draft";
@@ -15,6 +16,8 @@ export default function WizardPrototypePage() {
   const [resultModel, setResultModel] = useState<ReturnType<
     typeof createResearchResultsViewModel
   > | null>(null);
+  const [evaluation, setEvaluation] =
+    useState<VerifiedResearchEvaluationResult | null>(null);
 
   const evaluate = (draft: WizardPrototypeDraft): WizardErrors => {
     try {
@@ -22,6 +25,7 @@ export default function WizardPrototypePage() {
       if (!result.success) return result.errors;
 
       setEvaluatedDraft(structuredClone(draft));
+      setEvaluation(result.evaluation);
       setResultModel(createResearchResultsViewModel(result.evaluation));
       window.requestAnimationFrame(() => window.scrollTo({ top: 0 }));
       return {};
@@ -33,17 +37,19 @@ export default function WizardPrototypePage() {
     }
   };
 
-  if (resultModel && evaluatedDraft) {
+  if (resultModel && evaluatedDraft && evaluation) {
     return (
       <ResearchResultsExperience
         model={resultModel}
         reviewedAssumptions
+        whatIfEvaluation={evaluation}
         onEditAssumptions={() => {
           setResultModel(null);
           window.requestAnimationFrame(() => window.scrollTo({ top: 0 }));
         }}
         onReset={() => {
           setEvaluatedDraft(null);
+          setEvaluation(null);
           setResultModel(null);
           window.requestAnimationFrame(() => window.scrollTo({ top: 0 }));
         }}

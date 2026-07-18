@@ -77,50 +77,69 @@ export type ResearchWhatIfValues = Readonly<{
   takeHomeIncomeCents: number;
   housingCostCents: number;
   recurringExpensesCents: number;
+  retainedPropertyNetCents: number;
 }>;
 
-const baselineWhatIfValues: ResearchWhatIfValues = {
+type WhatIfScenario =
+  | ScenarioInput
+  | VerifiedResearchEvaluationResult["scenarioInput"];
+
+const whatIfValuesFromScenario = (
+  scenario: WhatIfScenario,
+): ResearchWhatIfValues => ({
   takeHomeIncomeCents:
-    losAngelesToSeattleBalancedResearchScenario.finances.destination
-      .takeHomeIncome.monthlyCents,
-  housingCostCents:
-    losAngelesToSeattleBalancedResearchScenario.finances.destination.housingCost
-      .monthlyCents,
+    scenario.finances.destination.takeHomeIncome.monthlyCents,
+  housingCostCents: scenario.finances.destination.housingCost.monthlyCents,
   recurringExpensesCents:
-    losAngelesToSeattleBalancedResearchScenario.finances.destination
-      .recurringExpensesExcludingHousing.monthlyCents,
-};
+    scenario.finances.destination.recurringExpensesExcludingHousing
+      .monthlyCents,
+  retainedPropertyNetCents:
+    scenario.finances.destination.retainedPropertyNet.monthlyCents,
+});
+
+const baselineWhatIfValues = whatIfValuesFromScenario(
+  losAngelesToSeattleBalancedResearchScenario,
+);
 
 const scenarioWithWhatIfValues = (
+  scenario: WhatIfScenario,
   values: ResearchWhatIfValues,
-): ScenarioInput => ({
-  ...losAngelesToSeattleBalancedResearchScenario,
-  finances: {
-    ...losAngelesToSeattleBalancedResearchScenario.finances,
-    destination: {
-      ...losAngelesToSeattleBalancedResearchScenario.finances.destination,
-      takeHomeIncome: {
-        ...losAngelesToSeattleBalancedResearchScenario.finances.destination
-          .takeHomeIncome,
-        monthlyCents: values.takeHomeIncomeCents,
-      },
-      housingCost: {
-        ...losAngelesToSeattleBalancedResearchScenario.finances.destination
-          .housingCost,
-        monthlyCents: values.housingCostCents,
-      },
-      recurringExpensesExcludingHousing: {
-        ...losAngelesToSeattleBalancedResearchScenario.finances.destination
-          .recurringExpensesExcludingHousing,
-        monthlyCents: values.recurringExpensesCents,
+): ScenarioInput => {
+  const mutableScenario = structuredClone(scenario) as ScenarioInput;
+  return {
+    ...mutableScenario,
+    finances: {
+      ...mutableScenario.finances,
+      destination: {
+        ...mutableScenario.finances.destination,
+        takeHomeIncome: {
+          ...mutableScenario.finances.destination.takeHomeIncome,
+          monthlyCents: values.takeHomeIncomeCents,
+        },
+        housingCost: {
+          ...mutableScenario.finances.destination.housingCost,
+          monthlyCents: values.housingCostCents,
+        },
+        recurringExpensesExcludingHousing: {
+          ...mutableScenario.finances.destination
+            .recurringExpensesExcludingHousing,
+          monthlyCents: values.recurringExpensesCents,
+        },
+        retainedPropertyNet: {
+          ...mutableScenario.finances.destination.retainedPropertyNet,
+          monthlyCents: values.retainedPropertyNetCents,
+        },
       },
     },
-  },
-});
+  };
+};
 
 const evaluateResearchScenario = (values = baselineWhatIfValues) =>
   evaluateResearchMoveDecision(
-    scenarioWithWhatIfValues(values),
+    scenarioWithWhatIfValues(
+      losAngelesToSeattleBalancedResearchScenario,
+      values,
+    ),
     loadLosAngelesToSeattleCommuteBenchmark(),
   );
 
@@ -318,63 +337,83 @@ const whatIfControlDefinitions = [
   {
     id: "takeHomeIncomeCents",
     label: "Destination take-home income",
-    assumption:
-      losAngelesToSeattleBalancedResearchScenario.finances.destination
-        .takeHomeIncome,
+    inputPath: "finances.destination.takeHomeIncome.monthlyCents",
+    assumption: (scenario: WhatIfScenario) =>
+      scenario.finances.destination.takeHomeIncome,
   },
   {
     id: "housingCostCents",
     label: "Destination housing",
-    assumption:
-      losAngelesToSeattleBalancedResearchScenario.finances.destination
-        .housingCost,
+    inputPath: "finances.destination.housingCost.monthlyCents",
+    assumption: (scenario: WhatIfScenario) =>
+      scenario.finances.destination.housingCost,
   },
   {
     id: "recurringExpensesCents",
     label: "Other recurring expenses",
-    assumption:
-      losAngelesToSeattleBalancedResearchScenario.finances.destination
-        .recurringExpensesExcludingHousing,
+    inputPath:
+      "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
+    assumption: (scenario: WhatIfScenario) =>
+      scenario.finances.destination.recurringExpensesExcludingHousing,
+  },
+  {
+    id: "retainedPropertyNetCents",
+    label: "Retained-property monthly net",
+    inputPath: "finances.destination.retainedPropertyNet.monthlyCents",
+    assumption: (scenario: WhatIfScenario) =>
+      scenario.finances.destination.retainedPropertyNet,
   },
 ] as const;
 
-export const createResearchWhatIfViewModel = (
-  values: ResearchWhatIfValues = baselineWhatIfValues,
+export const createVerifiedWhatIfViewModel = (
+  baseline: VerifiedResearchEvaluationResult,
+  values: ResearchWhatIfValues = whatIfValuesFromScenario(
+    baseline.scenarioInput,
+  ),
 ) => {
-  const baseline = evaluateResearchScenario();
-  const current = evaluateResearchScenario(values);
+  const baselineValues = whatIfValuesFromScenario(baseline.scenarioInput);
+  const current = evaluateResearchMoveDecision(
+    scenarioWithWhatIfValues(baseline.scenarioInput, values),
+    baseline.benchmarkComparison,
+  );
   const profile = current.decisionProfile;
   const thresholdLabels: Record<string, string> = {
     "finances.destination.takeHomeIncome.monthlyCents": "Take-home income",
     "finances.destination.housingCost.monthlyCents": "Housing",
     "finances.destination.recurringExpensesExcludingHousing.monthlyCents":
       "Recurring expenses",
+    "finances.destination.retainedPropertyNet.monthlyCents":
+      "Retained-property net",
   };
   const thresholdOrder: Record<string, number> = {
     "finances.destination.takeHomeIncome.monthlyCents": 0,
     "finances.destination.housingCost.monthlyCents": 1,
     "finances.destination.recurringExpensesExcludingHousing.monthlyCents": 2,
+    "finances.destination.retainedPropertyNet.monthlyCents": 3,
   };
 
   return {
     values,
-    baselineValues: baselineWhatIfValues,
-    changed: JSON.stringify(values) !== JSON.stringify(baselineWhatIfValues),
-    controls: whatIfControlDefinitions.map((control) => {
-      const range = control.assumption.plausibleRangeCents;
-      if (range === null) {
-        throw new Error(`What-if control ${control.id} requires a range.`);
-      }
-      return {
-        id: control.id,
-        label: control.label,
-        minCents: range.min,
-        maxCents: range.max,
-        valueCents: values[control.id],
-        value: formatMoney(values[control.id]),
-        min: formatMoney(range.min),
-        max: formatMoney(range.max),
-      };
+    baselineValues,
+    changed: JSON.stringify(values) !== JSON.stringify(baselineValues),
+    controls: whatIfControlDefinitions.flatMap((control) => {
+      const range = control.assumption(
+        baseline.scenarioInput,
+      ).plausibleRangeCents;
+      return range === null
+        ? []
+        : [
+            {
+              id: control.id,
+              label: control.label,
+              minCents: range.min,
+              maxCents: range.max,
+              valueCents: values[control.id],
+              value: formatMoney(values[control.id]),
+              min: formatMoney(range.min),
+              max: formatMoney(range.max),
+            },
+          ];
     }),
     result: {
       condition: conditionCopy[profile.condition.value],
@@ -392,7 +431,8 @@ export const createResearchWhatIfViewModel = (
       .filter(
         (breakpoint) =>
           breakpoint.withinPlausibleRange &&
-          breakpoint.changesConditionTo === "worth_a_closer_look",
+          breakpoint.changesConditionTo !==
+            baseline.decisionProfile.condition.value,
       )
       .sort(
         (left, right) =>
@@ -405,9 +445,14 @@ export const createResearchWhatIfViewModel = (
         operator:
           breakpoint.operator === "at_or_above" ? "at least" : "at or below",
         threshold: formatMoney(breakpoint.thresholdCents),
+        changesConditionTo: conditionCopy[breakpoint.changesConditionTo].label,
       })),
   };
 };
+
+export const createResearchWhatIfViewModel = (
+  values: ResearchWhatIfValues = baselineWhatIfValues,
+) => createVerifiedWhatIfViewModel(evaluateResearchScenario(), values);
 
 export type ResearchResultsViewModel = ReturnType<
   typeof createResearchResultsViewModel

@@ -1,18 +1,34 @@
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 
 import {
   createResearchWhatIfViewModel,
+  createVerifiedWhatIfViewModel,
   type ResearchWhatIfValues,
 } from "./model";
 
 type WhatIfKey = keyof ResearchWhatIfValues;
 
-export function WhatIfPanel() {
+type WhatIfPanelProps = {
+  evaluation?: VerifiedResearchEvaluationResult;
+};
+
+export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
   const [values, setValues] = useState<ResearchWhatIfValues>(
-    () => createResearchWhatIfViewModel().values,
+    () =>
+      (evaluation
+        ? createVerifiedWhatIfViewModel(evaluation)
+        : createResearchWhatIfViewModel()
+      ).values,
   );
-  const model = useMemo(() => createResearchWhatIfViewModel(values), [values]);
+  const model = useMemo(
+    () =>
+      evaluation
+        ? createVerifiedWhatIfViewModel(evaluation, values)
+        : createResearchWhatIfViewModel(values),
+    [evaluation, values],
+  );
 
   const update = (key: WhatIfKey, valueCents: number) => {
     setValues((current) => ({ ...current, [key]: valueCents }));
@@ -27,9 +43,9 @@ export function WhatIfPanel() {
             See what changes the answer
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Adjust the three destination estimates inside their declared ranges.
-            Every update reruns the same verified decision engine used by the
-            baseline result.
+            Adjust destination estimates inside their reviewed ranges. Every
+            update reruns the same verified decision engine used by the baseline
+            result.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-teal-800">
@@ -40,6 +56,13 @@ export function WhatIfPanel() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="space-y-6">
+          {model.controls.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
+              All destination financial values were marked confirmed, so there
+              are no estimate ranges to explore. Edit an assumption if you want
+              to test uncertainty.
+            </div>
+          ) : null}
           {model.controls.map((control) => (
             <div key={control.id}>
               <div className="flex items-start justify-between gap-4">
@@ -61,7 +84,7 @@ export function WhatIfPanel() {
                 type="range"
                 min={control.minCents}
                 max={control.maxCents}
-                step={5_000}
+                step={100}
                 value={control.valueCents}
                 aria-valuetext={control.value}
                 onChange={(event) =>
@@ -76,24 +99,29 @@ export function WhatIfPanel() {
             </div>
           ))}
 
-          <div className="border-t border-slate-200 pt-5">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-              Exact decision-changing thresholds
-            </p>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-3">
-              {model.thresholds.map((threshold) => (
-                <li
-                  key={threshold.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600"
-                >
-                  <strong className="block text-slate-950">
-                    {threshold.label}
-                  </strong>
-                  {threshold.operator} {threshold.threshold}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {model.thresholds.length > 0 ? (
+            <div className="border-t border-slate-200 pt-5">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                Exact decision-changing thresholds
+              </p>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {model.thresholds.map((threshold) => (
+                  <li
+                    key={threshold.id}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600"
+                  >
+                    <strong className="block text-slate-950">
+                      {threshold.label}
+                    </strong>
+                    {threshold.operator} {threshold.threshold}
+                    <span className="mt-1 block text-slate-500">
+                      Changes to {threshold.changesConditionTo}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
 
         <div

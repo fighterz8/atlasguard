@@ -7,6 +7,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
 } from "lucide-react";
+import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 
 import { EvidencePanel } from "@/features/research-results/evidence-panel";
 import { HousingContextPanel } from "@/features/research-results/housing-context-panel";
@@ -26,6 +27,7 @@ type ResearchResultsExperienceProps = {
   onEditAssumptions?: () => void;
   onReset?: () => void;
   showWhatIf?: boolean;
+  whatIfEvaluation?: VerifiedResearchEvaluationResult;
 };
 
 export function ResearchResultsExperience({
@@ -34,7 +36,9 @@ export function ResearchResultsExperience({
   onEditAssumptions,
   onReset,
   showWhatIf = false,
+  whatIfEvaluation,
 }: ResearchResultsExperienceProps) {
+  const hasWhatIf = showWhatIf || whatIfEvaluation !== undefined;
   const hasMaterialFindings =
     model.findings.drivers.length +
       model.findings.tradeoffs.length +
@@ -122,8 +126,8 @@ export function ResearchResultsExperience({
             route={model.route}
             housingContext={model.housingContext}
           />
-          {showWhatIf ? (
-            <WhatIfPanel />
+          {hasWhatIf ? (
+            <WhatIfPanel evaluation={whatIfEvaluation} />
           ) : (
             <section
               aria-labelledby="what-if-unavailable-heading"
@@ -236,7 +240,7 @@ export function ResearchResultsExperience({
             </ol>
             <p className="mt-6 flex items-center gap-2 text-xs text-slate-400">
               <MoveRight aria-hidden="true" className="h-4 w-4" />
-              {showWhatIf
+              {hasWhatIf
                 ? "What-if changes use exact deterministic boundaries—not a probability forecast."
                 : "Rerunning reviewed assumptions uses the same deterministic engine—not a probability forecast."}
             </p>
