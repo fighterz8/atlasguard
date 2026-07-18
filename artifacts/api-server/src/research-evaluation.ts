@@ -1,4 +1,7 @@
-import { loadLosAngelesToSeattleResearchBenchmark } from "@workspace/benchmark-data";
+import {
+  loadLosAngelesToSeattleResearchBenchmark,
+  resolveSupportedResearchComparison,
+} from "@workspace/benchmark-data";
 import type {
   ScenarioInput,
   VerifiedResearchEvaluationResult,
@@ -41,10 +44,11 @@ const unsupported = (
 export const evaluateLosAngelesToSeattleResearchScenario = (
   scenario: ScenarioInput,
 ): ResearchEvaluationAttempt => {
-  if (
-    scenario.originMetroSlug !== "los-angeles-ca" ||
-    scenario.destinationMetroSlug !== "seattle-wa"
-  ) {
+  const comparison = resolveSupportedResearchComparison(
+    scenario.originMetroSlug,
+    scenario.destinationMetroSlug,
+  );
+  if (comparison === null) {
     return unsupported(
       "unsupported_location_pair",
       "Research evaluation currently supports only the Los Angeles to Seattle comparison.",

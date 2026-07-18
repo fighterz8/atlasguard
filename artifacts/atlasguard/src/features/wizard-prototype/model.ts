@@ -1,3 +1,10 @@
+import {
+  getSupportedResearchPlace,
+  resolveSupportedResearchComparison,
+  supportedResearchPlaces,
+  type SupportedResearchPlaceSlug,
+} from "@workspace/benchmark-data";
+
 export const wizardSteps = [
   { id: "move", label: "Your move", shortLabel: "Move" },
   { id: "money", label: "Your money", shortLabel: "Money" },
@@ -16,22 +23,9 @@ export type ClimateHeatPreference =
   | "more_hot_days"
   | "does_not_matter";
 
-export const supportedPlaces = [
-  {
-    slug: "los-angeles-ca",
-    city: "Los Angeles",
-    state: "CA",
-    metro: "Los Angeles-Long Beach-Anaheim, CA Metro Area",
-  },
-  {
-    slug: "seattle-wa",
-    city: "Seattle",
-    state: "WA",
-    metro: "Seattle-Tacoma-Bellevue, WA Metro Area",
-  },
-] as const;
+export const supportedPlaces = supportedResearchPlaces;
 
-export type SupportedPlaceSlug = (typeof supportedPlaces)[number]["slug"];
+export type SupportedPlaceSlug = SupportedResearchPlaceSlug;
 
 export type WizardPrototypeDraft = {
   originSlug: SupportedPlaceSlug | "";
@@ -94,7 +88,7 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
 });
 
 export const getPlace = (slug: SupportedPlaceSlug | "") =>
-  supportedPlaces.find((place) => place.slug === slug) ?? null;
+  getSupportedResearchPlace(slug);
 
 const validateMoney = (
   errors: WizardErrors,
@@ -252,8 +246,10 @@ export function validateWizardStep(
     } else if (
       draft.originSlug !== "" &&
       draft.destinationSlug !== "" &&
-      (draft.originSlug !== "los-angeles-ca" ||
-        draft.destinationSlug !== "seattle-wa")
+      resolveSupportedResearchComparison(
+        draft.originSlug,
+        draft.destinationSlug,
+      ) === null
     ) {
       errors.destinationSlug =
         "This research slice currently supports Los Angeles to Seattle only.";

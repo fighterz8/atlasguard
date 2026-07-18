@@ -1,5 +1,7 @@
 import type { ScenarioInput } from "@workspace/contracts";
 
+import { LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON } from "../supported-research-locations";
+
 const confirmed = (monthlyCents: number) => ({
   monthlyCents,
   basis: "confirmed" as const,
@@ -19,8 +21,9 @@ const estimate = (monthlyCents: number, min: number, max: number) => ({
  */
 export const losAngelesToSeattleBalancedResearchScenario = {
   schemaVersion: "1.0.0",
-  originMetroSlug: "los-angeles-ca",
-  destinationMetroSlug: "seattle-wa",
+  originMetroSlug: LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.origin.slug,
+  destinationMetroSlug:
+    LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.destination.slug,
   finances: {
     origin: {
       takeHomeIncome: confirmed(500_000),

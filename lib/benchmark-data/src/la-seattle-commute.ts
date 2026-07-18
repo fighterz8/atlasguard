@@ -18,6 +18,7 @@ import {
   verifyRawCommuteSnapshot,
   type VerifiedRawCommuteSnapshot,
 } from "./raw-snapshot";
+import { getSupportedResearchComparisonPlace } from "./supported-research-locations";
 
 const COMPARISON_SNAPSHOT_VERSION = "1.0.0" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
@@ -27,19 +28,31 @@ export const LOS_ANGELES_SEATTLE_COMMUTE_COMPARISON_SHA256 =
 const metroRef = (
   record: VerifiedRawCommuteSnapshot["metros"][number],
   snapshot: VerifiedRawCommuteSnapshot,
-) => ({
-  slug: record.side === "origin" ? "los-angeles-ca" : ("seattle-wa" as const),
-  cbsaCode: record.cbsaCode,
-  label: record.cbsaLabel,
-  selectedPlace: record.selectedPlace,
-  selectedPlaceMapping: {
-    method: "official_cbsa_title_match" as const,
-    sourceArtifactId: snapshot.artifacts.acsGeographies.id,
-    sourceUrl: snapshot.artifacts.acsGeographies.sourceUrl,
-    sourceArtifactSha256: snapshot.artifacts.acsGeographies.sha256,
-    verifiedOn: snapshot.verifiedOn,
-  },
-});
+) => {
+  const place = getSupportedResearchComparisonPlace(record.side);
+  if (
+    record.cbsaCode !== place.cbsaCode ||
+    record.cbsaLabel !== place.metro ||
+    record.selectedPlace.city !== place.city ||
+    record.selectedPlace.stateCode !== place.state
+  ) {
+    throw new Error("Verified commute geography differs from the catalog.");
+  }
+
+  return {
+    slug: place.slug,
+    cbsaCode: record.cbsaCode,
+    label: record.cbsaLabel,
+    selectedPlace: record.selectedPlace,
+    selectedPlaceMapping: {
+      method: "official_cbsa_title_match" as const,
+      sourceArtifactId: snapshot.artifacts.acsGeographies.id,
+      sourceUrl: snapshot.artifacts.acsGeographies.sourceUrl,
+      sourceArtifactSha256: snapshot.artifacts.acsGeographies.sha256,
+      verifiedOn: snapshot.verifiedOn,
+    },
+  };
+};
 
 const buildEvidence = (
   snapshot: VerifiedRawCommuteSnapshot,

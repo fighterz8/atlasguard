@@ -6,6 +6,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON } from "@workspace/benchmark-data";
 
 import {
   createInitialWizardDraft,
@@ -28,8 +29,8 @@ import { PrototypeShell } from "./prototype-shell";
 import { StepProgress } from "./step-progress";
 
 const exampleDraft: WizardPrototypeDraft = {
-  originSlug: "los-angeles-ca",
-  destinationSlug: "seattle-wa",
+  originSlug: LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.origin.slug,
+  destinationSlug: LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.destination.slug,
   finances: {
     currentTakeHome: "5000",
     targetTakeHome: "5000",

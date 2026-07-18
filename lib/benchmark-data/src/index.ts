@@ -14,3 +14,4 @@ export * from "./raw-snapshot";
 export * from "./research-scenarios/la-seattle-balanced";
 export * from "./source-registry";
 export * from "./source-extraction";
+export * from "./supported-research-locations";

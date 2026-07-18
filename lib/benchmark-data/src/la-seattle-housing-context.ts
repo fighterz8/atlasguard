@@ -12,6 +12,7 @@ import {
   verifyRawHousingSnapshot,
   type VerifiedRawHousingSnapshot,
 } from "./raw-housing-snapshot";
+import { getSupportedResearchComparisonPlace } from "./supported-research-locations";
 
 const COMPARISON_VERSION = "1.0.0" as const;
 const ZERO_SHA = "0".repeat(64);
@@ -32,8 +33,17 @@ const metroRef = (
   side: "origin" | "destination",
 ) => {
   const record = recordFor(snapshot, side);
+  const place = getSupportedResearchComparisonPlace(side);
+  if (
+    record.cbsaCode !== place.cbsaCode ||
+    record.cbsaLabel !== place.metro ||
+    record.selectedPlace.city !== place.city ||
+    record.selectedPlace.stateCode !== place.state
+  ) {
+    throw new Error("Verified housing geography differs from the catalog.");
+  }
   return {
-    slug: side === "origin" ? "los-angeles-ca" : "seattle-wa",
+    slug: place.slug,
     cbsaCode: record.cbsaCode,
     label: record.cbsaLabel,
     selectedPlace: record.selectedPlace,
