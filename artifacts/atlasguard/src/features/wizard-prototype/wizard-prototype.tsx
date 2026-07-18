@@ -175,7 +175,7 @@ export function WizardPrototype() {
         </div>
 
         <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <section className="panel" aria-label="Wizard step">
+          <section className="panel min-w-0" aria-label="Wizard step">
             {errorEntries.length > 0 ? (
               <div
                 ref={errorSummaryRef}

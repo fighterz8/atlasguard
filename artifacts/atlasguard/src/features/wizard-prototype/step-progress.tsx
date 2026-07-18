@@ -23,7 +23,7 @@ export function StepProgress({ currentStep }: StepProgressProps) {
               <div
                 aria-current={current ? "step" : undefined}
                 className={cn(
-                  "flex min-h-14 items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors sm:px-3",
+                  "flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center text-xs font-semibold transition-colors sm:min-h-14 sm:flex-row sm:justify-start sm:gap-2 sm:px-3 sm:text-left",
                   current &&
                     "border-teal-700 bg-teal-50 text-teal-950 shadow-sm",
                   complete &&
@@ -49,7 +49,9 @@ export function StepProgress({ currentStep }: StepProgressProps) {
                     index + 1
                   )}
                 </span>
-                <span className="truncate sm:hidden">{step.shortLabel}</span>
+                <span className="max-w-full truncate sm:hidden">
+                  {step.shortLabel}
+                </span>
                 <span className="hidden truncate sm:inline">{step.label}</span>
               </div>
             </li>
