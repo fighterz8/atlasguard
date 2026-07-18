@@ -1,12 +1,4 @@
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  CheckCircle2,
-  Info,
-  MoveRight,
-  RotateCcw,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle2, RotateCcw } from "lucide-react";
 import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 
 import { EvidencePanel } from "@/features/research-results/evidence-panel";
@@ -17,7 +9,6 @@ import {
   type ResearchResultsViewModel,
 } from "@/features/research-results/model";
 import { PriorityPanel } from "@/features/research-results/priority-panel";
-import { ResearchBanner } from "@/features/research-results/research-banner";
 import { SummaryPanel } from "@/features/research-results/summary-panel";
 import { WhatIfPanel } from "@/features/research-results/what-if-panel";
 
@@ -47,7 +38,6 @@ export function ResearchResultsExperience({
 
   return (
     <div className="min-h-screen bg-[#f7f8f4] text-slate-950">
-      <ResearchBanner reviewedAssumptions={reviewedAssumptions} />
       <header className="border-b border-slate-200/80 bg-[#f7f8f4]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
           <a
@@ -87,44 +77,11 @@ export function ResearchResultsExperience({
       <main className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <SummaryPanel {...model} />
 
-        <section
-          aria-label="Interpretation limits"
-          className="mt-8 grid gap-3 sm:grid-cols-2"
-        >
-          <div className="status-note">
-            <Info
-              aria-hidden="true"
-              className="mt-0.5 h-5 w-5 shrink-0 text-amber-700"
-            />
-            <div>
-              <strong>Confidence: {model.confidence.level}.</strong>{" "}
-              {model.confidence.explanation}
-            </div>
-          </div>
-          <div className="status-note">
-            <Info
-              aria-hidden="true"
-              className="mt-0.5 h-5 w-5 shrink-0 text-amber-700"
-            />
-            <div>
-              <strong>
-                Stability: {model.stability.level.replaceAll("_", " ")}.
-              </strong>{" "}
-              {model.stability.explanation}
-            </div>
-          </div>
-        </section>
-
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <MoneyPanel
             route={model.route}
             finances={model.finances}
             reviewedAssumptions={reviewedAssumptions}
-          />
-          <PriorityPanel route={model.route} priority={model.priority} />
-          <HousingContextPanel
-            route={model.route}
-            housingContext={model.housingContext}
           />
           {hasWhatIf ? (
             <WhatIfPanel evaluation={whatIfEvaluation} />
@@ -133,44 +90,30 @@ export function ResearchResultsExperience({
               aria-labelledby="what-if-unavailable-heading"
               className="panel lg:col-span-2"
             >
-              <div className="flex items-start gap-3">
-                <SlidersHorizontal
-                  aria-hidden="true"
-                  className="mt-0.5 h-5 w-5 shrink-0 text-slate-500"
-                />
-                <div>
-                  <p className="eyebrow">Assumption sensitivity</p>
-                  <h2
-                    id="what-if-unavailable-heading"
-                    className="section-heading"
-                  >
-                    What-if ranges are not available yet
-                  </h2>
-                  <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                    This review collected point estimates, not plausible ranges.
-                    MoveWise will not invent uncertainty or show misleading
-                    sliders. Edit an assumption and rerun the same deterministic
-                    evaluation instead.
-                  </p>
-                  {onEditAssumptions ? (
-                    <button
-                      type="button"
-                      onClick={onEditAssumptions}
-                      className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:border-teal-700 hover:text-teal-900"
-                    >
-                      <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-                      Edit reviewed assumptions
-                    </button>
-                  ) : null}
-                </div>
-              </div>
+              <p className="eyebrow">Try another scenario</p>
+              <h2 id="what-if-unavailable-heading" className="section-heading">
+                Change an assumption and rerun
+              </h2>
+              {onEditAssumptions ? (
+                <button
+                  type="button"
+                  onClick={onEditAssumptions}
+                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:border-teal-700 hover:text-teal-900"
+                >
+                  <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+                  Edit my numbers
+                </button>
+              ) : null}
             </section>
           )}
 
-          <section aria-labelledby="reading-heading" className="panel">
-            <p className="eyebrow">Why this result</p>
+          <section
+            aria-labelledby="reading-heading"
+            className={model.priority ? "panel" : "panel lg:col-span-2"}
+          >
+            <p className="eyebrow">Key takeaways</p>
             <h2 id="reading-heading" className="section-heading">
-              Decision reading
+              Why MoveWise landed here
             </h2>
             {hasMaterialFindings ? (
               <ul className="mt-5 space-y-3">
@@ -197,70 +140,40 @@ export function ResearchResultsExperience({
                   No material driver or blocker was detected.
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {model.finances.reading} The commute change is also not
-                  material. More evidence is required—not more confident
-                  wording.
+                  {model.finances.reading}
+                  {model.priority
+                    ? " The commute difference is not large enough to change this reading."
+                    : " Commute was excluded because you said it does not matter."}
                 </p>
               </div>
             )}
           </section>
 
-          <section
-            aria-labelledby="next-heading"
-            className="panel bg-slate-950 text-white"
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-300">
-              Next investigation
-            </p>
-            <h2
-              id="next-heading"
-              className="mt-2 text-2xl font-semibold tracking-[-0.03em]"
-            >
-              What would make this useful?
-            </h2>
-            <ol className="mt-5 space-y-4">
-              {model.nextSteps.map((step, index) => (
-                <li
-                  key={step}
-                  className="flex gap-3 text-sm leading-6 text-slate-200"
-                >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-400/15 text-xs font-semibold text-teal-200">
-                    {index + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-              <li className="flex gap-3 text-sm leading-6 text-slate-200">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-400/15 text-xs font-semibold text-teal-200">
-                  {model.nextSteps.length + 1}
-                </span>
-                Add verified cost-of-living and climate evidence before
-                comparing a real move.
-              </li>
-            </ol>
-            <p className="mt-6 flex items-center gap-2 text-xs text-slate-400">
-              <MoveRight aria-hidden="true" className="h-4 w-4" />
-              {hasWhatIf
-                ? "What-if changes use exact deterministic boundaries—not a probability forecast."
-                : "Rerunning reviewed assumptions uses the same deterministic engine—not a probability forecast."}
-            </p>
-          </section>
+          {model.priority ? (
+            <section aria-labelledby="supporting-heading" className="panel">
+              <p className="eyebrow">Supporting context</p>
+              <h2 id="supporting-heading" className="section-heading">
+                Commute comparison
+              </h2>
+              <div className="mt-5">
+                <PriorityPanel route={model.route} priority={model.priority} />
+              </div>
+            </section>
+          ) : null}
+
+          <HousingContextPanel
+            route={model.route}
+            housingContext={model.housingContext}
+          />
 
           <EvidencePanel evidence={model.evidence} />
         </div>
 
-        <footer className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="mt-10 border-t border-slate-200 pt-6 text-xs leading-5 text-slate-500">
           <p>
-            Research-only result · no account, browser storage, model provider,
-            or live API call.
+            Research preview · this reading is based on the information entered
+            and the comparison data currently available.
           </p>
-          <a
-            className="inline-flex items-center gap-1 font-medium text-teal-800 hover:text-teal-950"
-            href="#evidence-heading"
-          >
-            Inspect the evidence{" "}
-            <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
-          </a>
         </footer>
       </main>
     </div>

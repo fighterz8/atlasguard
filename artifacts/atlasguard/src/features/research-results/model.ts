@@ -290,17 +290,20 @@ export const createResearchResultsViewModel = (
         rawSnapshotSha256: housingContext.snapshot.rawSnapshot.sha256,
       },
     },
-    priority: {
-      label: "Typical one-way commute",
-      originValue: `${metric.originValue?.toFixed(1)} min`,
-      destinationValue: `${metric.destinationValue?.toFixed(1)} min`,
-      originMoe: metric.quality.marginOfError?.origin ?? null,
-      destinationMoe: metric.quality.marginOfError?.destination ?? null,
-      classification: priority.classification,
-      weight: priority.weight,
-      quality: metric.quality.grade.value,
-      interpretation: priorityInterpretation,
-    },
+    priority:
+      priority.weight === 0
+        ? null
+        : {
+            label: "Typical one-way commute",
+            originValue: `${metric.originValue?.toFixed(1)} min`,
+            destinationValue: `${metric.destinationValue?.toFixed(1)} min`,
+            originMoe: metric.quality.marginOfError?.origin ?? null,
+            destinationMoe: metric.quality.marginOfError?.destination ?? null,
+            classification: priority.classification,
+            weight: priority.weight,
+            quality: metric.quality.grade.value,
+            interpretation: priorityInterpretation,
+          },
     findings: {
       drivers: profile.findings.drivers.map(findingText),
       tradeoffs: profile.findings.tradeoffs.map(findingText),
@@ -391,30 +394,26 @@ export const createVerifiedWhatIfViewModel = (
     "finances.destination.recurringExpensesExcludingHousing.monthlyCents": 2,
     "finances.destination.retainedPropertyNet.monthlyCents": 3,
   };
+  const editableDefinitions = whatIfControlDefinitions.filter(
+    (control) =>
+      control.assumption(baseline.scenarioInput).basis !== "confirmed",
+  );
+  const editableInputPaths = new Set<string>(
+    editableDefinitions.map((control) => control.inputPath),
+  );
 
   return {
     values,
     baselineValues,
     changed: JSON.stringify(values) !== JSON.stringify(baselineValues),
-    controls: whatIfControlDefinitions.flatMap((control) => {
-      const range = control.assumption(
-        baseline.scenarioInput,
-      ).plausibleRangeCents;
-      return range === null
-        ? []
-        : [
-            {
-              id: control.id,
-              label: control.label,
-              minCents: range.min,
-              maxCents: range.max,
-              valueCents: values[control.id],
-              value: formatMoney(values[control.id]),
-              min: formatMoney(range.min),
-              max: formatMoney(range.max),
-            },
-          ];
-    }),
+    controls: editableDefinitions.map((control) => ({
+      id: control.id,
+      label: control.label,
+      valueCents: values[control.id],
+      valueDollars: String(values[control.id] / 100),
+      value: formatMoney(values[control.id]),
+      baseline: formatMoney(baselineValues[control.id]),
+    })),
     result: {
       condition: conditionCopy[profile.condition.value],
       monthlyCushion: formatMoney(
@@ -430,7 +429,8 @@ export const createVerifiedWhatIfViewModel = (
       .filter((breakpoint) => breakpoint.kind === "money")
       .filter(
         (breakpoint) =>
-          breakpoint.withinPlausibleRange &&
+          editableInputPaths.has(breakpoint.inputPath) &&
+          breakpoint.changesConditionTo === "worth_a_closer_look" &&
           breakpoint.changesConditionTo !==
             baseline.decisionProfile.condition.value,
       )

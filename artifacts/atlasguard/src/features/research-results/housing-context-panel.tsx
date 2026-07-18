@@ -1,4 +1,4 @@
-import { Building2, ExternalLink, ShieldCheck } from "lucide-react";
+import { Building2, ExternalLink } from "lucide-react";
 
 import type { ResearchResultsViewModel } from "./model";
 
@@ -31,27 +31,20 @@ export function HousingContextPanel({
       aria-labelledby="housing-context-heading"
       className="panel lg:col-span-2"
     >
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-2xl">
-          <div className="flex items-center gap-2">
-            <p className="eyebrow">Verified housing context</p>
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-800">
-              Context only
-            </span>
-          </div>
+          <p className="eyebrow">Regional context</p>
           <h2 id="housing-context-heading" className="section-heading">
-            What the regional rent benchmark says
+            Typical rent in each metro
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            ACS median gross rent gives the comparison a grounded area-level
-            reference. It is deliberately isolated from the illustrative
-            financial inputs above.
+            A quick area-level reference alongside the housing amount you
+            entered.
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900">
-          <ShieldCheck aria-hidden="true" className="h-4 w-4" />
+        <span className="w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">
           {housingContext.boundary}
-        </div>
+        </span>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -87,40 +80,37 @@ export function HousingContextPanel({
         ))}
       </div>
 
-      <div className="mt-5 grid gap-5 border-t border-slate-200 pt-5 lg:grid-cols-[1.2fr_0.8fr]">
-        <div>
-          <p className="text-sm font-semibold text-slate-950">
-            Difference: {housingContext.delta} per month
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {housingContext.reading}
-          </p>
-          <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+      <div className="mt-5 border-t border-slate-200 pt-5">
+        <p className="text-sm font-semibold text-slate-950">
+          Difference: {housingContext.delta} per month
+        </p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          {housingContext.reading}
+        </p>
+        <details className="mt-4 text-xs leading-5 text-slate-500">
+          <summary className="min-h-11 cursor-pointer py-3 font-semibold text-slate-700">
+            About this benchmark
+          </summary>
+          <ul className="space-y-2">
             {housingContext.caveats.map((caveat) => (
               <li key={caveat}>• {caveat}</li>
             ))}
           </ul>
-        </div>
-        <div className="rounded-xl bg-slate-950 p-4 text-xs leading-5 text-slate-300">
-          <p className="font-semibold text-white">
+          <p className="mt-3">
             {housingContext.evidence.publisher} ·{" "}
-            {housingContext.evidence.tableId}
-          </p>
-          <p className="mt-1">{housingContext.evidence.observationPeriod}</p>
-          <p className="mt-1">
-            Released {housingContext.evidence.releasedOn} · verified{" "}
-            {housingContext.evidence.verifiedOn}
+            {housingContext.evidence.tableId} ·{" "}
+            {housingContext.evidence.observationPeriod}
           </p>
           <a
             href={housingContext.evidence.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 inline-flex items-center gap-1 font-semibold text-teal-300 hover:text-teal-200"
+            className="mt-3 inline-flex items-center gap-1 font-semibold text-teal-800 hover:text-teal-950"
           >
-            Inspect official source
+            Official source
             <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
           </a>
-        </div>
+        </details>
       </div>
     </section>
   );

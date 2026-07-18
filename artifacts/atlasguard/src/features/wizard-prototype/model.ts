@@ -2,7 +2,6 @@ export const wizardSteps = [
   { id: "move", label: "Your move", shortLabel: "Move" },
   { id: "money", label: "Your money", shortLabel: "Money" },
   { id: "priorities", label: "What matters", shortLabel: "Priorities" },
-  { id: "review", label: "Review assumptions", shortLabel: "Review" },
 ] as const;
 
 export type WizardStepId = (typeof wizardSteps)[number]["id"];
@@ -69,7 +68,7 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     targetHousing: "",
     currentExpenses: "",
     targetExpenses: "",
-    retainedPropertyNet: "",
+    retainedPropertyNet: "0",
     targetTakeHomeRangeMin: "",
     targetTakeHomeRangeMax: "",
     targetHousingRangeMin: "",
@@ -81,7 +80,7 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     targetTakeHomeBasis: "user_estimate",
     targetHousingBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
-    retainedPropertyNetBasis: "user_estimate",
+    retainedPropertyNetBasis: "confirmed",
   },
   commuteImportance: "important",
 });
@@ -168,6 +167,10 @@ const validatePlausibleRange = (
 ) => {
   if (finances[options.basisKey] === "confirmed") return;
 
+  const minValue = finances[options.minKey].trim();
+  const maxValue = finances[options.maxKey].trim();
+  if (minValue === "" && maxValue === "") return;
+
   if (options.signed) {
     validateSignedMoney(
       errors,
@@ -228,7 +231,7 @@ export function validateWizardStep(
 ): WizardErrors {
   const errors: WizardErrors = {};
 
-  if (step === "move" || step === "review") {
+  if (step === "move") {
     if (draft.originSlug === "") {
       errors.originSlug = "Choose your current location.";
     }
@@ -249,7 +252,7 @@ export function validateWizardStep(
     }
   }
 
-  if (step === "money" || step === "review") {
+  if (step === "money") {
     validateMoney(
       errors,
       "currentTakeHome",
@@ -332,6 +335,13 @@ export function validateWizardStep(
   return errors;
 }
 
+export function validateWizardDraft(draft: WizardPrototypeDraft): WizardErrors {
+  return {
+    ...validateWizardStep("move", draft),
+    ...validateWizardStep("money", draft),
+  };
+}
+
 export function getNextStep(
   current: WizardStepId,
   draft: WizardPrototypeDraft,
@@ -351,137 +361,4 @@ export function getNextStep(
 export function getPreviousStep(current: WizardStepId): WizardStepId {
   const index = wizardSteps.findIndex((step) => step.id === current);
   return wizardSteps[Math.max(index - 1, 0)].id;
-}
-
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-const formatMoney = (value: string) => {
-  const amount = Number(value.trim().replaceAll(",", ""));
-  return Number.isFinite(amount) ? `${money.format(amount)}/month` : "Missing";
-};
-
-const formatRange = (min: string, max: string) =>
-  `${formatMoney(min).replace("/month", "")}–${formatMoney(max)}`;
-
-export function createReviewRows(draft: WizardPrototypeDraft) {
-  const origin = getPlace(draft.originSlug);
-  const destination = getPlace(draft.destinationSlug);
-
-  const rows = [
-    {
-      group: "Move",
-      label: "Current location",
-      value: origin ? `${origin.city}, ${origin.state}` : "Missing",
-      basis: "manual_entry" as const,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Move",
-      label: "Destination",
-      value: destination
-        ? `${destination.city}, ${destination.state}`
-        : "Missing",
-      basis: "manual_entry" as const,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Money",
-      label: "Current take-home income",
-      value: formatMoney(draft.finances.currentTakeHome),
-      basis: "confirmed" as const,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Money",
-      label: "Target take-home income",
-      value: formatMoney(draft.finances.targetTakeHome),
-      basis: draft.finances.targetTakeHomeBasis,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Money",
-      label: "Current housing",
-      value: formatMoney(draft.finances.currentHousing),
-      basis: "confirmed" as const,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Money",
-      label: "Target housing",
-      value: formatMoney(draft.finances.targetHousing),
-      basis: draft.finances.targetHousingBasis,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Money",
-      label: "Current recurring expenses",
-      value: formatMoney(draft.finances.currentExpenses),
-      basis: "confirmed" as const,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Money",
-      label: "Target recurring expenses",
-      value: formatMoney(draft.finances.targetExpenses),
-      basis: draft.finances.targetExpensesBasis,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Money",
-      label: "Retained-property monthly net",
-      value: formatMoney(draft.finances.retainedPropertyNet),
-      basis: draft.finances.retainedPropertyNetBasis,
-      source: "manual_entry" as const,
-    },
-    {
-      group: "Priority",
-      label: "Typical commute time",
-      value: draft.commuteImportance.replaceAll("_", " "),
-      basis: "user_priority" as const,
-      source: "manual_entry" as const,
-    },
-  ];
-
-  const rangeRows = [
-    {
-      basisKey: "targetTakeHomeBasis" as const,
-      label: "Target take-home plausible range",
-      min: draft.finances.targetTakeHomeRangeMin,
-      max: draft.finances.targetTakeHomeRangeMax,
-    },
-    {
-      basisKey: "targetHousingBasis" as const,
-      label: "Target housing plausible range",
-      min: draft.finances.targetHousingRangeMin,
-      max: draft.finances.targetHousingRangeMax,
-    },
-    {
-      basisKey: "targetExpensesBasis" as const,
-      label: "Target expenses plausible range",
-      min: draft.finances.targetExpensesRangeMin,
-      max: draft.finances.targetExpensesRangeMax,
-    },
-    {
-      basisKey: "retainedPropertyNetBasis" as const,
-      label: "Retained-property plausible range",
-      min: draft.finances.retainedPropertyNetRangeMin,
-      max: draft.finances.retainedPropertyNetRangeMax,
-    },
-  ]
-    .filter(({ basisKey }) => draft.finances[basisKey] === "user_estimate")
-    .map(({ label, min, max }) => ({
-      group: "Money",
-      label,
-      value: formatRange(min, max),
-      basis: "user_estimate" as const,
-      source: "manual_entry" as const,
-    }));
-
-  const priorityIndex = rows.findIndex((row) => row.group === "Priority");
-  rows.splice(priorityIndex, 0, ...rangeRows);
-  return rows;
 }

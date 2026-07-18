@@ -7,7 +7,7 @@ import {
 } from "@workspace/contracts";
 
 import {
-  validateWizardStep,
+  validateWizardDraft,
   type PriorityImportance,
   type WizardErrors,
   type WizardPrototypeDraft,
@@ -55,6 +55,8 @@ const rangeToCents = (
 ) => {
   if (basis === "confirmed") return null;
 
+  if (min.trim() === "" && max.trim() === "") return null;
+
   const minCents = dollarsToCents(min, `${fieldPrefix}RangeMin`, errors);
   const maxCents = dollarsToCents(max, `${fieldPrefix}RangeMax`, errors);
   return minCents === null || maxCents === null
@@ -65,7 +67,7 @@ const rangeToCents = (
 export function adaptWizardDraftToScenarioInput(
   draft: WizardPrototypeDraft,
 ): WizardScenarioAdapterResult {
-  const errors = validateWizardStep("review", draft);
+  const errors = validateWizardDraft(draft);
   if (Object.keys(errors).length > 0) {
     return { success: false, errors };
   }

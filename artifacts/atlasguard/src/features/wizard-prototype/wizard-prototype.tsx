@@ -1,12 +1,18 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
-import { useRef, useState } from "react";
-
-import { StatusBadge } from "../ux-system/status-badge";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  LoaderCircle,
+  RotateCcw,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   createInitialWizardDraft,
+  getPlace,
   getNextStep,
   getPreviousStep,
+  wizardSteps,
   type AssumptionBasis,
   type PriorityImportance,
   type SupportedPlaceSlug,
@@ -14,16 +20,10 @@ import {
   type WizardPrototypeDraft,
   type WizardStepId,
 } from "./model";
-import {
-  MoneyStep,
-  type BasisKey,
-  type RangeKey,
-  type ValueKey,
-} from "./money-step";
+import { MoneyStep, type BasisKey, type ValueKey } from "./money-step";
 import { MoveStep } from "./move-step";
 import { PrioritiesStep } from "./priorities-step";
 import { PrototypeShell } from "./prototype-shell";
-import { ReviewStep } from "./review-step";
 import { StepProgress } from "./step-progress";
 
 const exampleDraft: WizardPrototypeDraft = {
@@ -37,12 +37,12 @@ const exampleDraft: WizardPrototypeDraft = {
     currentExpenses: "1500",
     targetExpenses: "1500",
     retainedPropertyNet: "0",
-    targetTakeHomeRangeMin: "4750",
-    targetTakeHomeRangeMax: "5500",
-    targetHousingRangeMin: "1700",
-    targetHousingRangeMax: "2400",
-    targetExpensesRangeMin: "1200",
-    targetExpensesRangeMax: "1800",
+    targetTakeHomeRangeMin: "",
+    targetTakeHomeRangeMax: "",
+    targetHousingRangeMin: "",
+    targetHousingRangeMax: "",
+    targetExpensesRangeMin: "",
+    targetExpensesRangeMax: "",
     retainedPropertyNetRangeMin: "",
     retainedPropertyNetRangeMax: "",
     targetTakeHomeBasis: "user_estimate",
@@ -55,6 +55,16 @@ const exampleDraft: WizardPrototypeDraft = {
 
 const errorFieldId = (path: string) =>
   path.startsWith("finances.") ? path.replace("finances.", "") : path;
+
+type RangeKey =
+  | "targetTakeHomeRangeMin"
+  | "targetTakeHomeRangeMax"
+  | "targetHousingRangeMin"
+  | "targetHousingRangeMax"
+  | "targetExpensesRangeMin"
+  | "targetExpensesRangeMax"
+  | "retainedPropertyNetRangeMin"
+  | "retainedPropertyNetRangeMax";
 
 const rangeKeysByBasis: Record<
   BasisKey,
@@ -82,13 +92,6 @@ const rangeKeysByBasis: Record<
   },
 };
 
-const valueKeyByRange = Object.fromEntries(
-  Object.values(rangeKeysByBasis).flatMap(({ value, min, max }) => [
-    [min, value],
-    [max, value],
-  ]),
-) as Record<RangeKey, ValueKey>;
-
 type WizardPrototypeProps = {
   initialDraft?: WizardPrototypeDraft;
   onEvaluate?: (draft: WizardPrototypeDraft) => WizardErrors;
@@ -99,14 +102,25 @@ export function WizardPrototype({
   onEvaluate,
 }: WizardPrototypeProps) {
   const [step, setStep] = useState<WizardStepId>(
-    initialDraft ? "review" : "move",
+    initialDraft ? "money" : "move",
   );
   const [draft, setDraft] = useState<WizardPrototypeDraft>(() =>
     initialDraft ? structuredClone(initialDraft) : createInitialWizardDraft(),
   );
   const [errors, setErrors] = useState<WizardErrors>({});
   const [reviewComplete, setReviewComplete] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
+  const evaluationTimerRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (evaluationTimerRef.current !== null) {
+        window.clearTimeout(evaluationTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const clearError = (key: string) => {
     setErrors((current) => {
@@ -142,13 +156,18 @@ export function WizardPrototype({
       return;
     }
 
-    if (step === "review") {
+    if (step === "priorities") {
       if (onEvaluate) {
-        const evaluationErrors = onEvaluate(structuredClone(draft));
-        setErrors(evaluationErrors);
-        if (Object.keys(evaluationErrors).length > 0) {
-          focusErrors(evaluationErrors);
-        }
+        setIsEvaluating(true);
+        evaluationTimerRef.current = window.setTimeout(() => {
+          const evaluationErrors = onEvaluate(structuredClone(draft));
+          evaluationTimerRef.current = null;
+          setIsEvaluating(false);
+          setErrors(evaluationErrors);
+          if (Object.keys(evaluationErrors).length > 0) {
+            focusErrors(evaluationErrors);
+          }
+        }, 650);
         return;
       }
       setReviewComplete(true);
@@ -189,15 +208,34 @@ export function WizardPrototype({
     clearError(key);
   };
 
-  const updateFinanceValue = (key: ValueKey | RangeKey, value: string) => {
+  const updateFinanceValue = (key: ValueKey, value: string) => {
     setDraft((current) => ({
       ...current,
       finances: { ...current.finances, [key]: value },
     }));
     clearError(`finances.${key}`);
-    if (key in valueKeyByRange) {
-      clearError(`finances.${valueKeyByRange[key as RangeKey]}`);
-    }
+  };
+
+  const copyCurrentFinances = () => {
+    setDraft((current) => ({
+      ...current,
+      finances: {
+        ...current.finances,
+        targetTakeHome: current.finances.currentTakeHome,
+        targetHousing: current.finances.currentHousing,
+        targetExpenses: current.finances.currentExpenses,
+        targetTakeHomeBasis: "user_estimate",
+        targetHousingBasis: "user_estimate",
+        targetExpensesBasis: "user_estimate",
+      },
+    }));
+    setErrors((current) => {
+      const next = { ...current };
+      delete next["finances.targetTakeHome"];
+      delete next["finances.targetHousing"];
+      delete next["finances.targetExpenses"];
+      return next;
+    });
   };
 
   const updateBasis = (key: BasisKey, value: AssumptionBasis) => {
@@ -228,6 +266,8 @@ export function WizardPrototype({
   };
 
   const errorEntries = Object.entries(errors);
+  const origin = getPlace(draft.originSlug);
+  const destination = getPlace(draft.destinationSlug);
 
   return (
     <PrototypeShell>
@@ -241,8 +281,8 @@ export function WizardPrototype({
               Pre-commitment move validator
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Compare one move using explicit household assumptions and visible
-              evidence boundaries.
+              Answer three focused questions, then see the financial tradeoff
+              and what could change it.
             </p>
           </div>
           <button
@@ -260,120 +300,175 @@ export function WizardPrototype({
         </div>
 
         <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <section className="panel min-w-0" aria-label="Wizard step">
-            {errorEntries.length > 0 ? (
-              <div
-                ref={errorSummaryRef}
-                tabIndex={-1}
-                role="alert"
-                className="mb-6 rounded-xl border border-risk/25 bg-risk-surface p-4 text-risk"
-              >
-                <p className="font-semibold">
-                  Correct these fields to continue:
-                </p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                  {errorEntries.map(([key, message]) => (
-                    <li key={key}>{message}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-
-            {step === "move" ? (
-              <MoveStep draft={draft} errors={errors} onChange={updateMove} />
-            ) : null}
-            {step === "money" ? (
-              <MoneyStep
-                finances={draft.finances}
-                errors={errors}
-                onValueChange={updateFinanceValue}
-                onBasisChange={updateBasis}
-              />
-            ) : null}
-            {step === "priorities" ? (
-              <PrioritiesStep
-                value={draft.commuteImportance}
-                onChange={updatePriority}
-              />
-            ) : null}
-            {step === "review" ? <ReviewStep draft={draft} /> : null}
-
-            {reviewComplete ? (
+          <section
+            className="panel relative min-w-0 overflow-hidden"
+            aria-label="Wizard step"
+            aria-busy={isEvaluating || undefined}
+          >
+            {isEvaluating ? (
               <div
                 role="status"
-                className="mt-7 rounded-xl border border-favorable/25 bg-favorable-surface p-4 text-favorable"
+                className="flex min-h-[30rem] flex-col items-center justify-center px-4 py-12 text-center"
               >
-                <p className="font-semibold">Assumption review complete.</p>
-                <p className="mt-1 text-sm leading-6">
-                  The prototype stops here by design. You can inspect the fixed
-                  research result without submitting these values.
+                <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 text-teal-800">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-teal-100 opacity-60 motion-reduce:animate-none" />
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className="relative h-7 w-7 animate-spin motion-reduce:animate-none"
+                  />
+                </span>
+                <h1 className="mt-6 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+                  Building your move picture
+                </h1>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  Comparing your monthly position and applying the priorities
+                  you chose.
                 </p>
-                <a
-                  href={`${import.meta.env.BASE_URL}research/la-to-seattle`}
-                  className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg bg-favorable px-4 py-2 text-sm font-semibold text-white"
-                >
-                  View fixed sample result
-                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
-                </a>
+                <div aria-hidden="true" className="mt-6 flex gap-2">
+                  {[0, 1, 2].map((item) => (
+                    <span
+                      key={item}
+                      className="h-2 w-12 animate-pulse rounded-full bg-teal-200 motion-reduce:animate-none"
+                    />
+                  ))}
+                </div>
               </div>
-            ) : null}
+            ) : (
+              <>
+                {errorEntries.length > 0 ? (
+                  <div
+                    ref={errorSummaryRef}
+                    tabIndex={-1}
+                    role="alert"
+                    className="mb-6 rounded-xl border border-risk/25 bg-risk-surface p-4 text-risk"
+                  >
+                    <p className="font-semibold">
+                      Correct these fields to continue:
+                    </p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                      {errorEntries.map(([key, message]) => (
+                        <li key={key}>{message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
 
-            <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-2">
-                {step !== "move" ? (
+                <div
+                  key={step}
+                  className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
+                >
+                  {step === "move" ? (
+                    <MoveStep
+                      draft={draft}
+                      errors={errors}
+                      onChange={updateMove}
+                    />
+                  ) : null}
+                  {step === "money" ? (
+                    <MoneyStep
+                      finances={draft.finances}
+                      errors={errors}
+                      onValueChange={updateFinanceValue}
+                      onBasisChange={updateBasis}
+                      onCopyCurrent={copyCurrentFinances}
+                    />
+                  ) : null}
+                  {step === "priorities" ? (
+                    <PrioritiesStep
+                      value={draft.commuteImportance}
+                      onChange={updatePriority}
+                    />
+                  ) : null}
+                </div>
+
+                {reviewComplete ? (
+                  <div
+                    role="status"
+                    className="mt-7 rounded-xl border border-favorable/25 bg-favorable-surface p-4 text-favorable"
+                  >
+                    <p className="font-semibold">Your comparison is ready.</p>
+                    <p className="mt-1 text-sm leading-6">
+                      The prototype stops here by design. You can inspect the
+                      fixed research result without submitting these values.
+                    </p>
+                    <a
+                      href={`${import.meta.env.BASE_URL}research/la-to-seattle`}
+                      className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg bg-favorable px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      View fixed sample result
+                      <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                    </a>
+                  </div>
+                ) : null}
+
+                <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex gap-2">
+                    {step !== "move" ? (
+                      <button
+                        type="button"
+                        onClick={goBack}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:border-teal-600 hover:text-teal-900"
+                      >
+                        <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+                        Back
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={reset}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                    >
+                      <RotateCcw aria-hidden="true" className="h-4 w-4" />
+                      Reset
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    onClick={goBack}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:border-teal-600 hover:text-teal-900"
+                    onClick={continueForward}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-900"
                   >
-                    <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-                    Back
+                    {step === "priorities" ? "See my result" : "Continue"}
+                    <ArrowRight aria-hidden="true" className="h-4 w-4" />
                   </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                >
-                  <RotateCcw aria-hidden="true" className="h-4 w-4" />
-                  Reset
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={continueForward}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-900"
-              >
-                {step === "review"
-                  ? onEvaluate
-                    ? "Evaluate reviewed move"
-                    : "Finish review"
-                  : "Continue"}
-                <ArrowRight aria-hidden="true" className="h-4 w-4" />
-              </button>
-            </div>
+                </div>
+              </>
+            )}
           </section>
 
           <aside
-            aria-label="Prototype boundaries"
+            aria-label="Your comparison"
             className="space-y-4 lg:sticky lg:top-6"
           >
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-950">
-                Trust boundaries
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                Your comparison
               </p>
-              <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">
-                <li>• No account or persistence.</li>
-                <li>• No live API or data-source request.</li>
-                <li>• No AI-selected facts or recommendation.</li>
-                <li>• Manual entry remains fully supported.</li>
-              </ul>
+              <p className="mt-3 text-lg font-semibold tracking-[-0.02em] text-slate-950">
+                {origin ? `${origin.city}, ${origin.state}` : "Choose a start"}
+                <ArrowRight
+                  aria-hidden="true"
+                  className="mx-2 inline h-4 w-4 text-teal-700"
+                />
+                {destination
+                  ? `${destination.city}, ${destination.state}`
+                  : "choose a destination"}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Your answers stay editable. Use Back anytime—there is no
+                separate review chore at the end.
+              </p>
             </div>
-            <div className="rounded-xl border border-estimate/25 bg-estimate-surface p-5 text-estimate">
-              <StatusBadge tone="estimate">Source-aware by design</StatusBadge>
-              <p className="mt-3 text-sm leading-6">
-                Future imported aggregates remain visibly separate from
-                confirmed values and can always be corrected before evaluation.
+            <div className="rounded-xl bg-slate-950 p-5 text-white shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-300">
+                Step {wizardSteps.findIndex((item) => item.id === step) + 1} of
+                3
+              </p>
+              <p className="mt-2 text-sm font-semibold">
+                {wizardSteps.find((item) => item.id === step)?.label}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-slate-300">
+                MoveWise uses only the information needed for the comparison
+                shown next.
               </p>
             </div>
           </aside>

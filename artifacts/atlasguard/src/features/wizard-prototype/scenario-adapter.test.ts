@@ -124,6 +124,32 @@ describe("Wizard scenario adapter", () => {
     ).toEqual({ min: 150_000, max: 200_000 });
   });
 
+  it("keeps point estimates valid when no uncertainty range is supplied", () => {
+    const draft = validDraft();
+    draft.finances.targetHousingRangeMin = "";
+    draft.finances.targetHousingRangeMax = "";
+    draft.finances.targetExpensesRangeMin = "";
+    draft.finances.targetExpensesRangeMax = "";
+    draft.finances.retainedPropertyNetRangeMin = "";
+    draft.finances.retainedPropertyNetRangeMax = "";
+
+    const result = adaptWizardDraftToScenarioInput(draft);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(
+      result.scenario.finances.destination.housingCost.plausibleRangeCents,
+    ).toBeNull();
+    expect(
+      result.scenario.finances.destination.recurringExpensesExcludingHousing
+        .plausibleRangeCents,
+    ).toBeNull();
+    expect(
+      result.scenario.finances.destination.retainedPropertyNet
+        .plausibleRangeCents,
+    ).toBeNull();
+  });
+
   it("rejects amounts outside the canonical monthly domain", () => {
     const draft = validDraft();
     draft.finances.targetHousing = "100000001";

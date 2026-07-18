@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   createInitialWizardDraft,
-  createReviewRows,
   getNextStep,
   getPreviousStep,
   validateWizardStep,
@@ -66,7 +65,18 @@ describe("Wizard prototype model", () => {
     expect(validateWizardStep("money", draft)).toEqual({});
   });
 
-  it("requires complete estimate ranges that contain the entered value", () => {
+  it("accepts point estimates and validates a range only when supplied", () => {
+    const pointEstimates = validDraft();
+    pointEstimates.finances.targetTakeHomeRangeMin = "";
+    pointEstimates.finances.targetTakeHomeRangeMax = "";
+    pointEstimates.finances.targetHousingRangeMin = "";
+    pointEstimates.finances.targetHousingRangeMax = "";
+    pointEstimates.finances.targetExpensesRangeMin = "";
+    pointEstimates.finances.targetExpensesRangeMax = "";
+    pointEstimates.finances.retainedPropertyNetRangeMin = "";
+    pointEstimates.finances.retainedPropertyNetRangeMax = "";
+    expect(validateWizardStep("money", pointEstimates)).toEqual({});
+
     const missing = validDraft();
     missing.finances.targetHousingRangeMin = "";
     expect(validateWizardStep("money", missing)).toMatchObject({
@@ -123,40 +133,7 @@ describe("Wizard prototype model", () => {
     const draft = validDraft();
     const before = structuredClone(draft);
 
-    expect(getPreviousStep("review")).toBe("priorities");
+    expect(getPreviousStep("priorities")).toBe("money");
     expect(draft).toEqual(before);
-  });
-
-  it("builds a provenance-aware assumption review", () => {
-    const rows = createReviewRows(validDraft());
-
-    expect(rows).toContainEqual({
-      group: "Money",
-      label: "Target take-home income",
-      value: "$5,250/month",
-      basis: "user_estimate",
-      source: "manual_entry",
-    });
-    expect(rows).toContainEqual({
-      group: "Money",
-      label: "Target take-home plausible range",
-      value: "$4,750–$5,500/month",
-      basis: "user_estimate",
-      source: "manual_entry",
-    });
-    expect(rows).toContainEqual({
-      group: "Move",
-      label: "Destination",
-      value: "Seattle, WA",
-      basis: "manual_entry",
-      source: "manual_entry",
-    });
-    expect(rows).toContainEqual({
-      group: "Money",
-      label: "Retained-property monthly net",
-      value: "$0/month",
-      basis: "user_estimate",
-      source: "manual_entry",
-    });
   });
 });

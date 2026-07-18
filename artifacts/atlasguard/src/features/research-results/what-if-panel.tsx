@@ -1,5 +1,5 @@
-import { RotateCcw, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { LoaderCircle, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 
 import {
@@ -29,9 +29,71 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
         : createResearchWhatIfViewModel(values),
     [evaluation, values],
   );
+  const [inputValues, setInputValues] = useState<Record<WhatIfKey, string>>(
+    () => ({
+      takeHomeIncomeCents: String(values.takeHomeIncomeCents / 100),
+      housingCostCents: String(values.housingCostCents / 100),
+      recurringExpensesCents: String(values.recurringExpensesCents / 100),
+      retainedPropertyNetCents: String(values.retainedPropertyNetCents / 100),
+    }),
+  );
+  const [isUpdating, setIsUpdating] = useState(false);
+  const updateTimerRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (updateTimerRef.current !== null) {
+        window.clearTimeout(updateTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const update = (key: WhatIfKey, valueCents: number) => {
     setValues((current) => ({ ...current, [key]: valueCents }));
+    setIsUpdating(true);
+    if (updateTimerRef.current !== null) {
+      window.clearTimeout(updateTimerRef.current);
+    }
+    updateTimerRef.current = window.setTimeout(() => {
+      setIsUpdating(false);
+      updateTimerRef.current = null;
+    }, 280);
+  };
+
+  const updateInput = (key: WhatIfKey, value: string) => {
+    setInputValues((current) => ({ ...current, [key]: value }));
+    const normalized = value.trim().replaceAll(",", "");
+    if (!/^-?\d+$/.test(normalized)) return;
+    const dollars = Number(normalized);
+    if (!Number.isSafeInteger(dollars) || Math.abs(dollars) > 100_000_000)
+      return;
+    if (key !== "retainedPropertyNetCents" && dollars < 0) return;
+    update(key, dollars * 100);
+  };
+
+  const restoreInput = (key: WhatIfKey) => {
+    setInputValues((current) => ({
+      ...current,
+      [key]: String(values[key] / 100),
+    }));
+  };
+
+  const reset = () => {
+    setValues(model.baselineValues);
+    setInputValues({
+      takeHomeIncomeCents: String(
+        model.baselineValues.takeHomeIncomeCents / 100,
+      ),
+      housingCostCents: String(model.baselineValues.housingCostCents / 100),
+      recurringExpensesCents: String(
+        model.baselineValues.recurringExpensesCents / 100,
+      ),
+      retainedPropertyNetCents: String(
+        model.baselineValues.retainedPropertyNetCents / 100,
+      ),
+    });
+    setIsUpdating(false);
   };
 
   return (
@@ -43,9 +105,8 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
             See what changes the answer
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Adjust destination estimates inside their reviewed ranges. Every
-            update reruns the same verified decision engine used by the baseline
-            result.
+            Change any destination estimate to test a real alternative. Every
+            valid amount reruns the same decision engine immediately.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-teal-800">
@@ -58,13 +119,15 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
         <div className="space-y-6">
           {model.controls.length === 0 ? (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
-              All destination financial values were marked confirmed, so there
-              are no estimate ranges to explore. Edit an assumption if you want
-              to test uncertainty.
+              All destination amounts were marked confirmed. Edit an assumption
+              if you want to test a different estimate.
             </div>
           ) : null}
           {model.controls.map((control) => (
-            <div key={control.id}>
+            <div
+              key={control.id}
+              className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+            >
               <div className="flex items-start justify-between gap-4">
                 <label
                   htmlFor={`what-if-${control.id}`}
@@ -72,29 +135,30 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
                 >
                   {control.label}
                 </label>
-                <output
-                  htmlFor={`what-if-${control.id}`}
-                  className="text-sm font-semibold tabular-nums text-slate-950"
-                >
-                  {control.value}
-                </output>
+                <span className="text-xs text-slate-500">
+                  Baseline {control.baseline}
+                </span>
               </div>
-              <input
-                id={`what-if-${control.id}`}
-                type="range"
-                min={control.minCents}
-                max={control.maxCents}
-                step={100}
-                value={control.valueCents}
-                aria-valuetext={control.value}
-                onChange={(event) =>
-                  update(control.id, Number(event.currentTarget.value))
-                }
-                className="mt-3 h-2 w-full cursor-pointer accent-teal-700"
-              />
-              <div className="mt-2 flex justify-between text-xs tabular-nums text-slate-500">
-                <span>{control.min}</span>
-                <span>{control.max}</span>
+              <div className="relative mt-3 max-w-xs">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-slate-500"
+                >
+                  $
+                </span>
+                <input
+                  id={`what-if-${control.id}`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={inputValues[control.id]}
+                  aria-label={`${control.label} what-if amount`}
+                  onChange={(event) =>
+                    updateInput(control.id, event.currentTarget.value)
+                  }
+                  onBlur={() => restoreInput(control.id)}
+                  className="control-input pl-7 tabular-nums"
+                />
               </div>
             </div>
           ))}
@@ -128,8 +192,18 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
           aria-live="polite"
           className="flex min-h-64 flex-col rounded-2xl bg-slate-950 p-5 text-white"
         >
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-300">
-            {model.changed ? "Updated reading" : "Baseline reading"}
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-teal-300">
+            {isUpdating ? (
+              <LoaderCircle
+                aria-hidden="true"
+                className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none"
+              />
+            ) : null}
+            {isUpdating
+              ? "Recalculating"
+              : model.changed
+                ? "Updated reading"
+                : "Baseline reading"}
           </p>
           <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
             {model.result.condition.label}
@@ -154,7 +228,7 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
           <button
             type="button"
             disabled={!model.changed}
-            onClick={() => setValues(model.baselineValues)}
+            onClick={reset}
             className="mt-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-white transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw aria-hidden="true" className="h-4 w-4" />

@@ -96,6 +96,45 @@ describe("research results view model", () => {
     expect(model.stability.level).not.toBe("not_evaluated");
   });
 
+  it("omits the commute card when the user says it does not matter", () => {
+    const draft = reviewedDraft();
+    draft.commuteImportance = "does_not_matter";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation);
+
+    expect(model.priority).toBeNull();
+  });
+
+  it("builds the complete results experience when commute is excluded and ranges are omitted", () => {
+    const draft = reviewedDraft();
+    draft.commuteImportance = "does_not_matter";
+    draft.finances.targetTakeHome = "5000";
+    draft.finances.targetHousing = "2000";
+    draft.finances.targetExpenses = "1500";
+    draft.finances.retainedPropertyNet = "0";
+    draft.finances.targetTakeHomeRangeMin = "";
+    draft.finances.targetTakeHomeRangeMax = "";
+    draft.finances.targetHousingRangeMin = "";
+    draft.finances.targetHousingRangeMax = "";
+    draft.finances.targetExpensesRangeMin = "";
+    draft.finances.targetExpensesRangeMax = "";
+    draft.finances.retainedPropertyNetRangeMin = "";
+    draft.finances.retainedPropertyNetRangeMax = "";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    expect(
+      createResearchResultsViewModel(evaluation.evaluation).priority,
+    ).toBeNull();
+    expect(
+      createVerifiedWhatIfViewModel(evaluation.evaluation).controls,
+    ).toHaveLength(3);
+  });
+
   it("exposes exact favorable thresholds inside the declared ranges", () => {
     const model = createResearchWhatIfViewModel();
 
@@ -147,8 +186,8 @@ describe("research results view model", () => {
     if (!evaluation.success) return;
 
     const baseline = createVerifiedWhatIfViewModel(evaluation.evaluation);
-    expect(baseline.controls).toHaveLength(4);
-    expect(baseline.controls.map((control) => control.label)).toContain(
+    expect(baseline.controls).toHaveLength(3);
+    expect(baseline.controls.map((control) => control.label)).not.toContain(
       "Retained-property monthly net",
     );
     expect(baseline.thresholds.length).toBeGreaterThan(0);

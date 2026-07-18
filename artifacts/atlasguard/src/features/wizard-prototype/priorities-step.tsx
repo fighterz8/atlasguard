@@ -38,7 +38,7 @@ export function PrioritiesStep({ value, onChange }: PrioritiesStepProps) {
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 3 of 4</p>
+          <p className="eyebrow">Step 3 of 3</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
@@ -50,8 +50,8 @@ export function PrioritiesStep({ value, onChange }: PrioritiesStepProps) {
         <Route aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        MoveWise asks only about priorities backed by approved evidence. It will
-        not infer preferences or fabricate a broad lifestyle score.
+        Tell MoveWise how much commute time should affect this comparison.
+        Choose “does not matter” to leave it out completely.
       </p>
 
       <fieldset className="mt-8">
@@ -94,18 +94,10 @@ export function PrioritiesStep({ value, onChange }: PrioritiesStepProps) {
         </div>
       </fieldset>
 
-      <div className="mt-8 rounded-xl border border-unavailable/20 bg-unavailable-surface p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge tone="unavailable">Not collected yet</StatusBadge>
-          <strong className="text-sm text-slate-800">
-            Climate, safety, schools, amenities, and taxes
-          </strong>
-        </div>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          These dimensions stay out of the flow until their datasets,
-          transformations, geography rules, and limitations are approved.
-        </p>
-      </div>
+      <p className="mt-6 text-sm leading-6 text-slate-500">
+        More lifestyle factors will appear here as MoveWise adds reliable
+        comparison data for them.
+      </p>
     </div>
   );
 }
