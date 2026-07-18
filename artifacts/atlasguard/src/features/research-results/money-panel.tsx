@@ -2,22 +2,34 @@ import { WalletCards } from "lucide-react";
 
 import type { ResearchResultsViewModel } from "./model";
 
-type MoneyPanelProps = Pick<ResearchResultsViewModel, "route" | "finances">;
+type MoneyPanelProps = Pick<ResearchResultsViewModel, "route" | "finances"> & {
+  reviewedAssumptions?: boolean;
+};
 
 const rows = [
   ["Take-home income", "takeHome"],
+  ["Gross income", "gross"],
   ["Housing", "housing"],
   ["Other recurring expenses", "recurring"],
+  ["Retained-property net", "retainedPropertyNet"],
   ["Monthly cushion", "cushion"],
   ["Housing burden", "burden"],
 ] as const;
 
-export function MoneyPanel({ route, finances }: MoneyPanelProps) {
+export function MoneyPanel({
+  route,
+  finances,
+  reviewedAssumptions = false,
+}: MoneyPanelProps) {
   return (
     <section aria-labelledby="money-heading" className="panel">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Illustrative assumptions</p>
+          <p className="eyebrow">
+            {reviewedAssumptions
+              ? "Your reviewed assumptions"
+              : "Illustrative assumptions"}
+          </p>
           <h2 id="money-heading" className="section-heading">
             Money, side by side
           </h2>
@@ -25,15 +37,15 @@ export function MoneyPanel({ route, finances }: MoneyPanelProps) {
         <WalletCards aria-hidden="true" className="h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-600">
-        These illustrative values prove the calculation and layout only. The
-        destination estimates include declared ranges for What-if testing; none
-        are metro benchmarks or a suggested budget.
+        {reviewedAssumptions
+          ? "These are the monthly values reviewed in the Wizard. Gross income and plausible ranges remain unavailable because they were not collected; none of these values are metro benchmarks."
+          : "These illustrative values prove the calculation and layout only. The destination estimates include declared ranges for What-if testing; none are metro benchmarks or a suggested budget."}
       </p>
       <div className="mt-6">
         <table className="w-full table-fixed text-left text-sm">
           <caption className="sr-only">
-            Illustrative monthly finances for {route.originCity} and{" "}
-            {route.destinationCity}
+            {reviewedAssumptions ? "Reviewed" : "Illustrative"} monthly finances
+            for {route.originCity} and {route.destinationCity}
           </caption>
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">

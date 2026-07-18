@@ -7,6 +7,7 @@ import type {
   Finding,
   MetricEvidence,
   ScenarioInput,
+  VerifiedResearchEvaluationResult,
 } from "@workspace/contracts";
 import { evaluateResearchMoveDecision } from "@workspace/decision-core";
 
@@ -123,8 +124,9 @@ const evaluateResearchScenario = (values = baselineWhatIfValues) =>
     loadLosAngelesToSeattleCommuteBenchmark(),
   );
 
-export const createResearchResultsViewModel = () => {
-  const result = evaluateResearchScenario();
+export const createResearchResultsViewModel = (
+  result: VerifiedResearchEvaluationResult = evaluateResearchScenario(),
+) => {
   const profile = result.decisionProfile;
   const housingContext = loadLosAngelesToSeattleHousingContext();
   const metric = profile.evidence.find(
@@ -146,8 +148,8 @@ export const createResearchResultsViewModel = () => {
   const financialChange = profile.financialPosition.change;
   const financialReading =
     financialChange.monthlyCushionDeltaCents === 0
-      ? "The fixed scenario uses equal finances in both metros, so money does not favor either side."
-      : `The fixed scenario classifies the monthly cushion change as ${financialChange.classification}.`;
+      ? "The evaluated finances produce equal monthly cushions, so money does not favor either side."
+      : `The evaluated finances classify the monthly cushion change as ${financialChange.classification}.`;
   const priorityInterpretation =
     priority.classification === "similar"
       ? `The ${Math.abs(metric.deltaValue).toFixed(1)}-minute difference is below the registered materiality threshold. “Similar” is more defensible than declaring a winner.`
@@ -191,11 +193,20 @@ export const createResearchResultsViewModel = () => {
         takeHome: formatMoney(
           profile.financialPosition.origin.monthlyTakeHomeIncomeCents,
         ),
+        gross:
+          profile.financialPosition.origin.monthlyGrossIncomeCents === null
+            ? "Not available"
+            : formatMoney(
+                profile.financialPosition.origin.monthlyGrossIncomeCents,
+              ),
         housing: formatMoney(
           profile.financialPosition.origin.monthlyHousingCostCents,
         ),
         recurring: formatMoney(
           profile.financialPosition.origin.monthlyRecurringExpensesCents,
+        ),
+        retainedPropertyNet: formatMoney(
+          profile.financialPosition.origin.monthlyRetainedPropertyNetCents,
         ),
         cushion: formatMoney(
           profile.financialPosition.origin.monthlyCushionCents,
@@ -208,11 +219,20 @@ export const createResearchResultsViewModel = () => {
         takeHome: formatMoney(
           profile.financialPosition.destination.monthlyTakeHomeIncomeCents,
         ),
+        gross:
+          profile.financialPosition.destination.monthlyGrossIncomeCents === null
+            ? "Not available"
+            : formatMoney(
+                profile.financialPosition.destination.monthlyGrossIncomeCents,
+              ),
         housing: formatMoney(
           profile.financialPosition.destination.monthlyHousingCostCents,
         ),
         recurring: formatMoney(
           profile.financialPosition.destination.monthlyRecurringExpensesCents,
+        ),
+        retainedPropertyNet: formatMoney(
+          profile.financialPosition.destination.monthlyRetainedPropertyNetCents,
         ),
         cushion: formatMoney(
           profile.financialPosition.destination.monthlyCushionCents,

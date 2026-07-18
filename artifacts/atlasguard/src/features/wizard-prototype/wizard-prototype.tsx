@@ -43,10 +43,18 @@ const exampleDraft: WizardPrototypeDraft = {
 const errorFieldId = (path: string) =>
   path.startsWith("finances.") ? path.replace("finances.", "") : path;
 
-export function WizardPrototype() {
+type WizardPrototypeProps = {
+  initialDraft?: WizardPrototypeDraft;
+  onEvaluate?: (draft: WizardPrototypeDraft) => WizardErrors;
+};
+
+export function WizardPrototype({
+  initialDraft,
+  onEvaluate,
+}: WizardPrototypeProps) {
   const [step, setStep] = useState<WizardStepId>("move");
   const [draft, setDraft] = useState<WizardPrototypeDraft>(() =>
-    createInitialWizardDraft(),
+    initialDraft ? structuredClone(initialDraft) : createInitialWizardDraft(),
   );
   const [errors, setErrors] = useState<WizardErrors>({});
   const [reviewComplete, setReviewComplete] = useState(false);
@@ -87,6 +95,14 @@ export function WizardPrototype() {
     }
 
     if (step === "review") {
+      if (onEvaluate) {
+        const evaluationErrors = onEvaluate(structuredClone(draft));
+        setErrors(evaluationErrors);
+        if (Object.keys(evaluationErrors).length > 0) {
+          focusErrors(evaluationErrors);
+        }
+        return;
+      }
       setReviewComplete(true);
       return;
     }
@@ -261,7 +277,11 @@ export function WizardPrototype() {
                 onClick={continueForward}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-900"
               >
-                {step === "review" ? "Finish review" : "Continue"}
+                {step === "review"
+                  ? onEvaluate
+                    ? "Evaluate reviewed move"
+                    : "Finish review"
+                  : "Continue"}
                 <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </button>
             </div>

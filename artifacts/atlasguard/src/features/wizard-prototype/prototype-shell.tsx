@@ -22,11 +22,11 @@ export function PrototypeShell({ children }: PrototypeShellProps) {
           />
           <div>
             <p className="text-sm font-semibold">
-              Interaction prototype · no evaluation is submitted
+              Gated research evaluation · no data is submitted
             </p>
             <p className="mt-0.5 text-xs leading-5 sm:text-sm">
-              This gated flow tests clarity, validation, and assumption review.
-              It does not save data or produce a relocation result.
+              This flow evaluates reviewed assumptions in this browser using a
+              verified research benchmark. It does not save or transmit them.
             </p>
           </div>
         </div>

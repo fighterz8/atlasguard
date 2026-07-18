@@ -4,6 +4,28 @@ import {
   createResearchResultsViewModel,
   createResearchWhatIfViewModel,
 } from "./model";
+import { evaluateWizardDraft } from "../wizard-prototype/evaluate-wizard-draft";
+import {
+  createInitialWizardDraft,
+  type WizardPrototypeDraft,
+} from "../wizard-prototype/model";
+
+const reviewedDraft = (): WizardPrototypeDraft => ({
+  ...createInitialWizardDraft(),
+  originSlug: "los-angeles-ca",
+  destinationSlug: "seattle-wa",
+  finances: {
+    ...createInitialWizardDraft().finances,
+    currentTakeHome: "5000",
+    targetTakeHome: "5250",
+    currentHousing: "2000",
+    targetHousing: "1750",
+    currentExpenses: "1500",
+    targetExpenses: "1250",
+    retainedPropertyNet: "-100",
+  },
+  commuteImportance: "important",
+});
 
 describe("research results view model", () => {
   it("renders only the canonical research evaluation", () => {
@@ -48,6 +70,21 @@ describe("research results view model", () => {
     expect(model.housingContext.evidence.snapshotSha256).toMatch(
       /^[a-f0-9]{64}$/,
     );
+  });
+
+  it("renders a verified user-reviewed evaluation without hidden inputs", () => {
+    const evaluation = evaluateWizardDraft(reviewedDraft());
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation);
+
+    expect(model.finances.origin.gross).toBe("Not available");
+    expect(model.finances.destination.gross).toBe("Not available");
+    expect(model.finances.destination.takeHome).toBe("$5,250");
+    expect(model.finances.destination.housing).toBe("$1,750");
+    expect(model.finances.destination.retainedPropertyNet).toBe("-$100");
+    expect(model.stability.level).toBe("not_evaluated");
   });
 
   it("exposes exact favorable thresholds inside the declared ranges", () => {

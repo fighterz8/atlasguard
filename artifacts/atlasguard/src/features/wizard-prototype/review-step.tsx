@@ -115,9 +115,9 @@ export function ReviewStep({ draft }: ReviewStepProps) {
       </div>
 
       <div className="mt-7 rounded-xl border border-caution/25 bg-caution-surface p-4 text-sm leading-6 text-caution">
-        Completing this review will not evaluate or save the scenario. The
-        functional endpoint remains disabled until the supported metro lookup
-        and complete user-facing evidence path are approved.
+        Completing this review evaluates the supported research comparison in
+        memory. It does not save or transmit your values, and the public
+        evaluation endpoint remains disabled.
       </div>
     </div>
   );
