@@ -361,6 +361,9 @@ export const EvaluationResultSchema = z
 export const UserFacingEvaluationResultSchema = EvaluationResultSchema.and(
   z.object({ releaseStatus: z.literal("user_facing") }).passthrough(),
 );
+export const ResearchEvaluationResultSchema = EvaluationResultSchema.and(
+  z.object({ releaseStatus: z.literal("research_only") }).passthrough(),
+);
 
 type DeepReadonly<T> = T extends (...args: never[]) => unknown
   ? T

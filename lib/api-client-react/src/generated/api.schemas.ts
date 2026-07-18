@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Generated structural transport contract. Runtime validation and semantic trust remain authoritative in @workspace/contracts.
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 export type ScenarioInputSchemaVersion =
   (typeof ScenarioInputSchemaVersion)[keyof typeof ScenarioInputSchemaVersion];
@@ -2060,7 +2060,7 @@ export type EvaluationResult = {
     )[];
   };
 } & {
-  releaseStatus: "user_facing";
+  releaseStatus: "research_only";
   [key: string]: unknown;
 };
 
@@ -2102,5 +2102,29 @@ export const DecisionEngineUnavailableErrorError = {
 
 export interface DecisionEngineUnavailableError {
   error: DecisionEngineUnavailableErrorError;
+  message: string;
+}
+
+export type UnsupportedResearchScenarioErrorError =
+  (typeof UnsupportedResearchScenarioErrorError)[keyof typeof UnsupportedResearchScenarioErrorError];
+
+export const UnsupportedResearchScenarioErrorError = {
+  unsupported_research_scenario: "unsupported_research_scenario",
+} as const;
+
+export interface UnsupportedResearchScenarioError {
+  error: UnsupportedResearchScenarioErrorError;
+  issues: ValidationIssue[];
+}
+
+export type EvaluationFailedErrorError =
+  (typeof EvaluationFailedErrorError)[keyof typeof EvaluationFailedErrorError];
+
+export const EvaluationFailedErrorError = {
+  evaluation_failed: "evaluation_failed",
+} as const;
+
+export interface EvaluationFailedError {
+  error: EvaluationFailedErrorError;
   message: string;
 }

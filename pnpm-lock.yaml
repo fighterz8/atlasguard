@@ -180,9 +180,15 @@ importers:
 
   artifacts/api-server:
     dependencies:
+      '@workspace/benchmark-data':
+        specifier: workspace:*
+        version: link:../../lib/benchmark-data
       '@workspace/contracts':
         specifier: workspace:*
         version: link:../../lib/contracts
+      '@workspace/decision-core':
+        specifier: workspace:*
+        version: link:../../lib/decision-core
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7

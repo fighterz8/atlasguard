@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Generated structural transport contract. Runtime validation and semantic trust remain authoritative in @workspace/contracts.
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -18,10 +18,12 @@ import type {
 
 import type {
   DecisionEngineUnavailableError,
+  EvaluationFailedError,
   EvaluationResult,
   HealthStatus,
   InvalidScenarioInputError,
   ScenarioInput,
+  UnsupportedResearchScenarioError,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -110,7 +112,7 @@ export function useHealthCheck<
 }
 
 /**
- * Validates a canonical MoveWise scenario. The 200 response is the canonical activation contract; the current HTTP route returns 501 after successful validation until the deterministic engine is wired to the transport boundary.
+ * Validates a canonical MoveWise scenario. Normal and production processes keep evaluation disabled and return 501 after validation. A non-production process may explicitly enable the fixed Los Angeles-to-Seattle research capability, which returns a result labeled research_only.
  * @summary Evaluate a relocation scenario
  */
 export const getEvaluateScenarioUrl = () => {
@@ -131,7 +133,10 @@ export const evaluateScenario = async (
 
 export const getEvaluateScenarioMutationOptions = <
   TError = ErrorType<
-    InvalidScenarioInputError | DecisionEngineUnavailableError
+    | InvalidScenarioInputError
+    | UnsupportedResearchScenarioError
+    | EvaluationFailedError
+    | DecisionEngineUnavailableError
   >,
   TContext = unknown,
 >(options?: {
@@ -174,7 +179,10 @@ export type EvaluateScenarioMutationResult = NonNullable<
 >;
 export type EvaluateScenarioMutationBody = BodyType<ScenarioInput>;
 export type EvaluateScenarioMutationError = ErrorType<
-  InvalidScenarioInputError | DecisionEngineUnavailableError
+  | InvalidScenarioInputError
+  | UnsupportedResearchScenarioError
+  | EvaluationFailedError
+  | DecisionEngineUnavailableError
 >;
 
 /**
@@ -182,7 +190,10 @@ export type EvaluateScenarioMutationError = ErrorType<
  */
 export const useEvaluateScenario = <
   TError = ErrorType<
-    InvalidScenarioInputError | DecisionEngineUnavailableError
+    | InvalidScenarioInputError
+    | UnsupportedResearchScenarioError
+    | EvaluationFailedError
+    | DecisionEngineUnavailableError
   >,
   TContext = unknown,
 >(options?: {

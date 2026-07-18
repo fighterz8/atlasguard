@@ -13,7 +13,7 @@ extendZodWithOpenApi(z);
 
 // The OpenAPI extension must be installed before canonical schemas are
 // constructed, so load the contracts package after extending Zod.
-const { UserFacingEvaluationResultSchema, ScenarioInputSchema } =
+const { ResearchEvaluationResultSchema, ScenarioInputSchema } =
   await import("@workspace/contracts");
 
 const registry = new OpenAPIRegistry();
@@ -24,7 +24,7 @@ const ScenarioInputTransportSchema = registry.register(
 );
 const EvaluationResultTransportSchema = registry.register(
   "EvaluationResult",
-  UserFacingEvaluationResultSchema,
+  ResearchEvaluationResultSchema,
 );
 const HealthStatusSchema = registry.register(
   "HealthStatus",
@@ -58,6 +58,24 @@ const DecisionEngineUnavailableErrorSchema = registry.register(
     })
     .strict(),
 );
+const UnsupportedResearchScenarioErrorSchema = registry.register(
+  "UnsupportedResearchScenarioError",
+  z
+    .object({
+      error: z.literal("unsupported_research_scenario"),
+      issues: z.array(ValidationIssueSchema),
+    })
+    .strict(),
+);
+const EvaluationFailedErrorSchema = registry.register(
+  "EvaluationFailedError",
+  z
+    .object({
+      error: z.literal("evaluation_failed"),
+      message: z.string(),
+    })
+    .strict(),
+);
 
 registry.registerPath({
   method: "get",
@@ -83,7 +101,7 @@ registry.registerPath({
   tags: ["evaluation"],
   summary: "Evaluate a relocation scenario",
   description:
-    "Validates a canonical MoveWise scenario. The 200 response is the canonical activation contract; the current HTTP route returns 501 after successful validation until the deterministic engine is wired to the transport boundary.",
+    "Validates a canonical MoveWise scenario. Normal and production processes keep evaluation disabled and return 501 after validation. A non-production process may explicitly enable the fixed Los Angeles-to-Seattle research capability, which returns a result labeled research_only.",
   request: {
     body: {
       required: true,
@@ -97,7 +115,7 @@ registry.registerPath({
   responses: {
     200: {
       description:
-        "Canonical deterministic result shape reserved for transport activation; not returned by the current Phase 0 route.",
+        "A canonical deterministic result. The currently implemented capability returns only research_only evidence and cannot start in a production process.",
       content: {
         "application/json": { schema: EvaluationResultTransportSchema },
       },
@@ -108,11 +126,27 @@ registry.registerPath({
         "application/json": { schema: InvalidScenarioInputErrorSchema },
       },
     },
+    422: {
+      description:
+        "The request is canonical but does not match the explicitly supported research comparison.",
+      content: {
+        "application/json": {
+          schema: UnsupportedResearchScenarioErrorSchema,
+        },
+      },
+    },
     501: {
       description:
         "The request is valid, but the decision engine is not active at the HTTP boundary.",
       content: {
         "application/json": { schema: DecisionEngineUnavailableErrorSchema },
+      },
+    },
+    500: {
+      description:
+        "The enabled research evaluator failed without exposing internal details.",
+      content: {
+        "application/json": { schema: EvaluationFailedErrorSchema },
       },
     },
   },
@@ -123,7 +157,7 @@ const document = generator.generateDocument({
   openapi: "3.1.0",
   info: {
     title: "MoveWise API",
-    version: "0.2.0",
+    version: "0.3.0",
     description:
       "Generated structural transport contract. Runtime validation and semantic trust remain authoritative in @workspace/contracts.",
   },

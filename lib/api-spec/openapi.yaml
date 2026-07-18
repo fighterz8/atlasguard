@@ -4,7 +4,7 @@
 openapi: 3.1.0
 info:
   title: MoveWise API
-  version: 0.2.0
+  version: 0.3.0
   description: Generated structural transport contract. Runtime validation and semantic trust remain authoritative in @workspace/contracts.
 servers:
   - url: /api
@@ -3402,7 +3402,7 @@ components:
             releaseStatus:
               type: string
               enum:
-                - user_facing
+                - research_only
           required:
             - releaseStatus
           additionalProperties: {}
@@ -3462,6 +3462,34 @@ components:
         - error
         - message
       additionalProperties: false
+    UnsupportedResearchScenarioError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+            - unsupported_research_scenario
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationIssue"
+      required:
+        - error
+        - issues
+      additionalProperties: false
+    EvaluationFailedError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+            - evaluation_failed
+        message:
+          type: string
+      required:
+        - error
+        - message
+      additionalProperties: false
   parameters: {}
 paths:
   /healthz:
@@ -3484,7 +3512,7 @@ paths:
       tags:
         - evaluation
       summary: Evaluate a relocation scenario
-      description: Validates a canonical MoveWise scenario. The 200 response is the canonical activation contract; the current HTTP route returns 501 after successful validation until the deterministic engine is wired to the transport boundary.
+      description: Validates a canonical MoveWise scenario. Normal and production processes keep evaluation disabled and return 501 after validation. A non-production process may explicitly enable the fixed Los Angeles-to-Seattle research capability, which returns a result labeled research_only.
       requestBody:
         required: true
         description: A structurally valid scenario. The server applies additional semantic refinements from @workspace/contracts at runtime.
@@ -3494,7 +3522,7 @@ paths:
               $ref: "#/components/schemas/ScenarioInput"
       responses:
         "200":
-          description: Canonical deterministic result shape reserved for transport activation; not returned by the current Phase 0 route.
+          description: A canonical deterministic result. The currently implemented capability returns only research_only evidence and cannot start in a production process.
           content:
             application/json:
               schema:
@@ -3505,6 +3533,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InvalidScenarioInputError"
+        "422":
+          description: The request is canonical but does not match the explicitly supported research comparison.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnsupportedResearchScenarioError"
+        "500":
+          description: The enabled research evaluator failed without exposing internal details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationFailedError"
         "501":
           description: The request is valid, but the decision engine is not active at the HTTP boundary.
           content:

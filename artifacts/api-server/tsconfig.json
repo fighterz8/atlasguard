@@ -9,6 +9,12 @@
   "references": [
     {
       "path": "../../lib/contracts"
+    },
+    {
+      "path": "../../lib/benchmark-data"
+    },
+    {
+      "path": "../../lib/decision-core"
     }
   ]
 }

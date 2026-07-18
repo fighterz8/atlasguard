@@ -1,10 +1,20 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import evaluateRouter from "./evaluate";
+import { createEvaluateRouter } from "./evaluate";
+import {
+  disabledEvaluationCapability,
+  type EvaluationCapability,
+} from "../research-evaluation";
 
-const router: IRouter = Router();
+export const createRouter = (
+  evaluationCapability: EvaluationCapability = disabledEvaluationCapability,
+): IRouter => {
+  const router: IRouter = Router();
 
-router.use(healthRouter);
-router.use(evaluateRouter);
+  router.use(healthRouter);
+  router.use(createEvaluateRouter(evaluationCapability));
 
-export default router;
+  return router;
+};
+
+export default createRouter();

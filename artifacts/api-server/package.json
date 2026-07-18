@@ -10,7 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@workspace/benchmark-data": "workspace:*",
     "@workspace/contracts": "workspace:*",
+    "@workspace/decision-core": "workspace:*",
     "cookie-parser": "^1.4.7",
     "cors": "^2",
     "express": "^5",
