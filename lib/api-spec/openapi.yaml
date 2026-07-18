@@ -1443,6 +1443,45 @@ components:
                                   - origin
                                   - destination
                                 additionalProperties: false
+                              selectionUncertainty:
+                                type: object
+                                properties:
+                                  kind:
+                                    type: string
+                                    enum:
+                                      - reference_site_range
+                                  origin:
+                                    type: object
+                                    properties:
+                                      min:
+                                        type: number
+                                      max:
+                                        type: number
+                                    required:
+                                      - min
+                                      - max
+                                    additionalProperties: false
+                                  destination:
+                                    type: object
+                                    properties:
+                                      min:
+                                        type: number
+                                      max:
+                                        type: number
+                                    required:
+                                      - min
+                                      - max
+                                    additionalProperties: false
+                                  rationale:
+                                    type: string
+                                    minLength: 1
+                                    maxLength: 500
+                                required:
+                                  - kind
+                                  - origin
+                                  - destination
+                                  - rationale
+                                additionalProperties: false
                               coverageBps:
                                 type:
                                   - integer
@@ -3120,6 +3159,45 @@ components:
                                 required:
                                   - origin
                                   - destination
+                                additionalProperties: false
+                              selectionUncertainty:
+                                type: object
+                                properties:
+                                  kind:
+                                    type: string
+                                    enum:
+                                      - reference_site_range
+                                  origin:
+                                    type: object
+                                    properties:
+                                      min:
+                                        type: number
+                                      max:
+                                        type: number
+                                    required:
+                                      - min
+                                      - max
+                                    additionalProperties: false
+                                  destination:
+                                    type: object
+                                    properties:
+                                      min:
+                                        type: number
+                                      max:
+                                        type: number
+                                    required:
+                                      - min
+                                      - max
+                                    additionalProperties: false
+                                  rationale:
+                                    type: string
+                                    minLength: 1
+                                    maxLength: 500
+                                required:
+                                  - kind
+                                  - origin
+                                  - destination
+                                  - rationale
                                 additionalProperties: false
                               coverageBps:
                                 type:

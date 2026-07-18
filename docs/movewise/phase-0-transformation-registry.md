@@ -4,6 +4,8 @@
 
 This registry exists to prove the deterministic trust path with synthetic fixtures. It is not a calibrated production scoring model and must not be described as one.
 
+The Phase 2 LA -> Seattle research slice now exercises `climate_heat.utility@1.0.0` with frozen NOAA evidence. That proves source-to-decision reproducibility but does not change this transform's research-only calibration status. See `phase-2-la-seattle-climate-evidence.md`.
+
 A benchmark cannot be promoted merely because it is schema-valid and checksum-consistent. The promotion loader independently binds the priority, metric, transformation version, materiality threshold, unit, direction, and raw origin/destination values to one registry entry. The declared utilities must match exactly.
 
 ## Registered transformations

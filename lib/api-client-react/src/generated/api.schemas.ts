@@ -1017,6 +1017,22 @@ export type EvaluationResult = {
              */
             destination: number | null;
           } | null;
+          selectionUncertainty?: {
+            kind: "reference_site_range";
+            origin: {
+              min: number;
+              max: number;
+            };
+            destination: {
+              min: number;
+              max: number;
+            };
+            /**
+             * @minLength 1
+             * @maxLength 500
+             */
+            rationale: string;
+          };
           /**
            * @minimum 0
            * @maximum 10000
@@ -1933,6 +1949,22 @@ export type EvaluationResult = {
                */
               destination: number | null;
             } | null;
+            selectionUncertainty?: {
+              kind: "reference_site_range";
+              origin: {
+                min: number;
+                max: number;
+              };
+              destination: {
+                min: number;
+                max: number;
+              };
+              /**
+               * @minLength 1
+               * @maxLength 500
+               */
+              rationale: string;
+            };
             /**
              * @minimum 0
              * @maximum 10000

@@ -104,3 +104,114 @@ export const APPROVED_ACS_RENT_SOURCE = {
     destination: { estimateDollars: 2_050, marginOfError90Dollars: 25 },
   },
 } as const;
+
+export const APPROVED_NOAA_HEAT_SOURCE = {
+  id: "noaa.normals.1991-2020.hot-days.la-seattle",
+  dataset: "U.S. Climate Normals 1991-2020 Annual/Seasonal",
+  observationPeriod: "1991-2020 climate normal",
+  metricColumn: "ANN-TMAX-AVGNDS-GRTH090",
+  selectionPolicy: {
+    reference:
+      "One NOAA Standard-completeness urban station named for the selected city",
+    envelope:
+      "The urban reference plus the NOAA Standard-completeness primary-airport station named for the selected city",
+    interpretation:
+      "Selected-city station proxy with reference-site selection uncertainty; not a metro-wide or neighborhood forecast",
+  },
+  artifacts: {
+    inventory: {
+      id: "noaa.normals.1991-2020.station-inventory",
+      sourceUrl:
+        "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/doc/inventory_30yr.txt",
+      sha256:
+        "c9f5f0f3c38b89410b75d03267bf05fb53f6ba4b6623d22411be2df2bfe01bdb",
+    },
+    documentation: {
+      id: "noaa.normals.1991-2020.annual-documentation",
+      sourceUrl:
+        "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/doc/Normals_ANN_Documentation_1991-2020.pdf",
+      sha256:
+        "5fd15ef9f513969dc360150341dfc99e43d6ffcc79ea544cd929376d9e125d15",
+    },
+    losAngelesUrban: {
+      id: "noaa.normals.usw00093134",
+      sourceUrl:
+        "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00093134.csv",
+      sha256:
+        "decefbf60a10efa40215278aedaab955f75b43c11ef27c72bc5239de1f9717f4",
+    },
+    losAngelesAirport: {
+      id: "noaa.normals.usw00023174",
+      sourceUrl:
+        "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00023174.csv",
+      sha256:
+        "a40a04b38ac76e3a5db75703cc1049dd3abe57bdccb3580b360ff42ab9a239ec",
+    },
+    seattleUrban: {
+      id: "noaa.normals.usw00094290",
+      sourceUrl:
+        "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00094290.csv",
+      sha256:
+        "2872fdaf785a5bdae06a423b04b4cd55b9620491e41f1cc419fdbf07d1ebb08c",
+    },
+    seattleAirport: {
+      id: "noaa.normals.usw00024233",
+      sourceUrl:
+        "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00024233.csv",
+      sha256:
+        "95345733f5237ceaa2c75058f82863ca6c70c960adef8b6cb34620cddb917c86",
+    },
+  },
+  places: {
+    origin: {
+      city: "Los Angeles",
+      stateCode: "CA",
+      referenceStationId: "USW00093134",
+      envelopeStationIds: ["USW00093134", "USW00023174"],
+    },
+    destination: {
+      city: "Seattle",
+      stateCode: "WA",
+      referenceStationId: "USW00094290",
+      envelopeStationIds: ["USW00094290", "USW00024233"],
+    },
+  },
+  extractedStations: {
+    USW00093134: {
+      name: "LOS ANGELES DWTN USC CAMPUS, CA US",
+      latitude: 34.0511,
+      longitude: -118.2353,
+      elevationMeters: 70.1,
+      annualDaysAbove90F: 25.6,
+      completenessFlag: "S",
+      years: 26,
+    },
+    USW00023174: {
+      name: "LOS ANGELES INTL AP, CA US",
+      latitude: 33.9381,
+      longitude: -118.3889,
+      elevationMeters: 29.6,
+      annualDaysAbove90F: 4.8,
+      completenessFlag: "S",
+      years: 26,
+    },
+    USW00094290: {
+      name: "SEATTLE SAND PT WSFO, WA US",
+      latitude: 47.6872,
+      longitude: -122.2553,
+      elevationMeters: 18.3,
+      annualDaysAbove90F: 2.1,
+      completenessFlag: "S",
+      years: 28,
+    },
+    USW00024233: {
+      name: "SEATTLE TACOMA INTL AP, WA US",
+      latitude: 47.4444,
+      longitude: -122.3139,
+      elevationMeters: 112.8,
+      annualDaysAbove90F: 3.8,
+      completenessFlag: "S",
+      years: 30,
+    },
+  },
+} as const;

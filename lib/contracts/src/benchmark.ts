@@ -137,6 +137,26 @@ const TransformedUtilityOutputsSchema = z
   })
   .strict();
 
+const SelectionUncertaintySchema = z
+  .object({
+    kind: z.literal("reference_site_range"),
+    origin: z
+      .object({ min: z.number(), max: z.number() })
+      .strict()
+      .refine((range) => range.min <= range.max, {
+        message: "Origin selection range minimum must not exceed its maximum.",
+      }),
+    destination: z
+      .object({ min: z.number(), max: z.number() })
+      .strict()
+      .refine((range) => range.min <= range.max, {
+        message:
+          "Destination selection range minimum must not exceed its maximum.",
+      }),
+    rationale: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
 export type MetricQualityGradeValue = z.infer<
   typeof MetricQualityGradeValueSchema
 >;
@@ -286,6 +306,7 @@ export const MetricEvidenceSchema = z
           })
           .strict()
           .nullable(),
+        selectionUncertainty: SelectionUncertaintySchema.optional(),
         coverageBps: BasisPointsSchema.nullable(),
         grade: z
           .object({
@@ -435,6 +456,69 @@ export const MetricEvidenceSchema = z
         code: "custom",
         message: `Metric quality grade must be ${expectedGrade} under policy ${METRIC_QUALITY_GRADE_POLICY_VERSION}.`,
         path: ["quality", "grade", "value"],
+      });
+    }
+
+    const selectionUncertainty = evidence.quality.selectionUncertainty;
+    if (selectionUncertainty !== undefined) {
+      (["origin", "destination"] as const).forEach((side) => {
+        const range = selectionUncertainty[side];
+        const rawValue =
+          side === "origin" ? evidence.originValue : evidence.destinationValue;
+        const declaredUncertainty =
+          side === "origin"
+            ? outputs.originUncertaintyBps
+            : outputs.destinationUncertaintyBps;
+        if (rawValue === null || rawValue < range.min || rawValue > range.max) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Reference-site selection ranges must contain the declared raw metric value.",
+            path: ["quality", "selectionUncertainty", side],
+          });
+          return;
+        }
+        const endpointUtilities = [range.min, range.max].map((endpoint) =>
+          applyRegisteredUtilityTransform({
+            priorityId: evidence.priorityId,
+            metricId: evidence.metricId,
+            transformationId: evidence.transformation.id,
+            transformationVersion: evidence.transformation.version,
+            materialityThresholdBps: evidence.materialityPolicy.utilityDeltaBps,
+            unit: evidence.unit,
+            preferredDirection: evidence.transformation.preferredDirection,
+            rawValue: endpoint,
+          }),
+        );
+        const referenceUtility = outputs[`${side}UtilityBps`];
+        const endpointUtilityValues = endpointUtilities.map((result) =>
+          result.status === "ok" ? result.utilityBps : null,
+        );
+        if (
+          referenceUtility === null ||
+          endpointUtilityValues.some((utility) => utility === null)
+        ) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Selection-range endpoints must be accepted by the registered transformation.",
+            path: ["quality", "selectionUncertainty", side],
+          });
+          return;
+        }
+        const expectedUncertainty = Math.max(
+          ...endpointUtilityValues.map((utility) =>
+            Math.abs(utility! - referenceUtility),
+          ),
+        );
+        if (declaredUncertainty !== expectedUncertainty) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Transformed uncertainty must equal the maximum endpoint departure in the declared selection range.",
+            path: ["transformation", "outputs", `${side}UncertaintyBps`],
+          });
+        }
       });
     }
   });

@@ -1,6 +1,9 @@
 import {
   APPROVED_ACS_COMMUTE_SOURCE,
   APPROVED_ACS_RENT_SOURCE,
+  APPROVED_NOAA_HEAT_SOURCE,
+  extractNoaaHeatInventoryStations,
+  extractNoaaHeatStation,
   extractCbsaLabelsFromGeographyInventory,
   extractCommuteRowsFromOfficialTables,
   extractRentRowsFromOfficialTable,
@@ -25,15 +28,33 @@ const download = async (source: {
   return bytes;
 };
 
-const [delineation, geographies, b08013, b08006, b25064] = await Promise.all([
+const [
+  delineation,
+  geographies,
+  b08013,
+  b08006,
+  b25064,
+  noaaInventory,
+  noaaDocumentation,
+  losAngelesUrban,
+  losAngelesAirport,
+  seattleUrban,
+  seattleAirport,
+] = await Promise.all([
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.cbsaDelineation),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.acsGeographies),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.b08013),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.b08006),
   download(APPROVED_ACS_RENT_SOURCE.artifacts.b25064),
+  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.inventory),
+  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.documentation),
+  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.losAngelesUrban),
+  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.losAngelesAirport),
+  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.seattleUrban),
+  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.seattleAirport),
 ]);
-if (delineation.byteLength === 0) {
-  throw new Error("Official CBSA delineation artifact is empty.");
+if (delineation.byteLength === 0 || noaaDocumentation.byteLength === 0) {
+  throw new Error("Official source documentation artifact is empty.");
 }
 const decoder = new TextDecoder();
 const extracted = extractCommuteRowsFromOfficialTables(
@@ -72,6 +93,53 @@ if (
   );
 }
 
+const inventoryStations = extractNoaaHeatInventoryStations(
+  decoder.decode(noaaInventory),
+);
+Object.entries(APPROVED_NOAA_HEAT_SOURCE.extractedStations).forEach(
+  ([stationId, expected]) => {
+    const inventory = inventoryStations[stationId];
+    if (
+      inventory === undefined ||
+      inventory.name !== expected.name.split(",")[0] ||
+      inventory.latitude !== expected.latitude ||
+      inventory.longitude !== expected.longitude ||
+      inventory.elevationMeters !== expected.elevationMeters
+    ) {
+      throw new Error(`Official NOAA inventory mismatch for ${stationId}.`);
+    }
+  },
+);
+
+const stationArtifacts = [
+  losAngelesUrban,
+  losAngelesAirport,
+  seattleUrban,
+  seattleAirport,
+];
+stationArtifacts.forEach((bytes) => {
+  const actual = extractNoaaHeatStation(decoder.decode(bytes));
+  const expected =
+    APPROVED_NOAA_HEAT_SOURCE.extractedStations[
+      actual.stationId as keyof typeof APPROVED_NOAA_HEAT_SOURCE.extractedStations
+    ];
+  if (
+    expected === undefined ||
+    actual.measurementFlag !== "" ||
+    JSON.stringify({
+      name: actual.name,
+      latitude: actual.latitude,
+      longitude: actual.longitude,
+      elevationMeters: actual.elevationMeters,
+      annualDaysAbove90F: actual.annualDaysAbove90F,
+      completenessFlag: actual.completenessFlag,
+      years: actual.years,
+    }) !== JSON.stringify(expected)
+  ) {
+    throw new Error(`Official NOAA station mismatch for ${actual.stationId}.`);
+  }
+});
+
 process.stdout.write(
-  "Verified five official artifact checksums, two CBSA rows, and ten ACS values.\n",
+  "Verified eleven official artifact checksums, two CBSA rows, ten ACS values, and four NOAA station normals.\n",
 );

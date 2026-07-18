@@ -66,7 +66,7 @@ Coverage is `null`, not 100%. ACS is a survey estimate, and this slice has no de
 
 ## Deliberately excluded
 
-- NOAA climate evidence: station selection is a mapped proxy and materially changes the result inside Los Angeles; no representative-station policy is approved.
+- NOAA climate evidence: at this Phase 1 checkpoint, station selection was a mapped proxy and no representative-station policy was approved. The later research-only resolution is documented in `phase-2-la-seattle-climate-evidence.md`; it preserves the station spread as explicit selection uncertainty rather than claiming metro representativeness.
 - BEA Regional Price Parities: useful descriptive context, but there is no approved affordability transformation and the data is not a household budget.
 - Direct DP03 API values: no Census API key is required for this slice; the result is reproduced from official bulk detail tables.
 - Public evaluation, UI rendering, scenario storage, AI explanation, or a recommendation to move.
