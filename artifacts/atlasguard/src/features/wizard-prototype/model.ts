@@ -204,6 +204,7 @@ export function createReviewRows(draft: WizardPrototypeDraft) {
       label: "Current location",
       value: origin ? `${origin.city}, ${origin.state}` : "Missing",
       basis: "manual_entry" as const,
+      source: "manual_entry" as const,
     },
     {
       group: "Move",
@@ -212,48 +213,56 @@ export function createReviewRows(draft: WizardPrototypeDraft) {
         ? `${destination.city}, ${destination.state}`
         : "Missing",
       basis: "manual_entry" as const,
+      source: "manual_entry" as const,
     },
     {
       group: "Money",
       label: "Current take-home income",
       value: formatMoney(draft.finances.currentTakeHome),
       basis: "confirmed" as const,
+      source: "manual_entry" as const,
     },
     {
       group: "Money",
       label: "Target take-home income",
       value: formatMoney(draft.finances.targetTakeHome),
       basis: draft.finances.targetTakeHomeBasis,
+      source: "manual_entry" as const,
     },
     {
       group: "Money",
       label: "Current housing",
       value: formatMoney(draft.finances.currentHousing),
       basis: "confirmed" as const,
+      source: "manual_entry" as const,
     },
     {
       group: "Money",
       label: "Target housing",
       value: formatMoney(draft.finances.targetHousing),
       basis: draft.finances.targetHousingBasis,
+      source: "manual_entry" as const,
     },
     {
       group: "Money",
       label: "Current recurring expenses",
       value: formatMoney(draft.finances.currentExpenses),
       basis: "confirmed" as const,
+      source: "manual_entry" as const,
     },
     {
       group: "Money",
       label: "Target recurring expenses",
       value: formatMoney(draft.finances.targetExpenses),
       basis: draft.finances.targetExpensesBasis,
+      source: "manual_entry" as const,
     },
     {
       group: "Priority",
       label: "Typical commute time",
       value: draft.commuteImportance.replaceAll("_", " "),
       basis: "user_priority" as const,
+      source: "manual_entry" as const,
     },
   ];
 }

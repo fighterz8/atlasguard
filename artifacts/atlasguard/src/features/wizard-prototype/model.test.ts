@@ -77,12 +77,14 @@ describe("Wizard prototype model", () => {
       label: "Target take-home income",
       value: "$5,250/month",
       basis: "user_estimate",
+      source: "manual_entry",
     });
     expect(rows).toContainEqual({
       group: "Move",
       label: "Destination",
       value: "Seattle, WA",
       basis: "manual_entry",
+      source: "manual_entry",
     });
   });
 });
