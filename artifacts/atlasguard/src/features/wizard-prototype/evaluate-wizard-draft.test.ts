@@ -16,6 +16,14 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
     currentExpenses: "1500",
     targetExpenses: "1250",
     retainedPropertyNet: "0",
+    targetTakeHomeRangeMin: "5000",
+    targetTakeHomeRangeMax: "5500",
+    targetHousingRangeMin: "1500",
+    targetHousingRangeMax: "2000",
+    targetExpensesRangeMin: "1000",
+    targetExpensesRangeMax: "1500",
+    retainedPropertyNetRangeMin: "-250",
+    retainedPropertyNetRangeMax: "250",
   },
   commuteImportance: "important",
 });
@@ -38,7 +46,7 @@ describe("Wizard deterministic evaluation", () => {
     expect(result.evaluation.decisionProfile.condition.value).toBe(
       "worth_a_closer_look",
     );
-    expect(result.evaluation.decisionProfile.stability.level).toBe(
+    expect(result.evaluation.decisionProfile.stability.level).not.toBe(
       "not_evaluated",
     );
   });

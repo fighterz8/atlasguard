@@ -46,6 +46,22 @@ const dollarsToCents = (
   }
 };
 
+const rangeToCents = (
+  basis: "confirmed" | "user_estimate",
+  min: string,
+  max: string,
+  fieldPrefix: string,
+  errors: WizardErrors,
+) => {
+  if (basis === "confirmed") return null;
+
+  const minCents = dollarsToCents(min, `${fieldPrefix}RangeMin`, errors);
+  const maxCents = dollarsToCents(max, `${fieldPrefix}RangeMax`, errors);
+  return minCents === null || maxCents === null
+    ? null
+    : { min: minCents, max: maxCents };
+};
+
 export function adaptWizardDraftToScenarioInput(
   draft: WizardPrototypeDraft,
 ): WizardScenarioAdapterResult {
@@ -92,6 +108,37 @@ export function adaptWizardDraftToScenarioInput(
     ),
   };
 
+  const ranges = {
+    targetTakeHome: rangeToCents(
+      draft.finances.targetTakeHomeBasis,
+      draft.finances.targetTakeHomeRangeMin,
+      draft.finances.targetTakeHomeRangeMax,
+      "finances.targetTakeHome",
+      errors,
+    ),
+    targetHousing: rangeToCents(
+      draft.finances.targetHousingBasis,
+      draft.finances.targetHousingRangeMin,
+      draft.finances.targetHousingRangeMax,
+      "finances.targetHousing",
+      errors,
+    ),
+    targetExpenses: rangeToCents(
+      draft.finances.targetExpensesBasis,
+      draft.finances.targetExpensesRangeMin,
+      draft.finances.targetExpensesRangeMax,
+      "finances.targetExpenses",
+      errors,
+    ),
+    retainedPropertyNet: rangeToCents(
+      draft.finances.retainedPropertyNetBasis,
+      draft.finances.retainedPropertyNetRangeMin,
+      draft.finances.retainedPropertyNetRangeMax,
+      "finances.retainedPropertyNet",
+      errors,
+    ),
+  };
+
   if (
     Object.keys(errors).length > 0 ||
     Object.values(cents).some((value) => value === null)
@@ -102,7 +149,8 @@ export function adaptWizardDraftToScenarioInput(
   const assumption = (
     monthlyCents: number,
     basis: "confirmed" | "user_estimate",
-  ) => ({ monthlyCents, basis, plausibleRangeCents: null });
+    plausibleRangeCents: { min: number; max: number } | null = null,
+  ) => ({ monthlyCents, basis, plausibleRangeCents });
 
   const parsed = ScenarioInputSchema.safeParse({
     schemaVersion: SCENARIO_SCHEMA_VERSION,
@@ -122,19 +170,23 @@ export function adaptWizardDraftToScenarioInput(
         takeHomeIncome: assumption(
           cents.targetTakeHome!,
           draft.finances.targetTakeHomeBasis,
+          ranges.targetTakeHome,
         ),
         grossIncome: null,
         housingCost: assumption(
           cents.targetHousing!,
           draft.finances.targetHousingBasis,
+          ranges.targetHousing,
         ),
         recurringExpensesExcludingHousing: assumption(
           cents.targetExpenses!,
           draft.finances.targetExpensesBasis,
+          ranges.targetExpenses,
         ),
         retainedPropertyNet: assumption(
           cents.retainedPropertyNet!,
           draft.finances.retainedPropertyNetBasis,
+          ranges.retainedPropertyNet,
         ),
       },
     },

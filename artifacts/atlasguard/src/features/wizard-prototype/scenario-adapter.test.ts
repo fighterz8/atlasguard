@@ -20,6 +20,12 @@ const validDraft = (): WizardPrototypeDraft => ({
     currentExpenses: "1500",
     targetExpenses: "1,250",
     retainedPropertyNet: "-400",
+    targetHousingRangeMin: "1500",
+    targetHousingRangeMax: "2000",
+    targetExpensesRangeMin: "1000",
+    targetExpensesRangeMax: "1500",
+    retainedPropertyNetRangeMin: "-600",
+    retainedPropertyNetRangeMax: "100",
     targetTakeHomeBasis: "confirmed",
     retainedPropertyNetBasis: "user_estimate",
   },
@@ -56,7 +62,7 @@ describe("Wizard scenario adapter", () => {
           retainedPropertyNet: {
             monthlyCents: -40_000,
             basis: "user_estimate",
-            plausibleRangeCents: null,
+            plausibleRangeCents: { min: -60_000, max: 10_000 },
           },
         },
       },
@@ -102,7 +108,7 @@ describe("Wizard scenario adapter", () => {
     });
   });
 
-  it("does not fabricate gross income or plausible ranges", () => {
+  it("keeps confirmed assumptions range-free and converts reviewed estimates", () => {
     const result = adaptWizardDraftToScenarioInput(validDraft());
 
     expect(result.success).toBe(true);
@@ -111,13 +117,17 @@ describe("Wizard scenario adapter", () => {
     expect(result.scenario.finances.origin.grossIncome).toBeNull();
     expect(result.scenario.finances.destination.grossIncome).toBeNull();
     expect(
-      result.scenario.finances.destination.housingCost.plausibleRangeCents,
+      result.scenario.finances.destination.takeHomeIncome.plausibleRangeCents,
     ).toBeNull();
+    expect(
+      result.scenario.finances.destination.housingCost.plausibleRangeCents,
+    ).toEqual({ min: 150_000, max: 200_000 });
   });
 
   it("rejects amounts outside the canonical monthly domain", () => {
     const draft = validDraft();
     draft.finances.targetHousing = "100000001";
+    draft.finances.targetHousingBasis = "confirmed";
 
     expect(adaptWizardDraftToScenarioInput(draft)).toEqual({
       success: false,

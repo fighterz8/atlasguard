@@ -21,6 +21,14 @@ const validDraft = () => ({
     currentExpenses: "1500",
     targetExpenses: "1500",
     retainedPropertyNet: "0",
+    targetTakeHomeRangeMin: "4,750",
+    targetTakeHomeRangeMax: "5,500",
+    targetHousingRangeMin: "1,500",
+    targetHousingRangeMax: "2,100",
+    targetExpensesRangeMin: "1,200",
+    targetExpensesRangeMax: "1,800",
+    retainedPropertyNetRangeMin: "-500",
+    retainedPropertyNetRangeMax: "500",
   },
 });
 
@@ -54,6 +62,39 @@ describe("Wizard prototype model", () => {
   it("accepts a signed retained-property monthly net", () => {
     const draft = validDraft();
     draft.finances.retainedPropertyNet = "-450";
+
+    expect(validateWizardStep("money", draft)).toEqual({});
+  });
+
+  it("requires complete estimate ranges that contain the entered value", () => {
+    const missing = validDraft();
+    missing.finances.targetHousingRangeMin = "";
+    expect(validateWizardStep("money", missing)).toMatchObject({
+      "finances.targetHousingRangeMin":
+        "Target housing cost plausible low is required.",
+    });
+
+    const inverted = validDraft();
+    inverted.finances.targetExpensesRangeMin = "1800";
+    inverted.finances.targetExpensesRangeMax = "1200";
+    expect(validateWizardStep("money", inverted)).toMatchObject({
+      "finances.targetExpensesRangeMax":
+        "Target recurring expenses plausible high must be at least the low.",
+    });
+
+    const outside = validDraft();
+    outside.finances.targetTakeHomeRangeMax = "5000";
+    expect(validateWizardStep("money", outside)).toMatchObject({
+      "finances.targetTakeHome":
+        "Target take-home income must fall within its plausible range.",
+    });
+  });
+
+  it("does not require a range for confirmed destination values", () => {
+    const draft = validDraft();
+    draft.finances.targetHousingBasis = "confirmed";
+    draft.finances.targetHousingRangeMin = "";
+    draft.finances.targetHousingRangeMax = "";
 
     expect(validateWizardStep("money", draft)).toEqual({});
   });
@@ -93,6 +134,13 @@ describe("Wizard prototype model", () => {
       group: "Money",
       label: "Target take-home income",
       value: "$5,250/month",
+      basis: "user_estimate",
+      source: "manual_entry",
+    });
+    expect(rows).toContainEqual({
+      group: "Money",
+      label: "Target take-home plausible range",
+      value: "$4,750–$5,500/month",
       basis: "user_estimate",
       source: "manual_entry",
     });

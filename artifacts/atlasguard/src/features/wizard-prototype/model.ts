@@ -41,6 +41,14 @@ export type WizardPrototypeDraft = {
     currentExpenses: string;
     targetExpenses: string;
     retainedPropertyNet: string;
+    targetTakeHomeRangeMin: string;
+    targetTakeHomeRangeMax: string;
+    targetHousingRangeMin: string;
+    targetHousingRangeMax: string;
+    targetExpensesRangeMin: string;
+    targetExpensesRangeMax: string;
+    retainedPropertyNetRangeMin: string;
+    retainedPropertyNetRangeMax: string;
     targetTakeHomeBasis: AssumptionBasis;
     targetHousingBasis: AssumptionBasis;
     targetExpensesBasis: AssumptionBasis;
@@ -62,6 +70,14 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     currentExpenses: "",
     targetExpenses: "",
     retainedPropertyNet: "",
+    targetTakeHomeRangeMin: "",
+    targetTakeHomeRangeMax: "",
+    targetHousingRangeMin: "",
+    targetHousingRangeMax: "",
+    targetExpensesRangeMin: "",
+    targetExpensesRangeMax: "",
+    retainedPropertyNetRangeMin: "",
+    retainedPropertyNetRangeMax: "",
     targetTakeHomeBasis: "user_estimate",
     targetHousingBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
@@ -114,6 +130,95 @@ const validateSignedMoney = (
   const amount = Number(normalized);
   if (!Number.isFinite(amount) || !Number.isInteger(amount)) {
     errors[`finances.${key}`] = `${label} must be a whole-dollar amount.`;
+  }
+};
+
+const wholeDollarAmount = (value: string) => {
+  const amount = Number(value.trim().replaceAll(",", ""));
+  return Number.isFinite(amount) && Number.isInteger(amount) ? amount : null;
+};
+
+const validatePlausibleRange = (
+  errors: WizardErrors,
+  finances: WizardPrototypeDraft["finances"],
+  options: {
+    valueKey:
+      | "targetTakeHome"
+      | "targetHousing"
+      | "targetExpenses"
+      | "retainedPropertyNet";
+    basisKey:
+      | "targetTakeHomeBasis"
+      | "targetHousingBasis"
+      | "targetExpensesBasis"
+      | "retainedPropertyNetBasis";
+    minKey:
+      | "targetTakeHomeRangeMin"
+      | "targetHousingRangeMin"
+      | "targetExpensesRangeMin"
+      | "retainedPropertyNetRangeMin";
+    maxKey:
+      | "targetTakeHomeRangeMax"
+      | "targetHousingRangeMax"
+      | "targetExpensesRangeMax"
+      | "retainedPropertyNetRangeMax";
+    label: string;
+    signed?: boolean;
+  },
+) => {
+  if (finances[options.basisKey] === "confirmed") return;
+
+  if (options.signed) {
+    validateSignedMoney(
+      errors,
+      options.minKey,
+      finances[options.minKey],
+      `${options.label} plausible low`,
+    );
+    validateSignedMoney(
+      errors,
+      options.maxKey,
+      finances[options.maxKey],
+      `${options.label} plausible high`,
+    );
+  } else {
+    validateMoney(
+      errors,
+      options.minKey,
+      finances[options.minKey],
+      `${options.label} plausible low`,
+      true,
+    );
+    validateMoney(
+      errors,
+      options.maxKey,
+      finances[options.maxKey],
+      `${options.label} plausible high`,
+      true,
+    );
+  }
+
+  const point = wholeDollarAmount(finances[options.valueKey]);
+  const min = wholeDollarAmount(finances[options.minKey]);
+  const max = wholeDollarAmount(finances[options.maxKey]);
+  if (
+    point === null ||
+    min === null ||
+    max === null ||
+    errors[`finances.${options.valueKey}`] ||
+    errors[`finances.${options.minKey}`] ||
+    errors[`finances.${options.maxKey}`]
+  )
+    return;
+
+  if (min > max) {
+    errors[`finances.${options.maxKey}`] =
+      `${options.label} plausible high must be at least the low.`;
+    return;
+  }
+  if (point < min || point > max) {
+    errors[`finances.${options.valueKey}`] =
+      `${options.label} must fall within its plausible range.`;
   }
 };
 
@@ -193,6 +298,35 @@ export function validateWizardStep(
       draft.finances.retainedPropertyNet,
       "Retained-property monthly net",
     );
+    validatePlausibleRange(errors, draft.finances, {
+      valueKey: "targetTakeHome",
+      basisKey: "targetTakeHomeBasis",
+      minKey: "targetTakeHomeRangeMin",
+      maxKey: "targetTakeHomeRangeMax",
+      label: "Target take-home income",
+    });
+    validatePlausibleRange(errors, draft.finances, {
+      valueKey: "targetHousing",
+      basisKey: "targetHousingBasis",
+      minKey: "targetHousingRangeMin",
+      maxKey: "targetHousingRangeMax",
+      label: "Target housing cost",
+    });
+    validatePlausibleRange(errors, draft.finances, {
+      valueKey: "targetExpenses",
+      basisKey: "targetExpensesBasis",
+      minKey: "targetExpensesRangeMin",
+      maxKey: "targetExpensesRangeMax",
+      label: "Target recurring expenses",
+    });
+    validatePlausibleRange(errors, draft.finances, {
+      valueKey: "retainedPropertyNet",
+      basisKey: "retainedPropertyNetBasis",
+      minKey: "retainedPropertyNetRangeMin",
+      maxKey: "retainedPropertyNetRangeMax",
+      label: "Retained-property monthly net",
+      signed: true,
+    });
   }
 
   return errors;
@@ -230,11 +364,14 @@ const formatMoney = (value: string) => {
   return Number.isFinite(amount) ? `${money.format(amount)}/month` : "Missing";
 };
 
+const formatRange = (min: string, max: string) =>
+  `${formatMoney(min).replace("/month", "")}–${formatMoney(max)}`;
+
 export function createReviewRows(draft: WizardPrototypeDraft) {
   const origin = getPlace(draft.originSlug);
   const destination = getPlace(draft.destinationSlug);
 
-  return [
+  const rows = [
     {
       group: "Move",
       label: "Current location",
@@ -308,4 +445,43 @@ export function createReviewRows(draft: WizardPrototypeDraft) {
       source: "manual_entry" as const,
     },
   ];
+
+  const rangeRows = [
+    {
+      basisKey: "targetTakeHomeBasis" as const,
+      label: "Target take-home plausible range",
+      min: draft.finances.targetTakeHomeRangeMin,
+      max: draft.finances.targetTakeHomeRangeMax,
+    },
+    {
+      basisKey: "targetHousingBasis" as const,
+      label: "Target housing plausible range",
+      min: draft.finances.targetHousingRangeMin,
+      max: draft.finances.targetHousingRangeMax,
+    },
+    {
+      basisKey: "targetExpensesBasis" as const,
+      label: "Target expenses plausible range",
+      min: draft.finances.targetExpensesRangeMin,
+      max: draft.finances.targetExpensesRangeMax,
+    },
+    {
+      basisKey: "retainedPropertyNetBasis" as const,
+      label: "Retained-property plausible range",
+      min: draft.finances.retainedPropertyNetRangeMin,
+      max: draft.finances.retainedPropertyNetRangeMax,
+    },
+  ]
+    .filter(({ basisKey }) => draft.finances[basisKey] === "user_estimate")
+    .map(({ label, min, max }) => ({
+      group: "Money",
+      label,
+      value: formatRange(min, max),
+      basis: "user_estimate" as const,
+      source: "manual_entry" as const,
+    }));
+
+  const priorityIndex = rows.findIndex((row) => row.group === "Priority");
+  rows.splice(priorityIndex, 0, ...rangeRows);
+  return rows;
 }
