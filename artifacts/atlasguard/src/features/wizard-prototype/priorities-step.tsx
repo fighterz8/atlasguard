@@ -1,7 +1,7 @@
 import { Route } from "lucide-react";
 
-import { StatusBadge } from "@/features/ux-system/status-badge";
-import { cn } from "@/lib/utils";
+import { StatusBadge } from "../ux-system/status-badge";
+import { cn } from "../../lib/utils";
 
 import type { PriorityImportance } from "./model";
 

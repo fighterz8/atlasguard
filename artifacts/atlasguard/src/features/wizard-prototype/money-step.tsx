@@ -1,6 +1,6 @@
 import { Landmark } from "lucide-react";
 
-import { StatusBadge } from "@/features/ux-system/status-badge";
+import { StatusBadge } from "../ux-system/status-badge";
 
 import type {
   AssumptionBasis,
@@ -70,7 +70,7 @@ function MoneyField({
                 event.currentTarget.value as AssumptionBasis,
               )
             }
-            className="min-h-9 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 focus-visible:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700/20"
+            className="min-h-11 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700/20"
           >
             <option value="user_estimate">User estimate</option>
             <option value="confirmed">Confirmed</option>

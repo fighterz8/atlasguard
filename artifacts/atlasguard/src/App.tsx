@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import WizardPage from "@/pages/wizard";
 import ResultsPage from "@/pages/results";
+import WizardPrototypePage from "@/pages/wizard-prototype";
 import { researchPreviewEnabled } from "@/features/research-results/preview-gate";
 
 const queryClient = new QueryClient();
@@ -15,6 +16,9 @@ function Router() {
       <Route path="/" component={WizardPage} />
       {researchPreviewEnabled ? (
         <Route path="/research/la-to-seattle" component={ResultsPage} />
+      ) : null}
+      {researchPreviewEnabled ? (
+        <Route path="/research/wizard" component={WizardPrototypePage} />
       ) : null}
       <Route component={NotFound} />
     </Switch>

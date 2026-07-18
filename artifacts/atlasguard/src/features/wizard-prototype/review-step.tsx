@@ -1,9 +1,6 @@
 import { ClipboardCheck } from "lucide-react";
 
-import {
-  StatusBadge,
-  type StatusBadgeTone,
-} from "@/features/ux-system/status-badge";
+import { StatusBadge, type StatusBadgeTone } from "../ux-system/status-badge";
 
 import { createReviewRows, getPlace, type WizardPrototypeDraft } from "./model";
 

@@ -1,6 +1,6 @@
 import { MapPin } from "lucide-react";
 
-import { StatusBadge } from "@/features/ux-system/status-badge";
+import { StatusBadge } from "../ux-system/status-badge";
 
 import {
   getPlace,
