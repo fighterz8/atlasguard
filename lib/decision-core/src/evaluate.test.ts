@@ -233,13 +233,10 @@ describe("evaluateMoveDecision", () => {
     );
     if (commute === undefined) throw new Error("Missing commute fixture.");
     commute.weight = 0;
-    const benchmark = verifiedBenchmarkWith((comparison) => {
-      comparison.priorities = comparison.priorities.filter(
-        (priority) => priority.priorityId !== "commute_time",
-      );
-    });
-
-    const profile = evaluateMoveDecision(input, benchmark).decisionProfile;
+    const profile = evaluateMoveDecision(
+      input,
+      cloneVerifiedBenchmark(),
+    ).decisionProfile;
     const change = profile.priorityChanges.find(
       (priority) => priority.priorityId === "commute_time",
     );
@@ -609,15 +606,6 @@ describe("evaluateMoveDecision", () => {
         ),
       "missing_active_benchmark_priorities",
     );
-    assertCode(() => {
-      const input = cloneInput();
-      const commute = input.priorities.find(
-        (priority) => priority.priorityId === "commute_time",
-      );
-      if (commute === undefined) throw new Error("Missing commute fixture.");
-      commute.weight = 0;
-      return evaluateMoveDecision(input, cloneVerifiedBenchmark());
-    }, "extra_active_benchmark_priorities");
     assertCode(() => {
       const input = cloneInput();
       const climate = input.priorities.find(

@@ -247,11 +247,23 @@ export const EvaluationResultSchema = z
     const benchmarkPriorityIds = benchmarkComparison.priorities
       .map((priority) => priority.priorityId)
       .sort();
-    if (!canonicalEquals(activeInputPriorityIds, benchmarkPriorityIds)) {
+    const scenarioPriorityIds = scenarioInput.priorities
+      .map((priority) => priority.priorityId)
+      .sort();
+    const missingActivePriorityIds = activeInputPriorityIds.filter(
+      (priorityId) => !benchmarkPriorityIds.includes(priorityId),
+    );
+    const unknownBenchmarkPriorityIds = benchmarkPriorityIds.filter(
+      (priorityId) => !scenarioPriorityIds.includes(priorityId),
+    );
+    if (
+      missingActivePriorityIds.length > 0 ||
+      unknownBenchmarkPriorityIds.length > 0
+    ) {
       context.addIssue({
         code: "custom",
         message:
-          "Promoted benchmark priorities must exactly match active input priorities.",
+          "Promoted benchmark priorities must cover active inputs and cannot introduce priorities absent from the scenario.",
         path: ["benchmarkComparison", "priorities"],
       });
     }

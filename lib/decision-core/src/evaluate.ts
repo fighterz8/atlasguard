@@ -171,6 +171,9 @@ const assertBenchmarkMatchesScenario = (
   const activePriorityIds = new Set(
     activePriorities.map((priority) => priority.priorityId),
   );
+  const scenarioPriorityIds = new Set(
+    scenario.priorities.map((priority) => priority.priorityId),
+  );
   const benchmarkPriorityIds = new Set(
     benchmark.priorities.map((priority) => priority.priorityId),
   );
@@ -185,7 +188,7 @@ const assertBenchmarkMatchesScenario = (
     );
   }
   const extraPriorityIds = [...benchmarkPriorityIds]
-    .filter((priorityId) => !activePriorityIds.has(priorityId))
+    .filter((priorityId) => !scenarioPriorityIds.has(priorityId))
     .sort(compareStableIds);
   if (extraPriorityIds.length > 0) {
     throw new MoveDecisionPreflightError(

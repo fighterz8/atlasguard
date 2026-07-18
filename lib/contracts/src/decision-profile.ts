@@ -1388,28 +1388,33 @@ export const DecisionProfileSchema = z
       "finances.destination.takeHomeIncome.monthlyCents",
       "finances.destination.housingCost.monthlyCents",
       "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
+      "finances.destination.retainedPropertyNet.monthlyCents",
     ]);
-    const hasSensitivityRange = profile.evidence.some(
-      (evidence) =>
+    const sensitivityInputs = profile.evidence.filter(
+      (evidence): evidence is ScenarioInputEvidence =>
         evidence.kind === "scenario_input" &&
-        sensitivityInputPaths.has(evidence.inputPath) &&
-        evidence.plausibleRangeCents !== null,
+        sensitivityInputPaths.has(evidence.inputPath),
     );
+    const hasSensitivityRange = sensitivityInputs.some(
+      (evidence) => evidence.plausibleRangeCents !== null,
+    );
+    const hasIncompleteEstimateRanges = sensitivityInputs.some(
+      (evidence) =>
+        evidence.assumptionBasis === "user_estimate" &&
+        evidence.plausibleRangeCents === null,
+    );
+    const expectedNotEvaluatedReason = hasIncompleteEstimateRanges
+      ? ["stability.incomplete_estimate_ranges"]
+      : ["stability.no_plausible_ranges"];
     if (
       profile.stability.level === "not_evaluated" &&
       (profile.stability.breakpointIds.length > 0 ||
-        hasSensitivityRange ||
-        !arraysEqual(
-          profile.stability.reasonCodes,
-          profile.breakpoints.length === 0
-            ? ["stability.not_evaluated"]
-            : ["stability.no_plausible_ranges"],
-        ))
+        !arraysEqual(profile.stability.reasonCodes, expectedNotEvaluatedReason))
     ) {
       context.addIssue({
         code: "custom",
         message:
-          "Not-evaluated stability requires no plausible ranges, no cited breakpoints, and its canonical reason.",
+          "Not-evaluated stability requires no cited breakpoints and the canonical range-coverage reason.",
         path: ["stability"],
       });
     }

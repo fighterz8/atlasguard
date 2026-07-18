@@ -51,6 +51,33 @@ describe("Wizard deterministic evaluation", () => {
     );
   });
 
+  it("excludes commute without rejecting the verified benchmark", () => {
+    const draft = reviewedDraft();
+    draft.commuteImportance = "does_not_matter";
+
+    const result = evaluateWizardDraft(draft);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.evaluation.scenarioInput.priorities).toEqual([
+      {
+        priorityId: "commute_time",
+        preferredDirection: "lower",
+        weight: 0,
+      },
+    ]);
+    expect(result.evaluation.decisionProfile.priorityChanges[0]).toMatchObject({
+      priorityId: "commute_time",
+      weight: 0,
+      availability: "unavailable",
+      transformationId: "not_evaluated",
+      evidenceRefs: [],
+    });
+    expect(
+      result.evaluation.decisionProfile.findings.omittedPriorities,
+    ).toContain("commute_time");
+  });
+
   it("returns validation errors without invoking a different data path", () => {
     const draft = reviewedDraft();
     draft.destinationSlug = "los-angeles-ca";
