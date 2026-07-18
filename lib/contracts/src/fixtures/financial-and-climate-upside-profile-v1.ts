@@ -211,11 +211,43 @@ export const financialAndClimateUpsideProfile = {
     missingPriorityIds: [],
   },
   stability: {
-    level: "not_evaluated",
+    level: "stable",
     breakpointIds: [],
-    reasonCodes: ["stability.not_evaluated"],
+    reasonCodes: ["stability.no_in_range_condition_change"],
   },
-  breakpoints: [],
+  breakpoints: [
+    {
+      id: "breakpoint.destination_housing.meaningful_tradeoff.225000",
+      kind: "money",
+      inputPath: "finances.destination.housingCost.monthlyCents",
+      operator: "at_or_above",
+      thresholdCents: 225_000,
+      withinPlausibleRange: false,
+      changesConditionTo: "meaningful_tradeoff",
+      evidenceRefs: ["input.destination.housing"],
+    },
+    {
+      id: "breakpoint.destination_recurring.meaningful_tradeoff.295000",
+      kind: "money",
+      inputPath:
+        "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
+      operator: "at_or_above",
+      thresholdCents: 295_000,
+      withinPlausibleRange: false,
+      changesConditionTo: "meaningful_tradeoff",
+      evidenceRefs: ["input.destination.recurring"],
+    },
+    {
+      id: "breakpoint.destination_take_home.meaningful_tradeoff.505000",
+      kind: "money",
+      inputPath: "finances.destination.takeHomeIncome.monthlyCents",
+      operator: "at_or_below",
+      thresholdCents: 505_000,
+      withinPlausibleRange: false,
+      changesConditionTo: "meaningful_tradeoff",
+      evidenceRefs: ["input.destination.take_home"],
+    },
+  ],
   findings: {
     drivers: [
       {

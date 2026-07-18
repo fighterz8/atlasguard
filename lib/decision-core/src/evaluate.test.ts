@@ -76,6 +76,32 @@ describe("evaluateMoveDecision", () => {
     ).toBe(false);
   });
 
+  it("marks a result assumption-sensitive when a proven threshold is in range", () => {
+    const input = cloneInput();
+    input.finances.destination.housingCost.plausibleRangeCents = {
+      min: 160_000,
+      max: 230_000,
+    };
+
+    const profile = evaluateMoveDecision(
+      input,
+      cloneVerifiedBenchmark(),
+    ).decisionProfile;
+
+    expect(profile.stability.level).toBe("assumption_sensitive");
+    expect(profile.breakpoints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          inputPath: "finances.destination.housingCost.monthlyCents",
+          operator: "at_or_above",
+          thresholdCents: 225_000,
+          withinPlausibleRange: true,
+          changesConditionTo: "meaningful_tradeoff",
+        }),
+      ]),
+    );
+  });
+
   it("makes a negative target cushion a blocking financial risk", () => {
     const input = cloneInput();
     input.finances.destination.recurringExpensesExcludingHousing.monthlyCents = 500_000;

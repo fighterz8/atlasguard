@@ -18,6 +18,7 @@ import {
   ScenarioInputSchema,
 } from "./scenario-input";
 import type { ScenarioInput } from "./scenario-input";
+import { deriveFinancialSensitivity } from "./sensitivity";
 
 export const ResultModeSchema = z.enum([
   "deterministic",
@@ -325,15 +326,21 @@ export const EvaluationResultSchema = z
       }
     });
 
+    const expectedSensitivity = deriveFinancialSensitivity(
+      scenarioInput,
+      decisionProfile.priorityChanges,
+    );
     if (
-      decisionProfile.breakpoints.length > 0 ||
-      decisionProfile.stability.level !== "not_evaluated" ||
-      decisionProfile.stability.breakpointIds.length > 0
+      !canonicalEquals(
+        decisionProfile.breakpoints,
+        expectedSensitivity.breakpoints,
+      ) ||
+      !canonicalEquals(decisionProfile.stability, expectedSensitivity.stability)
     ) {
       context.addIssue({
         code: "custom",
         message:
-          "Phase 0 trusted results must mark stability not evaluated until reevaluation proof exists.",
+          "Breakpoints and stability must match canonical financial reevaluation.",
         path: ["decisionProfile", "breakpoints"],
       });
     }

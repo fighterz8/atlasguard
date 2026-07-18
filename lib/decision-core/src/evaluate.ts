@@ -7,6 +7,7 @@ import {
   DECISION_RULE_VERSION,
   deriveConfidenceSelection,
   deriveDecisionNextSteps,
+  deriveFinancialSensitivity,
   deriveFinancialBlockerCodes,
   deriveFinancialRiskCodes,
   FINANCIAL_BLOCKER_FINDING_REGISTRY,
@@ -558,12 +559,17 @@ const buildProfile = (
     materialPriorityChanges.some(
       (change) => change.classification === "worsens",
     );
+  const sensitivity = deriveFinancialSensitivity(scenario, priorityChanges);
   const condition = selectDecisionCondition({
     hasFinancialBlocker: financialPosition.blockerCodes.length > 0,
     hasCriticalEvidenceGap: criticalMissingChanges.length > 0,
     hasMaterialUpside,
     hasMaterialDownside,
-    hasFavorableInRangeBreakpoint: false,
+    hasFavorableInRangeBreakpoint: sensitivity.breakpoints.some(
+      (breakpoint) =>
+        breakpoint.withinPlausibleRange &&
+        breakpoint.changesConditionTo === "worth_a_closer_look",
+    ),
   });
 
   const conditionEvidenceRefs = new Set<string>([
@@ -697,12 +703,8 @@ const buildProfile = (
         .map((change) => change.priorityId)
         .sort(compareStableIds),
     },
-    stability: {
-      level: "not_evaluated",
-      breakpointIds: [],
-      reasonCodes: ["stability.not_evaluated"],
-    },
-    breakpoints: [],
+    stability: sensitivity.stability,
+    breakpoints: sensitivity.breakpoints,
     findings: {
       drivers: drivers.sort((left, right) =>
         compareStableIds(left.id, right.id),

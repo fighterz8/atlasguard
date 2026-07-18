@@ -701,6 +701,23 @@ describe("EvaluationResultSchema", () => {
     ).toBe(true);
   });
 
+  it("rejects a self-attested breakpoint that canonical reevaluation does not reproduce", () => {
+    const result = cloneEvaluationResult();
+    const breakpoint = result.decisionProfile.breakpoints[0];
+    if (breakpoint?.kind !== "money") {
+      throw new Error("Expected a financial breakpoint fixture.");
+    }
+    breakpoint.thresholdCents += 1;
+
+    const parsed = EvaluationResultSchema.safeParse(result);
+    expect(parsed.success).toBe(false);
+    expect(
+      parsed.success
+        ? []
+        : parsed.error.issues.map((issue) => issue.path.join(".")),
+    ).toContain("decisionProfile.breakpoints");
+  });
+
   it("structurally excludes research results from the transport schema", () => {
     const result = {
       ...cloneEvaluationResult(),

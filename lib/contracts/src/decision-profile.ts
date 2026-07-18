@@ -1384,18 +1384,32 @@ export const DecisionProfileSchema = z
       .filter((breakpoint) => breakpoint.withinPlausibleRange)
       .map((breakpoint) => breakpoint.id)
       .sort();
+    const sensitivityInputPaths = new Set<FinancialInputPath>([
+      "finances.destination.takeHomeIncome.monthlyCents",
+      "finances.destination.housingCost.monthlyCents",
+      "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
+    ]);
+    const hasSensitivityRange = profile.evidence.some(
+      (evidence) =>
+        evidence.kind === "scenario_input" &&
+        sensitivityInputPaths.has(evidence.inputPath) &&
+        evidence.plausibleRangeCents !== null,
+    );
     if (
       profile.stability.level === "not_evaluated" &&
-      (profile.breakpoints.length > 0 ||
-        profile.stability.breakpointIds.length > 0 ||
-        !arraysEqual(profile.stability.reasonCodes, [
-          "stability.not_evaluated",
-        ]))
+      (profile.stability.breakpointIds.length > 0 ||
+        hasSensitivityRange ||
+        !arraysEqual(
+          profile.stability.reasonCodes,
+          profile.breakpoints.length === 0
+            ? ["stability.not_evaluated"]
+            : ["stability.no_plausible_ranges"],
+        ))
     ) {
       context.addIssue({
         code: "custom",
         message:
-          "Not-evaluated stability cannot contain breakpoints and must use its canonical reason.",
+          "Not-evaluated stability requires no plausible ranges, no cited breakpoints, and its canonical reason.",
         path: ["stability"],
       });
     }
@@ -1421,6 +1435,23 @@ export const DecisionProfileSchema = z
         code: "custom",
         message: "Stability level must reflect the in-range breakpoint set.",
         path: ["stability", "level"],
+      });
+    }
+    if (
+      profile.stability.level !== "not_evaluated" &&
+      (!hasSensitivityRange ||
+        !arraysEqual(
+          profile.stability.reasonCodes,
+          expectedEvaluatedStability === "stable"
+            ? ["stability.no_in_range_condition_change"]
+            : ["stability.in_range_condition_change"],
+        ))
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Evaluated stability requires a plausible range and its canonical reason.",
+        path: ["stability", "reasonCodes"],
       });
     }
 
