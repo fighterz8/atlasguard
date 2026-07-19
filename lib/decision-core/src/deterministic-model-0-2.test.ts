@@ -1,0 +1,178 @@
+import type { DeterministicModelCalibrationInput } from "@workspace/contracts";
+import { describe, expect, it } from "vitest";
+
+import {
+  DeterministicModelPreflightError,
+  evaluateDeterministicModelCandidate,
+} from "./deterministic-model-0-2";
+import { deterministicModelCalibrationCorpus } from "./fixtures/deterministic-model-calibration-v1";
+
+const baseInput = (
+  overrides: Partial<DeterministicModelCalibrationInput> = {},
+): DeterministicModelCalibrationInput => ({
+  originMetroSlug: "origin-metro",
+  destinationMetroSlug: "destination-metro",
+  monthlyCushionDeltaCents: 0,
+  destinationMonthlyCushionCents: 100_000,
+  destinationMonthlyCushionRangeCents: null,
+  financialMaterialityThresholdCents: 25_000,
+  lowCushionCautionThresholdCents: 50_000,
+  destinationHousingBurdenBps: null,
+  commuteImpact: "neutral",
+  climateImpact: "neutral",
+  householdSignals: [],
+  essentialRequirements: [],
+  ...overrides,
+});
+
+describe("MoveWise deterministic rule 0.2.0 candidate", () => {
+  it("satisfies every accepted family and individual outcome", () => {
+    const scenarios = deterministicModelCalibrationCorpus.fixtures.filter(
+      (fixture) => fixture.kind === "scenario",
+    );
+
+    for (const fixture of scenarios) {
+      const result = evaluateDeterministicModelCandidate(fixture.input);
+
+      expect(
+        {
+          condition: result.condition,
+          band: result.band,
+          stability: result.stability,
+          requiredBlockerCodes: result.activeBlockerCodes,
+          requiredRangeBlockerCodes: result.rangeBlockerCodes,
+          requiredCautionCodes: result.cautionCodes,
+          requiredConditionalRequirementIds: result.conditionalRequirementIds,
+          requiredUnmetRequirementIds: result.unmetRequirementIds,
+        },
+        fixture.id,
+      ).toEqual(fixture.expected);
+    }
+  });
+
+  it("locks the neutral baseline and condition ladder", () => {
+    expect(evaluateDeterministicModelCandidate(baseInput())).toMatchObject({
+      ruleVersion: "0.2.0",
+      value: 50,
+      band: "mixed_or_similar",
+      condition: "no_clear_advantage",
+      appliedCap: null,
+    });
+  });
+
+  it("distinguishes the exact negative-cushion edge", () => {
+    const zero = evaluateDeterministicModelCandidate(
+      baseInput({ destinationMonthlyCushionCents: 0 }),
+    );
+    const negative = evaluateDeterministicModelCandidate(
+      baseInput({ destinationMonthlyCushionCents: -1 }),
+    );
+
+    expect(zero.activeBlockerCodes).toEqual([]);
+    expect(zero.cautionCodes).toContain("low_destination_cushion");
+    expect(negative).toMatchObject({
+      value: 39,
+      band: "worse_fit",
+      condition: "high_financial_risk",
+      activeBlockerCodes: ["negative_destination_cushion"],
+    });
+  });
+
+  it("distinguishes housing caution from the exact 50% blocker", () => {
+    const caution = evaluateDeterministicModelCandidate(
+      baseInput({
+        monthlyCushionDeltaCents: 100_000,
+        destinationHousingBurdenBps: 4_999,
+      }),
+    );
+    const blocker = evaluateDeterministicModelCandidate(
+      baseInput({
+        monthlyCushionDeltaCents: 100_000,
+        destinationHousingBurdenBps: 5_000,
+      }),
+    );
+
+    expect(caution).toMatchObject({
+      value: 59,
+      band: "mixed_or_similar",
+      condition: "no_clear_advantage",
+      activeBlockerCodes: [],
+      cautionCodes: ["destination_housing_burden_at_or_above_45_percent"],
+    });
+    expect(blocker).toMatchObject({
+      value: 59,
+      band: "mixed_or_similar",
+      condition: "high_financial_risk",
+      activeBlockerCodes: ["destination_housing_burden_at_or_above_50_percent"],
+    });
+  });
+
+  it("keeps excluded and unavailable metrics distinct without redistribution", () => {
+    const result = evaluateDeterministicModelCandidate(
+      baseInput({ commuteImpact: "excluded", climateImpact: "unavailable" }),
+    );
+
+    expect(result.value).toBe(50);
+    expect(result.metricContributions).toMatchObject({
+      commute: { status: "excluded", contribution: 0 },
+      climate: { status: "unavailable", contribution: 0 },
+    });
+  });
+
+  it("reruns a blocker-crossing range instead of averaging it away", () => {
+    const result = evaluateDeterministicModelCandidate(
+      baseInput({
+        destinationMonthlyCushionCents: null,
+        destinationMonthlyCushionRangeCents: { min: -1, max: 100_000 },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      value: 50,
+      condition: "promising_if",
+      stability: "assumption_sensitive",
+      range: { min: 39, max: 50 },
+      rangeBlockerCodes: ["negative_destination_cushion"],
+    });
+  });
+
+  it("is deterministic, directional, immutable, and rejects same-metro input", () => {
+    const forwardInput = baseInput({
+      monthlyCushionDeltaCents: 50_000,
+      commuteImpact: "positive",
+    });
+    const first = evaluateDeterministicModelCandidate(forwardInput);
+    const second = evaluateDeterministicModelCandidate(
+      structuredClone(forwardInput),
+    );
+    const reverse = evaluateDeterministicModelCandidate({
+      ...forwardInput,
+      originMetroSlug: forwardInput.destinationMetroSlug,
+      destinationMetroSlug: forwardInput.originMetroSlug,
+      monthlyCushionDeltaCents: -50_000,
+      commuteImpact: "negative",
+    });
+
+    expect(second).toEqual(first);
+    expect(reverse.value).toBeLessThan(first.value);
+    expect(Object.isFrozen(first)).toBe(true);
+    expect(Object.isFrozen(first.metricContributions)).toBe(true);
+    expect(() =>
+      evaluateDeterministicModelCandidate({
+        ...forwardInput,
+        destinationMetroSlug: forwardInput.originMetroSlug,
+      }),
+    ).toThrow(DeterministicModelPreflightError);
+  });
+
+  it("keeps financial improvement monotonic before caps", () => {
+    const values = [-50_000, -25_000, 0, 25_000, 50_000].map(
+      (monthlyCushionDeltaCents) =>
+        evaluateDeterministicModelCandidate(
+          baseInput({ monthlyCushionDeltaCents }),
+        ).value,
+    );
+
+    expect(values).toEqual([...values].sort((left, right) => left - right));
+  });
+});

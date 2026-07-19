@@ -8,7 +8,10 @@ import {
 } from "@workspace/contracts";
 
 const baseInput = {
+  originMetroSlug: "origin-metro",
+  destinationMetroSlug: "destination-metro",
   financialMaterialityThresholdCents: 25_000,
+  lowCushionCautionThresholdCents: 50_000,
   destinationHousingBurdenBps: null,
   commuteImpact: "neutral",
   climateImpact: "neutral",
@@ -17,6 +20,9 @@ const baseInput = {
 } satisfies Pick<
   DeterministicModelCalibrationInput,
   | "financialMaterialityThresholdCents"
+  | "lowCushionCautionThresholdCents"
+  | "originMetroSlug"
+  | "destinationMetroSlug"
   | "destinationHousingBurdenBps"
   | "commuteImpact"
   | "climateImpact"
@@ -434,7 +440,7 @@ export const deterministicModelCalibrationCorpus: DeterministicModelCalibrationC
         },
         expected: {
           condition: "high_financial_risk",
-          band: "mixed_or_similar",
+          band: "worse_fit",
           stability: "stable",
           requiredBlockerCodes: ["negative_destination_cushion"],
           requiredRangeBlockerCodes: [],
@@ -454,7 +460,7 @@ export const deterministicModelCalibrationCorpus: DeterministicModelCalibrationC
           destinationMonthlyCushionCents: 160_000,
           destinationMonthlyCushionRangeCents: null,
           householdSignals: [
-            { signalId: "support_network", impact: "negative" },
+            { signalId: "support_network", impact: "strong_negative" },
           ],
         },
         expected: {

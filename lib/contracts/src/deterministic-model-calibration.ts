@@ -1,6 +1,10 @@
 import { z } from "zod/v4";
 
-import { SafeIntegerSchema, StableIdSchema } from "./primitives";
+import {
+  MetroSlugSchema,
+  SafeIntegerSchema,
+  StableIdSchema,
+} from "./primitives";
 
 export const DETERMINISTIC_MODEL_CALIBRATION_SCHEMA_VERSION = "1.0.0" as const;
 export const DETERMINISTIC_MODEL_RULE_CANDIDATE_VERSION = "0.2.0" as const;
@@ -95,10 +99,13 @@ const EssentialRequirementSchema = z
 
 export const DeterministicModelCalibrationInputSchema = z
   .object({
+    originMetroSlug: MetroSlugSchema,
+    destinationMetroSlug: MetroSlugSchema,
     monthlyCushionDeltaCents: SafeIntegerSchema.nullable(),
     destinationMonthlyCushionCents: SafeIntegerSchema.nullable(),
     destinationMonthlyCushionRangeCents: RangeSchema.nullable(),
     financialMaterialityThresholdCents: SafeIntegerSchema.positive(),
+    lowCushionCautionThresholdCents: SafeIntegerSchema.positive(),
     destinationHousingBurdenBps: SafeIntegerSchema.min(0)
       .max(10_000)
       .nullable(),
