@@ -58,7 +58,7 @@ Full `pnpm run verify` passes 43 test files / 334 tests, transport drift, format
 
 Before the Wizard or Results can deliberately select `0.2.0`:
 
-1. Add explicit family/individual applicability plus normalized household and essential-requirement questions.
+1. Review and accept the explicit family/individual applicability plus normalized household and essential-requirement questions proposed in [Phase 4F](./phase-4f-wizard-input-adapter-charter.md).
 2. Build a verified adapter that derives financial fields from the canonical Decision Profile, including the accepted low-cushion threshold `max($500/month, 10% of destination take-home pay)`.
 3. Re-evaluate all accepted plausible financial ranges through the full adapter rather than collapsing them into an average.
 4. Bind the `0.2.0` result to input, benchmark, decision-rule, and scoring-rule versions needed for exact reproduction.
