@@ -8,13 +8,12 @@ Implemented and verified in the default-off research Results experience on 2026-
 
 Phase 4A proved that MoveWise Score rule `0.1.0` is deterministic and falsifiable. It did not prove that a person would interpret the number correctly. This slice introduces the verified score inside the research-only editorial Results report without changing the formula, Decision Profile, benchmark evidence, transport contract, or runtime gate.
 
-The presentation must answer five questions before the number can influence a decision:
+The presentation must answer four questions before the number can influence a decision:
 
 1. What is this score relative to?
 2. How much can accepted estimates change it?
 3. Which exact financial result, evidence strength, or blocker constrains it?
 4. What supported signal moves it most, and what is not scored yet?
-5. Which exact assumption is closest to changing the canonical Decision Profile?
 
 ## Presentation contract
 
@@ -33,8 +32,9 @@ The explanation immediately below keeps the score beside:
 - the strictest registered blocker and score cap when active;
 - strongest supported improvement and tradeoff with their canonical point contributions;
 - every unavailable score component, with no silent weight redistribution;
-- the nearest exact condition-changing financial threshold; and
 - the rule version plus deduplicated evidence and input references in a collapsed disclosure.
+
+Exact condition-changing thresholds remain in the lower What-if tool, where each value is attached to a named monthly input and can be compared with the editable assumption that produced it. They are not duplicated in the opening score explanation.
 
 The Decision Profile remains the source of truth. Its condition stays the page `h1`; MoveWise Score is a secondary `h2` summary, followed by the existing side-by-side finances, reasoning, What-if tool, and evidence.
 
@@ -45,26 +45,33 @@ The Decision Profile remains the source of truth. Its condition stays the page `
 - Evidence confidence stays separate from the number and range.
 - A registered severe financial blocker is shown as an explicit cap rather than allowing a favorable-looking number to imply safety.
 - Opportunity Context and Household Fit remain visibly not scored under rule `0.1.0`; Daily-life Fit is also unavailable when all of its metrics are excluded.
-- Exact finances and threshold operators use formatted canonical cents rather than reconstructed floating-point values.
+- Exact finances and What-if threshold operators use formatted canonical cents rather than reconstructed floating-point values.
+- The opening explanation does not surface a bare threshold amount without its monthly input context.
 - Calculation references start collapsed so auditability does not displace the decision hierarchy.
+
+## Human-review correction
+
+The first review found that the San Diego-to-Austin opening summary could show wording such as `at least $8,100` under “Most decision-changing assumption” without making the unit or decision value clear. Because the lower What-if section already presents the canonical thresholds with their named monthly inputs, the duplicate opening block and its presentation-only model mapping were removed. The score rule, breakpoint calculation, evidence references, and What-if thresholds are unchanged.
 
 ## Verification
 
-RED/GREEN model and server-rendered component tests cover relative meaning, no-range behavior, unavailable components, blocker-cap copy, exact threshold presentation, rule/evidence references, the single page `h1`, and the non-probability boundary. Focused verification passes 17 tests plus the AtlasGuard frontend type-check and research-enabled production build.
+RED/GREEN model and server-rendered component tests cover relative meaning, no-range behavior, unavailable components, blocker-cap copy, the absence of the duplicate opening threshold, rule/evidence references, the single page `h1`, and the non-probability boundary. Focused verification passes 17 tests plus the AtlasGuard frontend type-check and research-enabled production build.
 
 Real system-Chrome checks passed locally and against the exact preview at 1440, 1024, 768, 390, and 320 CSS pixels:
 
 - canonical direct Results score `52`, range `22–82`, and filled-Wizard score `61` bind to their separate verified evaluations;
+- the San Diego-to-Austin Wizard result omits the duplicate opening threshold block identified in review;
 - one `h1`, no skipped heading levels, and visible controls/disclosures at least 44 pixels high;
-- relative baseline, interpretation boundary, sensitivity, exact finance, evidence confidence, unavailable dimensions, threshold, and calculation references are visible and inspectable;
+- relative baseline, interpretation boundary, sensitivity, exact finance, evidence confidence, unavailable dimensions, and calculation references are visible and inspectable;
+- exact decision-changing thresholds remain visible in the named-input What-if section and are absent from the opening score explanation;
 - zero horizontal overflow, console warnings/errors, page errors, `/api/` requests, local-storage writes, or session-storage writes; and
 - desktop and mobile captures preserve the editorial report hierarchy without adding a card grid.
 
-Exact preview deployment `dpl_2X5AWAe62Cq5eQtGka485EcMjyuk` is READY at:
+Exact replacement preview deployment `dpl_Du2fseqfE8b4GAu5251JnaSSr612` is READY at:
 
-`https://movewise-m2bykczoh-fighterz8s-projects.vercel.app/research/wizard`
+`https://movewise-lvuoiz6k3-fighterz8s-projects.vercel.app/research/wizard`
 
-The preview was built from clean commit `3f611c60945ccf6c5eb47b65cabffb7d3d37a1a5` with the existing research-only Vite gate enabled.
+The application source in the preview matches commit `5b37cf90567e6ee1494be929848abaa4268f1fe1`, built with the existing research-only Vite gate enabled. The hosted suite passed all 135 browser checks across the five viewport sizes and the added San Diego-to-Austin flow.
 
 ## Deliberate exclusions and remaining gate
 
