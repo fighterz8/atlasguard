@@ -24,6 +24,7 @@ const importanceOptions: readonly PriorityChoiceOption<PriorityImportance>[] = [
     value: "must_have",
     label: "Must-have",
     description: "A material loss here could block the move.",
+    tone: "caution",
   },
   {
     value: "important",
@@ -39,6 +40,7 @@ const importanceOptions: readonly PriorityChoiceOption<PriorityImportance>[] = [
     value: "does_not_matter",
     label: "Does not matter",
     description: "Exclude this priority from the decision.",
+    tone: "unavailable",
   },
 ];
 
@@ -63,6 +65,7 @@ const climatePreferenceOptions: readonly PriorityChoiceOption<ClimateHeatPrefere
       value: "does_not_matter",
       label: "No preference",
       description: "Leave this climate signal out of the decision.",
+      tone: "unavailable",
     },
   ];
 

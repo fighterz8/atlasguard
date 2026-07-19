@@ -57,6 +57,7 @@ describe("research results view model", () => {
       value: 52,
       outOf: 100,
       bandLabel: "Mixed or similar",
+      tone: "caution",
       baselineMeaning:
         "50 means roughly even with Los Angeles for your current inputs.",
       boundary:
@@ -103,6 +104,12 @@ describe("research results view model", () => {
       ]),
       scoreVersion: "0.1.0",
     });
+    expect(model.comparison.financialRows).toMatchObject([
+      { id: "monthly_cushion", classification: "similar" },
+      { id: "take_home_income", classification: "similar" },
+      { id: "housing_cost", classification: "similar" },
+      { id: "recurring_expenses", classification: "similar" },
+    ]);
   });
 
   it("does not fabricate a score range and keeps unavailable dimensions visible", () => {
@@ -186,6 +193,7 @@ describe("research results view model", () => {
         originValue: "$1,500",
         destinationValue: "$1,500",
         deltaValue: "$0",
+        classification: "similar",
         emphasis: true,
       },
       {
@@ -194,6 +202,7 @@ describe("research results view model", () => {
         originValue: "$5,000",
         destinationValue: "$5,000",
         deltaValue: "$0",
+        classification: "similar",
         emphasis: false,
       },
       {
@@ -202,6 +211,7 @@ describe("research results view model", () => {
         originValue: "$2,000",
         destinationValue: "$2,000",
         deltaValue: "$0",
+        classification: "similar",
         emphasis: false,
       },
       {
@@ -210,6 +220,7 @@ describe("research results view model", () => {
         originValue: "$1,500",
         destinationValue: "$1,500",
         deltaValue: "$0",
+        classification: "similar",
         emphasis: false,
       },
     ]);

@@ -43,6 +43,8 @@ describe("Money slider model", () => {
       delta: 250,
       deltaText: "+$250 per month",
       deltaDirection: "up",
+      deltaImpact: "favorable",
+      deltaImpactLabel: "Helps cushion",
       valueText: "$5,250 per month",
     });
 
@@ -56,6 +58,8 @@ describe("Money slider model", () => {
       delta: -250,
       deltaText: "−$250 per month",
       deltaDirection: "down",
+      deltaImpact: "favorable",
+      deltaImpactLabel: "Helps cushion",
     });
   });
 
@@ -71,7 +75,22 @@ describe("Money slider model", () => {
       delta: null,
       deltaText: "Enter both amounts to compare",
       deltaDirection: "unknown",
+      deltaImpact: "unknown",
+      deltaImpactLabel: null,
       valueText: "No destination amount entered",
+    });
+  });
+
+  it("marks changes that reduce the monthly cushion as risk", () => {
+    expect(
+      createMoneySliderModel({
+        kind: "housing",
+        currentValue: "2000",
+        destinationValue: "2500",
+      }),
+    ).toMatchObject({
+      deltaImpact: "risk",
+      deltaImpactLabel: "Reduces cushion",
     });
   });
 });

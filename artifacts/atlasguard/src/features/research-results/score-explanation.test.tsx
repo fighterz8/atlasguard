@@ -20,6 +20,9 @@ describe("MoveWise score presentation", () => {
       "50 means roughly even with Los Angeles for your current inputs.",
     );
     expect(html).toContain("Not a probability");
+    expect(html).toContain('data-score-tone="caution"');
+    expect(html).toContain('data-tone="neutral"');
+    expect(html).toContain('data-tone="caution"');
   });
 
   it("prioritizes the strongest effect and a contextual decision-changing condition", () => {

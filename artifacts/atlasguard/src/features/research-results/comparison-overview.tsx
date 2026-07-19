@@ -1,3 +1,5 @@
+import { StatusBadge } from "../ux-system/status-badge";
+
 import type { ResearchResultsViewModel } from "./model";
 
 type ComparisonOverviewProps = Pick<
@@ -12,6 +14,13 @@ const classificationCopy = {
   similar: "Similar",
   worsens: "Worse",
   unavailable: "Unavailable",
+} as const;
+
+const classificationTone = {
+  improves: "favorable",
+  similar: "neutral",
+  worsens: "risk",
+  unavailable: "unavailable",
 } as const;
 
 export function ComparisonOverview({
@@ -88,8 +97,13 @@ export function ComparisonOverview({
                 <td className="px-2 py-4 text-right text-sm font-medium tabular-nums text-slate-950">
                   {row.destinationValue}
                 </td>
-                <td className="py-4 pl-2 text-right text-sm font-semibold tabular-nums text-teal-900">
-                  {row.deltaValue}
+                <td className="py-4 pl-2 text-right text-sm font-semibold tabular-nums">
+                  <StatusBadge
+                    tone={classificationTone[row.classification]}
+                    className="ml-auto"
+                  >
+                    {row.deltaValue} · {classificationCopy[row.classification]}
+                  </StatusBadge>
                 </td>
               </tr>
             ))}
@@ -117,11 +131,19 @@ export function ComparisonOverview({
                   <dt className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-slate-500">
                     {label}
                   </dt>
-                  <dd
-                    className={`mt-1 text-sm font-semibold tabular-nums ${index === 2 ? "text-teal-900" : "text-slate-950"}`}
-                  >
-                    {value}
-                  </dd>
+                  {index === 2 ? (
+                    <dd className="mt-1">
+                      <StatusBadge
+                        tone={classificationTone[row.classification]}
+                      >
+                        {value} · {classificationCopy[row.classification]}
+                      </StatusBadge>
+                    </dd>
+                  ) : (
+                    <dd className="mt-1 text-sm font-semibold tabular-nums text-slate-950">
+                      {value}
+                    </dd>
+                  )}
                 </div>
               ))}
             </dl>
@@ -143,9 +165,9 @@ export function ComparisonOverview({
                 >
                   Commute
                 </h3>
-                <span className="text-sm font-semibold text-teal-900">
+                <StatusBadge tone={classificationTone[priority.classification]}>
                   {classificationCopy[priority.classification]}
-                </span>
+                </StatusBadge>
               </div>
               <dl className="grid grid-cols-2 gap-6 py-5">
                 <div>
@@ -181,9 +203,9 @@ export function ComparisonOverview({
                 >
                   Climate
                 </h3>
-                <span className="text-sm font-semibold text-teal-900">
+                <StatusBadge tone={classificationTone[climate.classification]}>
                   {classificationCopy[climate.classification]}
-                </span>
+                </StatusBadge>
               </div>
               <div className="grid gap-5 py-5 sm:grid-cols-2">
                 <div>

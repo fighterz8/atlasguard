@@ -5,6 +5,7 @@ import {
   CircleOff,
   Database,
   FilePenLine,
+  Minus,
 } from "lucide-react";
 
 import { cn } from "../../lib/utils";
@@ -16,6 +17,7 @@ export type StatusBadgeTone =
   | "favorable"
   | "caution"
   | "risk"
+  | "neutral"
   | "unavailable";
 
 const styles: Record<StatusBadgeTone, string> = {
@@ -25,6 +27,7 @@ const styles: Record<StatusBadgeTone, string> = {
   favorable: "border-favorable/25 bg-favorable-surface text-favorable",
   caution: "border-caution/25 bg-caution-surface text-caution",
   risk: "border-risk/25 bg-risk-surface text-risk",
+  neutral: "border-slate-300 bg-slate-50 text-slate-700",
   unavailable: "border-unavailable/20 bg-unavailable-surface text-unavailable",
 };
 
@@ -35,6 +38,7 @@ const icons = {
   favorable: CheckCircle2,
   caution: CircleAlert,
   risk: CircleAlert,
+  neutral: Minus,
   unavailable: CircleOff,
 } satisfies Record<StatusBadgeTone, typeof CheckCircle2>;
 

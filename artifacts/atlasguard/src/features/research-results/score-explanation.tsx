@@ -11,7 +11,7 @@ const contributionLabel = (value: number) =>
 
 const financeDirectionCopy = {
   improves: { label: "Better", tone: "favorable" as const },
-  similar: { label: "Similar", tone: "unavailable" as const },
+  similar: { label: "Similar", tone: "neutral" as const },
   worsens: { label: "Worse", tone: "risk" as const },
 };
 

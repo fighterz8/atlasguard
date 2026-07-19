@@ -37,6 +37,15 @@ export const createMoneySliderModel = (options: {
   );
   const delta =
     current === null || destination === null ? null : destination - current;
+  const positiveHelps = options.kind === "take_home";
+  const deltaImpact =
+    delta === null
+      ? ("unknown" as const)
+      : delta === 0
+        ? ("similar" as const)
+        : delta > 0 === positiveHelps
+          ? ("favorable" as const)
+          : ("risk" as const);
 
   return {
     minimum: 0,
@@ -62,6 +71,13 @@ export const createMoneySliderModel = (options: {
           : delta > 0
             ? "up"
             : "down",
+    deltaImpact,
+    deltaImpactLabel:
+      deltaImpact === "favorable"
+        ? "Helps cushion"
+        : deltaImpact === "risk"
+          ? "Reduces cushion"
+          : null,
     minimumLabel: currency.format(0),
     maximumLabel: currency.format(maximum),
   } as const;

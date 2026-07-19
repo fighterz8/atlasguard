@@ -77,9 +77,13 @@ export const moneyComparisons: readonly ComparisonDefinition[] = [
 
 function DeltaBadge({
   direction,
+  impact,
+  impactLabel,
   text,
 }: {
   direction: "unknown" | "same" | "up" | "down";
+  impact: "unknown" | "similar" | "favorable" | "risk";
+  impactLabel: "Helps cushion" | "Reduces cushion" | null;
   text: string;
 }) {
   const Icon =
@@ -89,14 +93,17 @@ function DeltaBadge({
     <span
       className={cn(
         "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tabular-nums",
-        direction === "unknown"
+        impact === "unknown"
           ? "border-slate-200 bg-slate-50 text-slate-500"
-          : direction === "same"
+          : impact === "similar"
             ? "border-slate-300 bg-white text-slate-700"
-            : "border-teal-200 bg-teal-50 text-teal-900",
+            : impact === "favorable"
+              ? "border-favorable/25 bg-favorable-surface text-favorable"
+              : "border-risk/25 bg-risk-surface text-risk",
       )}
     >
       <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+      {impactLabel ? `${impactLabel} · ` : null}
       {text}
     </span>
   );
@@ -140,7 +147,12 @@ export function MoneyComparisonCard({
             {definition.description}
           </p>
         </div>
-        <DeltaBadge direction={slider.deltaDirection} text={slider.deltaText} />
+        <DeltaBadge
+          direction={slider.deltaDirection}
+          impact={slider.deltaImpact}
+          impactLabel={slider.deltaImpactLabel}
+          text={slider.deltaText}
+        />
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-5">

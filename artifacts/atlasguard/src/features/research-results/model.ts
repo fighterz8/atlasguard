@@ -25,6 +25,15 @@ const dollars = new Intl.NumberFormat("en-US", {
 const formatMoney = (cents: number) => dollars.format(cents / 100);
 const formatPercent = (basisPoints: number | null) =>
   basisPoints === null ? "Not available" : `${(basisPoints / 100).toFixed(1)}%`;
+const classifyFinancialDelta = (
+  deltaCents: number,
+  positiveIsBetter: boolean,
+) =>
+  deltaCents === 0
+    ? ("similar" as const)
+    : deltaCents > 0 === positiveIsBetter
+      ? ("improves" as const)
+      : ("worsens" as const);
 
 const conditionCopy = {
   worth_a_closer_look: {
@@ -169,6 +178,13 @@ const scoreBandLabels = {
   substantially_better_fit: "Substantially better fit",
 } as const;
 
+const scoreBandTones = {
+  worse_fit: "risk",
+  mixed_or_similar: "caution",
+  better_fit: "favorable",
+  substantially_better_fit: "favorable",
+} as const;
+
 const scoreMetricLabels = {
   financial_cushion_delta: "Monthly financial cushion",
   commute_time: "Typical commute time",
@@ -261,6 +277,7 @@ export const createResearchResultsViewModel = (
       originValue: formatMoney(originFinances.monthlyCushionCents),
       destinationValue: formatMoney(destinationFinances.monthlyCushionCents),
       deltaValue: formatMoney(financialChange.monthlyCushionDeltaCents),
+      classification: financialChange.classification,
       emphasis: true,
     },
     {
@@ -273,6 +290,11 @@ export const createResearchResultsViewModel = (
       deltaValue: formatMoney(
         destinationFinances.monthlyTakeHomeIncomeCents -
           originFinances.monthlyTakeHomeIncomeCents,
+      ),
+      classification: classifyFinancialDelta(
+        destinationFinances.monthlyTakeHomeIncomeCents -
+          originFinances.monthlyTakeHomeIncomeCents,
+        true,
       ),
       emphasis: false,
     },
@@ -287,6 +309,11 @@ export const createResearchResultsViewModel = (
         destinationFinances.monthlyHousingCostCents -
           originFinances.monthlyHousingCostCents,
       ),
+      classification: classifyFinancialDelta(
+        destinationFinances.monthlyHousingCostCents -
+          originFinances.monthlyHousingCostCents,
+        false,
+      ),
       emphasis: false,
     },
     {
@@ -299,6 +326,11 @@ export const createResearchResultsViewModel = (
       deltaValue: formatMoney(
         destinationFinances.monthlyRecurringExpensesCents -
           originFinances.monthlyRecurringExpensesCents,
+      ),
+      classification: classifyFinancialDelta(
+        destinationFinances.monthlyRecurringExpensesCents -
+          originFinances.monthlyRecurringExpensesCents,
+        false,
       ),
       emphasis: false,
     },
@@ -317,6 +349,11 @@ export const createResearchResultsViewModel = (
             deltaValue: formatMoney(
               destinationFinances.monthlyRetainedPropertyNetCents -
                 originFinances.monthlyRetainedPropertyNetCents,
+            ),
+            classification: classifyFinancialDelta(
+              destinationFinances.monthlyRetainedPropertyNetCents -
+                originFinances.monthlyRetainedPropertyNetCents,
+              true,
             ),
             emphasis: false,
           },
@@ -432,6 +469,7 @@ export const createResearchResultsViewModel = (
       value: analysis.score.value,
       outOf: 100,
       bandLabel: scoreBandLabels[analysis.score.band],
+      tone: scoreBandTones[analysis.score.band],
       baselineMeaning: `50 means roughly even with ${profile.scenario.origin.selectedPlace.city} for your current inputs.`,
       boundary:
         "Not a probability, universal city grade, city ranking, or instruction to move.",

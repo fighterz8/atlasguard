@@ -1,22 +1,77 @@
 import React from "react";
 
+import { StatusBadge } from "../ux-system/status-badge";
+
 import type { ResearchResultsViewModel } from "./model";
 
 type SummaryPanelProps = Pick<
   ResearchResultsViewModel,
-  "condition" | "decisionMeta" | "score"
+  "condition" | "decisionMeta" | "score" | "confidence" | "stability"
 >;
 
 export function SummaryPanel({
   condition,
   decisionMeta,
   score,
+  confidence,
+  stability,
 }: SummaryPanelProps) {
+  const financialTone = {
+    improves: { label: "Better", tone: "favorable" as const },
+    similar: { label: "Similar", tone: "neutral" as const },
+    worsens: { label: "Worse", tone: "risk" as const },
+  }[decisionMeta.financialDirection];
+  const evidenceTone = {
+    limited: "caution",
+    moderate: "estimate",
+    high: "favorable",
+  } as const;
+  const sensitivityTone = {
+    assumption_sensitive: "caution",
+    stable: "favorable",
+    not_evaluated: "unavailable",
+  } as const;
   const meta = [
-    ["Monthly difference", decisionMeta.monthlyDifference],
-    ["Evidence", decisionMeta.confidenceLabel],
-    ["Sensitivity", decisionMeta.stabilityLabel],
+    {
+      label: "Monthly difference",
+      value: decisionMeta.monthlyDifference,
+      status: financialTone.label,
+      tone: financialTone.tone,
+    },
+    {
+      label: "Evidence",
+      value: decisionMeta.confidenceLabel,
+      status: null,
+      tone: evidenceTone[confidence.level],
+    },
+    {
+      label: "Sensitivity",
+      value: decisionMeta.stabilityLabel,
+      status: null,
+      tone: sensitivityTone[stability.level],
+    },
   ];
+  const scoreTone =
+    score.tone === "risk"
+      ? {
+          name: "risk",
+          border: "border-risk",
+          surface: "bg-risk-surface/35",
+          text: "text-risk",
+        }
+      : score.tone === "caution"
+        ? {
+            name: "caution",
+            border: "border-caution",
+            surface: "bg-caution-surface/45",
+            text: "text-caution",
+          }
+        : {
+            name: "favorable",
+            border: "border-favorable",
+            surface: "bg-favorable-surface/45",
+            text: "text-favorable",
+          };
 
   return (
     <section
@@ -37,10 +92,13 @@ export function SummaryPanel({
           {condition.summary}
         </p>
       </div>
-      <div className="self-end border-l-4 border-teal-800 pl-5">
+      <div
+        data-score-tone={scoreTone.name}
+        className={`self-end border-l-4 px-5 py-4 ${scoreTone.border} ${scoreTone.surface}`}
+      >
         <h2
           id="movewise-score-heading"
-          className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800"
+          className={`text-xs font-bold uppercase tracking-[0.16em] ${scoreTone.text}`}
         >
           MoveWise Score
         </h2>
@@ -66,7 +124,7 @@ export function SummaryPanel({
         </p>
       </div>
       <dl className="border-y border-slate-300 sm:grid sm:grid-cols-3 lg:col-span-2">
-        {meta.map(([label, value]) => (
+        {meta.map(({ label, value, status, tone }) => (
           <div
             key={label}
             className="flex items-baseline justify-between gap-5 border-b border-slate-200 py-4 last:border-0 sm:block sm:border-b-0 sm:border-r sm:px-5 sm:first:pl-0 sm:last:border-r-0 sm:last:pr-0"
@@ -74,8 +132,15 @@ export function SummaryPanel({
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
               {label}
             </dt>
-            <dd className="text-right text-sm font-semibold text-slate-900 tabular-nums sm:mt-2 sm:text-left">
-              {value}
+            <dd className="flex flex-wrap items-center justify-end gap-2 text-right text-sm font-semibold text-slate-900 tabular-nums sm:mt-2 sm:justify-start sm:text-left">
+              {label === "Monthly difference" ? (
+                <>
+                  <span>{value}</span>
+                  <StatusBadge tone={tone}>{status}</StatusBadge>
+                </>
+              ) : (
+                <StatusBadge tone={tone}>{value}</StatusBadge>
+              )}
             </dd>
           </div>
         ))}
