@@ -68,6 +68,7 @@ describe("research results view model", () => {
       exactFinance: {
         label: "Monthly cushion difference",
         value: "$0",
+        direction: "similar",
       },
       evidenceConfidence: {
         label: "Limited evidence",
@@ -80,6 +81,21 @@ describe("research results view model", () => {
         evidenceRefs: ["benchmark.commute_time.acs1.2024.la_seattle"],
       },
       strongestTradeoff: null,
+      strongestEffect: {
+        label: "Typical commute time",
+        contribution: 2,
+        kind: "lift",
+      },
+      decisionChangingAssumption: {
+        label: "Destination housing",
+        currentValue: "$2,000",
+        threshold: "$1,750",
+        operator: "at or below",
+        distance: "$250",
+        changesConditionTo: "Worth a closer look",
+        withinPlausibleRange: true,
+        evidenceRefs: ["input.destination.housing"],
+      },
       missingComponents: ["Household fit", "Opportunity context"],
       calculationEvidenceRefs: expect.arrayContaining([
         "benchmark.commute_time.acs1.2024.la_seattle",

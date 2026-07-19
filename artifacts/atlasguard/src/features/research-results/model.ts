@@ -175,6 +175,17 @@ const scoreMetricLabels = {
   climate_heat: "Climate fit",
 } as const;
 
+const scoreThresholdLabels: Record<string, string> = {
+  "finances.destination.takeHomeIncome.monthlyCents":
+    "Destination take-home income",
+  "finances.destination.grossIncome.monthlyCents": "Destination gross income",
+  "finances.destination.housingCost.monthlyCents": "Destination housing",
+  "finances.destination.recurringExpensesExcludingHousing.monthlyCents":
+    "Destination recurring expenses",
+  "finances.destination.retainedPropertyNet.monthlyCents":
+    "Retained-property monthly net",
+};
+
 const scoreComponentLabels = {
   financial_security: "Financial security",
   daily_life_fit: "Daily-life fit",
@@ -371,6 +382,25 @@ export const createResearchResultsViewModel = (
       (reference, index, references) => references.indexOf(reference) === index,
     )
     .sort();
+  const strongestEffect = [
+    ...(analysis.insights.strongestImprovement === null
+      ? []
+      : [{ ...analysis.insights.strongestImprovement, kind: "lift" as const }]),
+    ...(analysis.insights.strongestTradeoff === null
+      ? []
+      : [
+          {
+            ...analysis.insights.strongestTradeoff,
+            kind: "tradeoff" as const,
+          },
+        ]),
+  ].sort(
+    (left, right) =>
+      Math.abs(right.contribution) - Math.abs(left.contribution) ||
+      right.contribution - left.contribution,
+  )[0];
+  const decisionChangingAssumption =
+    analysis.insights.decisionChangingAssumption;
 
   if (
     housingContext.origin.cbsaCode !== profile.scenario.origin.cbsaCode ||
@@ -416,6 +446,7 @@ export const createResearchResultsViewModel = (
       exactFinance: {
         label: "Monthly cushion difference",
         value: formatMoney(financialChange.monthlyCushionDeltaCents),
+        direction: financialChange.classification,
       },
       evidenceConfidence: {
         label: confidenceLabels[profile.confidence.level],
@@ -453,6 +484,37 @@ export const createResearchResultsViewModel = (
               evidenceRefs: [
                 ...analysis.insights.strongestTradeoff.evidenceRefs,
               ],
+            },
+      strongestEffect:
+        strongestEffect === undefined
+          ? null
+          : {
+              label: scoreMetricLabels[strongestEffect.metricId],
+              contribution: strongestEffect.contribution,
+              kind: strongestEffect.kind,
+            },
+      decisionChangingAssumption:
+        decisionChangingAssumption === null
+          ? null
+          : {
+              label:
+                scoreThresholdLabels[decisionChangingAssumption.inputPath] ??
+                decisionChangingAssumption.inputPath,
+              currentValue: formatMoney(
+                decisionChangingAssumption.currentValueCents,
+              ),
+              threshold: formatMoney(decisionChangingAssumption.thresholdCents),
+              operator:
+                decisionChangingAssumption.operator === "at_or_above"
+                  ? "at least"
+                  : "at or below",
+              distance: formatMoney(decisionChangingAssumption.distanceCents),
+              changesConditionTo:
+                conditionCopy[decisionChangingAssumption.changesConditionTo]
+                  .label,
+              withinPlausibleRange:
+                decisionChangingAssumption.withinPlausibleRange,
+              evidenceRefs: [...decisionChangingAssumption.evidenceRefs],
             },
       missingComponents: analysis.insights.missingComponents.map(
         (componentId) => scoreComponentLabels[componentId],

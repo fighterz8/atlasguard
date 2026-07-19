@@ -1,11 +1,19 @@
 import React from "react";
 
+import { StatusBadge } from "../ux-system/status-badge";
+
 import type { ResearchResultsViewModel } from "./model";
 
 type ScoreExplanationProps = Pick<ResearchResultsViewModel, "score">;
 
 const contributionLabel = (value: number) =>
   `${value > 0 ? "+" : ""}${value} score ${Math.abs(value) === 1 ? "point" : "points"}`;
+
+const financeDirectionCopy = {
+  improves: { label: "Better", tone: "favorable" as const },
+  similar: { label: "Similar", tone: "unavailable" as const },
+  worsens: { label: "Worse", tone: "risk" as const },
+};
 
 export function ScoreExplanation({ score }: ScoreExplanationProps) {
   return (
@@ -31,54 +39,93 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
       </div>
 
       <dl className="mt-10 grid border-y border-slate-300 sm:grid-cols-3">
-        <div className="border-b border-slate-200 py-5 sm:border-b-0 sm:border-r sm:pr-6">
-          <dt className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
-            Estimate sensitivity
-          </dt>
-          <dd className="mt-2">
-            <span className="block text-2xl font-semibold tabular-nums text-slate-950">
-              {score.range?.label ?? "No score range"}
-            </span>
-            <span className="mt-2 block text-sm font-normal leading-6 text-slate-600">
-              {score.range?.explanation ??
-                "No accepted low/high financial estimate changes this point score."}
-            </span>
-          </dd>
-        </div>
-        <div className="border-b border-slate-200 py-5 sm:border-b-0 sm:border-r sm:px-6">
+        <div className="border-b border-slate-200 bg-white/60 px-4 py-5 sm:border-b-0 sm:border-r sm:px-5">
           <dt className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
             {score.exactFinance.label}
           </dt>
           <dd className="mt-2">
-            <span className="block text-2xl font-semibold tabular-nums text-slate-950">
-              {score.exactFinance.value}
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-2xl font-semibold tabular-nums text-slate-950">
+                {score.exactFinance.value}
+              </span>
+              <StatusBadge
+                tone={financeDirectionCopy[score.exactFinance.direction].tone}
+              >
+                {financeDirectionCopy[score.exactFinance.direction].label}
+              </StatusBadge>
             </span>
             <span className="mt-2 block text-sm font-normal leading-6 text-slate-600">
               Exact monthly arithmetic from the assumptions shown below.
             </span>
           </dd>
         </div>
-        <div className="py-5 sm:pl-6">
+        <div className="border-b border-slate-200 bg-favorable-surface/55 px-4 py-5 sm:border-b-0 sm:border-r sm:px-5">
           <dt className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
-            Evidence confidence
+            Strongest supported effect
           </dt>
-          <dd className="mt-2">
-            <span className="block text-2xl font-semibold text-slate-950">
-              {score.evidenceConfidence.label}
-            </span>
-            <span className="mt-2 block text-sm font-normal leading-6 text-slate-600">
-              {score.evidenceConfidence.explanation}
-            </span>
-          </dd>
+          {score.strongestEffect ? (
+            <dd className="mt-2">
+              <span className="block text-lg font-semibold text-slate-950">
+                {score.strongestEffect.label}
+              </span>
+              <span className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusBadge
+                  tone={
+                    score.strongestEffect.kind === "lift" ? "favorable" : "risk"
+                  }
+                >
+                  {score.strongestEffect.kind === "lift" ? "Lift" : "Tradeoff"}
+                </StatusBadge>
+                <span className="text-sm font-semibold tabular-nums text-slate-800">
+                  {contributionLabel(score.strongestEffect.contribution)}
+                </span>
+              </span>
+            </dd>
+          ) : (
+            <dd className="mt-2 text-sm leading-6 text-slate-600">
+              No evidence-backed factor moves the score at these inputs.
+            </dd>
+          )}
+        </div>
+        <div className="bg-caution-surface/70 px-4 py-5 sm:px-5">
+          <dt className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
+            Closest decision change
+          </dt>
+          {score.decisionChangingAssumption ? (
+            <dd className="mt-2">
+              <span className="block text-lg font-semibold text-slate-950">
+                {score.decisionChangingAssumption.label}
+              </span>
+              <span className="mt-1 block text-sm font-semibold tabular-nums text-caution">
+                {score.decisionChangingAssumption.operator[0].toUpperCase()}
+                {score.decisionChangingAssumption.operator.slice(1)}{" "}
+                {score.decisionChangingAssumption.threshold}/month
+              </span>
+              <span className="mt-2 block text-xs leading-5 text-slate-700">
+                Currently {score.decisionChangingAssumption.currentValue}/month
+                {" · "}
+                {score.decisionChangingAssumption.distance}/month away. Changes
+                the profile to{" "}
+                <strong>
+                  {score.decisionChangingAssumption.changesConditionTo}
+                </strong>
+                .
+              </span>
+            </dd>
+          ) : (
+            <dd className="mt-2 text-sm leading-6 text-slate-600">
+              No exact financial threshold changes this Decision Profile.
+            </dd>
+          )}
         </div>
       </dl>
 
       {score.activeBlocker ? (
         <div
           role="note"
-          className="mt-8 border-l-4 border-amber-600 bg-amber-50/60 px-5 py-4"
+          className="mt-8 border-l-4 border-caution bg-caution-surface px-5 py-4"
         >
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-900">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-caution">
             Score capped at {score.activeBlocker.scoreCap}
           </p>
           <p className="mt-2 font-semibold text-slate-950">
@@ -95,55 +142,13 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
           id="score-factors-heading"
           className="text-lg font-semibold text-slate-950"
         >
-          Strongest supported signals
+          What the score does not cover yet
         </h3>
-        <div className="mt-4 border-y border-slate-300">
-          {score.strongestImprovement ? (
-            <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 py-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                  Biggest lift
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-950">
-                  {score.strongestImprovement.label}
-                </p>
-              </div>
-              <p className="self-center text-sm font-semibold tabular-nums text-teal-900">
-                {contributionLabel(score.strongestImprovement.contribution)}
-              </p>
-            </div>
-          ) : (
-            <div className="border-b border-slate-200 py-4 text-sm text-slate-600">
-              No supported lift at the point estimates.
-            </div>
-          )}
-          {score.strongestTradeoff ? (
-            <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 py-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                  Biggest tradeoff
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-950">
-                  {score.strongestTradeoff.label}
-                </p>
-              </div>
-              <p className="self-center text-sm font-semibold tabular-nums text-slate-800">
-                {contributionLabel(score.strongestTradeoff.contribution)}
-              </p>
-            </div>
-          ) : (
-            <div className="border-b border-slate-200 py-4 text-sm text-slate-600">
-              No supported tradeoff at the point estimates.
-            </div>
-          )}
-          <div className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-              Not scored yet
-            </p>
-            <p className="mt-1 text-sm leading-6 text-slate-700">
-              {score.missingComponents.join(" · ")}
-            </p>
-          </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-slate-300 py-4">
+          <StatusBadge tone="unavailable">Not scored yet</StatusBadge>
+          <p className="text-sm leading-6 text-slate-700">
+            {score.missingComponents.join(" · ")}
+          </p>
         </div>
       </div>
 

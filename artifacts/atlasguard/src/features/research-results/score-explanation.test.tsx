@@ -22,19 +22,25 @@ describe("MoveWise score presentation", () => {
     expect(html).toContain("Not a probability");
   });
 
-  it("keeps score evidence together without duplicating the What-if thresholds", () => {
+  it("prioritizes the strongest effect and a contextual decision-changing condition", () => {
     const { score } = createResearchResultsViewModel();
     const html = renderToStaticMarkup(<ScoreExplanation score={score} />);
 
     expect(html).toContain('aria-labelledby="score-explanation-heading"');
-    expect(html).toContain("Estimate sensitivity");
     expect(html).toContain("Monthly cushion difference");
-    expect(html).toContain("Limited evidence");
+    expect(html).toContain("Strongest supported effect");
+    expect(html).toContain("Typical commute time");
+    expect(html).toContain("+2 score points");
+    expect(html).toContain("Closest decision change");
+    expect(html).toContain("Destination housing");
+    expect(html).toContain("At or below $1,750/month");
+    expect(html).toContain("Currently $2,000/month");
+    expect(html).toContain("$250/month away");
+    expect(html).toContain("Worth a closer look");
     expect(html).toContain("Household fit");
     expect(html).toContain("Opportunity context");
-    expect(html).not.toContain("Most decision-changing assumption");
-    expect(html).not.toContain("At that exact threshold");
-    expect(html).not.toContain("$1,750");
+    expect(html).not.toContain("Estimate sensitivity");
+    expect(html).not.toContain("Evidence confidence");
     expect(html).toContain("input.destination.housing");
     expect(html).toContain("Score rule 0.1.0");
   });
