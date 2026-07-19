@@ -1,6 +1,9 @@
 import {
   applyRegisteredUtilityTransform,
+  compareCodePoints,
   deriveMetricQualityGrade,
+  sha256Hex,
+  sortJsonKeys,
 } from "@workspace/contracts";
 import type {
   MetricEvidence,
@@ -96,6 +99,74 @@ export const composeProfileSourceArtifacts = (
   });
 
   return [...artifacts.values()];
+};
+
+export const composeProfileArtifactUnion = (
+  profiles: readonly VerifiedMetroProfile[],
+) => {
+  const artifacts = new Map<
+    string,
+    { id: string; sourceUrl: string; sha256: string }
+  >();
+
+  profiles.forEach((profile) => {
+    profile.snapshot.sourceArtifacts.forEach((artifact) => {
+      const normalized = {
+        id: artifact.id,
+        sourceUrl: artifact.sourceUrl,
+        sha256: artifact.sha256,
+      };
+      const existing = artifacts.get(artifact.id);
+      if (
+        existing !== undefined &&
+        JSON.stringify(existing) !== JSON.stringify(normalized)
+      ) {
+        throw new Error(`Metro profiles disagree on artifact ${artifact.id}.`);
+      }
+      artifacts.set(artifact.id, normalized);
+    });
+  });
+
+  return [...artifacts.values()].sort((left, right) =>
+    compareCodePoints(left.id, right.id),
+  );
+};
+
+export const composeProfilePairRawSnapshot = (
+  originProfile: VerifiedMetroProfile,
+  destinationProfile: VerifiedMetroProfile,
+  id: string,
+) => {
+  const rawSnapshots = new Map<string, { id: string; sha256: string }>();
+  [originProfile, destinationProfile].forEach((profile) => {
+    profile.snapshot.rawSnapshots.forEach((snapshot) => {
+      const existing = rawSnapshots.get(snapshot.id);
+      if (existing !== undefined && existing.sha256 !== snapshot.sha256) {
+        throw new Error(
+          `Metro profiles disagree on raw snapshot ${snapshot.id}.`,
+        );
+      }
+      rawSnapshots.set(snapshot.id, cloneJson(snapshot));
+    });
+  });
+  const profileRefs = [originProfile, destinationProfile]
+    .map((profile) => ({
+      slug: profile.metro.slug,
+      sha256: profile.snapshot.sha256,
+    }))
+    .sort((left, right) => compareCodePoints(left.slug, right.slug));
+  const rawSnapshotRefs = [...rawSnapshots.values()].sort((left, right) =>
+    compareCodePoints(left.id, right.id),
+  );
+
+  return {
+    id,
+    sha256: sha256Hex(
+      JSON.stringify(
+        sortJsonKeys({ profiles: profileRefs, rawSnapshots: rawSnapshotRefs }),
+      ),
+    ),
+  };
 };
 
 const applyTransform = (
@@ -197,12 +268,7 @@ const assertCompatibleDecisionObservations = (
       );
     }
   });
-  const dateFields = [
-    "observationPeriod",
-    "releasedOn",
-    "verifiedOn",
-    "rawSnapshotId",
-  ] as const;
+  const dateFields = ["observationPeriod", "releasedOn"] as const;
   dateFields.forEach((field) => {
     if (origin[field] !== destination[field]) {
       throw new Error(
@@ -220,6 +286,7 @@ export const composeMetricEvidenceFromProfiles = (input: {
   preferredDirection: PreferredDirection;
   snapshotVersion: string;
   snapshotSha256: string;
+  comparisonVerifiedOn?: string;
 }): MetricEvidence => {
   const origin = getDecisionProfileObservation(
     input.originProfile,
@@ -318,7 +385,7 @@ export const composeMetricEvidenceFromProfiles = (input: {
     },
     observationPeriod: origin.observationPeriod,
     releasedOn: origin.releasedOn,
-    verifiedOn: origin.verifiedOn,
+    verifiedOn: input.comparisonVerifiedOn ?? origin.verifiedOn,
     geographies: {
       origin: cloneJson(origin.geography),
       destination: cloneJson(destination.geography),
