@@ -3,6 +3,7 @@ export * from "./canonical-json";
 export * from "./context-metric";
 export * from "./decision-profile";
 export * from "./decision-rules";
+export * from "./deterministic-model-calibration";
 export * from "./evaluation-result";
 export * from "./metro-profile";
 export * from "./move-score";
