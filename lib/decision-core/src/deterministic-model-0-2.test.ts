@@ -57,12 +57,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
     const values = Object.fromEntries(
       deterministicModelCalibrationCorpus.fixtures.flatMap((fixture) =>
         fixture.kind === "scenario"
-          ? [
-              [
-                fixture.id,
-                evaluateDeterministicModel(fixture.input).value,
-              ],
-            ]
+          ? [[fixture.id, evaluateDeterministicModel(fixture.input).value]]
           : [],
       ),
     );
@@ -95,9 +90,10 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
     if (conditionalRange?.kind !== "scenario") {
       throw new Error("F05 must remain a scenario fixture.");
     }
-    expect(
-      evaluateDeterministicModel(conditionalRange.input).range,
-    ).toEqual({ min: 39, max: 65 });
+    expect(evaluateDeterministicModel(conditionalRange.input).range).toEqual({
+      min: 39,
+      max: 65,
+    });
   });
 
   it("locks the neutral baseline and condition ladder", () => {
@@ -192,9 +188,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
       commuteImpact: "positive",
     });
     const first = evaluateDeterministicModel(forwardInput);
-    const second = evaluateDeterministicModel(
-      structuredClone(forwardInput),
-    );
+    const second = evaluateDeterministicModel(structuredClone(forwardInput));
     const reverse = evaluateDeterministicModel({
       ...forwardInput,
       originMetroSlug: forwardInput.destinationMetroSlug,
@@ -218,9 +212,8 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
   it("keeps financial improvement monotonic before caps", () => {
     const values = [-50_000, -25_000, 0, 25_000, 50_000].map(
       (monthlyCushionDeltaCents) =>
-        evaluateDeterministicModel(
-          baseInput({ monthlyCushionDeltaCents }),
-        ).value,
+        evaluateDeterministicModel(baseInput({ monthlyCushionDeltaCents }))
+          .value,
     );
 
     expect(values).toEqual([...values].sort((left, right) => left - right));

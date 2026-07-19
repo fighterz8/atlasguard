@@ -38,7 +38,10 @@ const verifiedBenchmark = (): VerifiedBenchmarkComparison => {
 };
 
 const verifiedEvaluation = () =>
-  evaluateMoveDecision(clone(financialAndClimateUpsideInput), verifiedBenchmark());
+  evaluateMoveDecision(
+    clone(financialAndClimateUpsideInput),
+    verifiedBenchmark(),
+  );
 
 const acceptedInput = () => {
   const fixture = deterministicModelCalibrationCorpus.fixtures.find(
@@ -65,9 +68,9 @@ describe("MoveWise rule selection", () => {
   it("keeps explicit rule 0.1.0 equivalent to the safe default", () => {
     const evaluation = verifiedEvaluation();
 
-    expect(
-      evaluateMoveWiseRule({ ruleVersion: "0.1.0", evaluation }),
-    ).toEqual(evaluateMoveWiseRule({ evaluation }));
+    expect(evaluateMoveWiseRule({ ruleVersion: "0.1.0", evaluation })).toEqual(
+      evaluateMoveWiseRule({ evaluation }),
+    );
   });
 
   it("runs accepted rule 0.2.0 only when explicitly selected with complete input", () => {
@@ -111,7 +114,10 @@ describe("MoveWise rule selection", () => {
   });
 
   it("rejects malformed rule 0.2.0 inputs at the contract boundary", () => {
-    const malformed = { ...acceptedInput(), lowCushionCautionThresholdCents: 0 };
+    const malformed = {
+      ...acceptedInput(),
+      lowCushionCautionThresholdCents: 0,
+    };
 
     expect(() =>
       evaluateMoveWiseRule({ ruleVersion: "0.2.0", input: malformed }),

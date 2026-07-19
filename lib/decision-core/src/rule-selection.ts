@@ -34,9 +34,7 @@ export type MoveWiseRule020Result = Readonly<{
   analysis: DeterministicModelResult;
 }>;
 
-export type MoveWiseRuleResult =
-  | MoveWiseRule010Result
-  | MoveWiseRule020Result;
+export type MoveWiseRuleResult = MoveWiseRule010Result | MoveWiseRule020Result;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
