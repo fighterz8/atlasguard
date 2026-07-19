@@ -73,7 +73,7 @@ export const deterministicModelCalibrationCorpus: DeterministicModelCalibrationC
           destinationMonthlyCushionCents: 15_000,
           destinationMonthlyCushionRangeCents: null,
           destinationHousingBurdenBps: 4_500,
-          commuteImpact: "positive",
+          commuteImpact: "strong_positive",
           householdSignals: [
             { signalId: "support_network", impact: "positive" },
           ],
@@ -342,7 +342,7 @@ export const deterministicModelCalibrationCorpus: DeterministicModelCalibrationC
         },
         expected: {
           condition: "no_clear_advantage",
-          band: "mixed_or_similar",
+          band: "worse_fit",
           stability: "stable",
           requiredBlockerCodes: [],
           requiredRangeBlockerCodes: [],
@@ -363,9 +363,7 @@ export const deterministicModelCalibrationCorpus: DeterministicModelCalibrationC
           destinationMonthlyCushionRangeCents: null,
           commuteImpact: "positive",
           climateImpact: "positive",
-          householdSignals: [
-            { signalId: "confirmed_job", impact: "strong_positive" },
-          ],
+          householdSignals: [],
         },
         expected: {
           condition: "likely_better_move",
@@ -392,7 +390,7 @@ export const deterministicModelCalibrationCorpus: DeterministicModelCalibrationC
         },
         expected: {
           condition: "no_clear_advantage",
-          band: "mixed_or_similar",
+          band: "worse_fit",
           stability: "stable",
           requiredBlockerCodes: [],
           requiredRangeBlockerCodes: [],

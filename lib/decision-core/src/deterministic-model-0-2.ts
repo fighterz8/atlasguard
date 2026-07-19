@@ -1,8 +1,13 @@
+import {
+  DeterministicModelCalibrationInputSchema,
+  DETERMINISTIC_MODEL_RULE_CANDIDATE_VERSION,
+} from "@workspace/contracts";
 import type { DeterministicModelCalibrationInput } from "@workspace/contracts";
 
 export type DeterministicModelCandidateResult = Readonly<{
   ruleVersion: "0.2.0";
   value: number;
+  rawContribution: number;
   band:
     | "worse_fit"
     | "mixed_or_similar"
@@ -27,6 +32,7 @@ export type DeterministicModelCandidateResult = Readonly<{
     commute: Readonly<{ status: string; contribution: number }>;
     climate: Readonly<{ status: string; contribution: number }>;
     household: Readonly<{ status: string; contribution: number }>;
+    opportunity: Readonly<{ status: string; contribution: number }>;
   }>;
 }>;
 
@@ -55,6 +61,23 @@ const contributionForImpact = (impact: Impact, maximum = 5): number => {
       return -Math.ceil(maximum / 2);
     case "strong_negative":
       return -maximum;
+    case "neutral":
+    case "excluded":
+    case "unavailable":
+      return 0;
+  }
+};
+
+const householdContributionForImpact = (impact: Impact): number => {
+  switch (impact) {
+    case "strong_positive":
+      return 15;
+    case "positive":
+      return 10;
+    case "negative":
+      return -10;
+    case "strong_negative":
+      return -15;
     case "neutral":
     case "excluded":
     case "unavailable":
@@ -112,14 +135,14 @@ const evaluatePoint = (
           -30,
           30,
         );
-  const commuteContribution = contributionForImpact(input.commuteImpact, 5);
-  const climateContribution = contributionForImpact(input.climateImpact, 5);
+  const commuteContribution = contributionForImpact(input.commuteImpact, 10);
+  const climateContribution = contributionForImpact(input.climateImpact, 10);
   const householdContribution = clamp(
     input.householdSignals.reduce(
-      (total, signal) => total + contributionForImpact(signal.impact, 15),
+      (total, signal) => total + householdContributionForImpact(signal.impact),
       0,
     ),
-    -15,
+    -30,
     30,
   );
 
@@ -159,11 +182,10 @@ const evaluatePoint = (
     1,
     100,
   );
-  const rawValue =
-    activeBlockerCodes.length === 0
-      ? Math.max(uncappedRawValue, 40)
-      : uncappedRawValue;
-  const value = appliedCap === null ? rawValue : Math.min(rawValue, appliedCap);
+  const value =
+    appliedCap === null
+      ? uncappedRawValue
+      : Math.min(uncappedRawValue, appliedCap);
   let condition: DeterministicModelCandidateResult["condition"];
   if (activeBlockerCodes.length > 0) {
     condition = "high_financial_risk";
@@ -180,8 +202,13 @@ const evaluatePoint = (
   }
 
   return deepFreeze({
-    ruleVersion: "0.2.0",
+    ruleVersion: DETERMINISTIC_MODEL_RULE_CANDIDATE_VERSION,
     value,
+    rawContribution:
+      financialContribution +
+      commuteContribution +
+      climateContribution +
+      householdContribution,
     band: bandFor(value),
     condition,
     stability: "stable",
@@ -211,6 +238,7 @@ const evaluatePoint = (
           input.householdSignals.length === 0 ? "unavailable" : "available",
         contribution: householdContribution,
       },
+      opportunity: { status: "unavailable", contribution: 0 },
     },
   });
 };
@@ -239,8 +267,9 @@ export class DeterministicModelPreflightError extends Error {
 }
 
 export const evaluateDeterministicModelCandidate = (
-  input: DeterministicModelCalibrationInput,
+  rawInput: DeterministicModelCalibrationInput,
 ): DeterministicModelCandidateResult => {
+  const input = DeterministicModelCalibrationInputSchema.parse(rawInput);
   if (input.originMetroSlug === input.destinationMetroSlug) {
     throw new DeterministicModelPreflightError(
       "Deterministic model candidate requires different metros.",
@@ -271,7 +300,8 @@ export const evaluateDeterministicModelCandidate = (
     destinationMonthlyCushionRangeCents: null,
   });
   const values = endpointResults.map(({ value }) => value);
-  const value = rangeBlockerCodes.length > 0 ? 50 : point.value;
+  const value =
+    rangeBlockerCodes.length > 0 ? Math.min(point.value, 59) : point.value;
   return deepFreeze({
     ...point,
     value,

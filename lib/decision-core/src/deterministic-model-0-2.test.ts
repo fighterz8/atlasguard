@@ -1,4 +1,7 @@
-import type { DeterministicModelCalibrationInput } from "@workspace/contracts";
+import {
+  MOVEWISE_SCORE_RULE_VERSION,
+  type DeterministicModelCalibrationInput,
+} from "@workspace/contracts";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -174,5 +177,48 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
     );
 
     expect(values).toEqual([...values].sort((left, right) => left - right));
+  });
+
+  it("makes both branches of an essential requirement explicit", () => {
+    const unconfirmedInput = baseInput({
+      monthlyCushionDeltaCents: 75_000,
+      essentialRequirements: [
+        { requirementId: "mobility.car-free", status: "unconfirmed" },
+      ],
+    });
+    const unconfirmed = evaluateDeterministicModelCandidate(unconfirmedInput);
+    const confirmed = evaluateDeterministicModelCandidate({
+      ...unconfirmedInput,
+      essentialRequirements: [
+        { requirementId: "mobility.car-free", status: "confirmed_met" },
+      ],
+    });
+    const unmet = evaluateDeterministicModelCandidate({
+      ...unconfirmedInput,
+      essentialRequirements: [
+        { requirementId: "mobility.car-free", status: "confirmed_unmet" },
+      ],
+    });
+
+    expect(unconfirmed).toMatchObject({
+      value: 59,
+      condition: "promising_if",
+      conditionalRequirementIds: ["mobility.car-free"],
+    });
+    expect(confirmed).toMatchObject({
+      value: 80,
+      condition: "likely_better_move",
+      conditionalRequirementIds: [],
+      unmetRequirementIds: [],
+    });
+    expect(unmet).toMatchObject({
+      value: 59,
+      condition: "no_clear_advantage",
+      unmetRequirementIds: ["mobility.car-free"],
+    });
+  });
+
+  it("leaves the live score evaluator on rule 0.1.0", () => {
+    expect(MOVEWISE_SCORE_RULE_VERSION).toBe("0.1.0");
   });
 });
