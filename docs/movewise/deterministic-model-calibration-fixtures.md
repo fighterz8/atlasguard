@@ -2,7 +2,7 @@
 
 ## Status and review method
 
-Proposed synthetic corpus for Nick's human judgment. These scenarios do not contain real users or claim empirical truth. They define expected product behavior before score rule `0.2.0`, family questions, or new runtime logic are implemented.
+Partially reviewed synthetic corpus for Nick's human judgment. These scenarios do not contain real users or claim empirical truth. They define expected product behavior before score rule `0.2.0`, family questions, or new runtime logic are implemented.
 
 For each fixture, reply with one of:
 
@@ -18,6 +18,14 @@ Useful review dimensions:
 4. **Explanation:** What should be the strongest lift, tradeoff, and decision-changing condition?
 
 The amounts below are monthly. “Cushion” means take-home income minus housing and recurring expenses plus retained-property net.
+
+### Human judgment progress
+
+Accepted on 2026-07-19: `F01`, `F02`, `F04`, `F06`, `F10`, and `F11`.
+
+`F06` retains the exact 50% housing-burden blocker. Its activation must also produce a concise visible risk indicator in the final review explaining that the housing share reached the registered boundary; the score cap alone is insufficient explanation.
+
+Remaining for review: `F03`, `F05`, `F07`–`F09`, `F12`, `I01`–`I06`, and `B01`–`B06`.
 
 ## Family-first fixtures
 
