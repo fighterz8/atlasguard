@@ -28,13 +28,13 @@ The opening score view exposes:
 The explanation immediately below keeps the score beside:
 
 - exact monthly cushion difference;
-- separate evidence-confidence language;
+- the strongest supported score effect;
+- the closest condition-changing assumption with its named monthly input, current value, exact threshold, distance from current, and resulting Decision Profile;
 - the strictest registered blocker and score cap when active;
-- strongest supported improvement and tradeoff with their canonical point contributions;
 - every unavailable score component, with no silent weight redistribution;
 - the rule version plus deduplicated evidence and input references in a collapsed disclosure.
 
-Exact condition-changing thresholds remain in the lower What-if tool, where each value is attached to a named monthly input and can be compared with the editable assumption that produced it. They are not duplicated in the opening score explanation.
+Evidence confidence and estimate sensitivity remain visible in the opening report summary without consuming the three primary explanation slots. The full threshold list remains in the lower What-if tool, where every value is attached to a named editable monthly input; the explanation promotes only the closest decision change with enough context to interpret it.
 
 The Decision Profile remains the source of truth. Its condition stays the page `h1`; MoveWise Score is a secondary `h2` summary, followed by the existing side-by-side finances, reasoning, What-if tool, and evidence.
 
@@ -47,31 +47,35 @@ The Decision Profile remains the source of truth. Its condition stays the page `
 - Opportunity Context and Household Fit remain visibly not scored under rule `0.1.0`; Daily-life Fit is also unavailable when all of its metrics are excluded.
 - Exact finances and What-if threshold operators use formatted canonical cents rather than reconstructed floating-point values.
 - The opening explanation does not surface a bare threshold amount without its monthly input context.
+- Semantic colors always pair with text and icons: favorable/helps, risk/reduces, caution/needs attention, neutral/similar, and unavailable/not scored.
 - Calculation references start collapsed so auditability does not displace the decision hierarchy.
 
 ## Human-review correction
 
-The first review found that the San Diego-to-Austin opening summary could show wording such as `at least $8,100` under “Most decision-changing assumption” without making the unit or decision value clear. Because the lower What-if section already presents the canonical thresholds with their named monthly inputs, the duplicate opening block and its presentation-only model mapping were removed. The score rule, breakpoint calculation, evidence references, and What-if thresholds are unchanged.
+The first review found that the San Diego-to-Austin opening summary could show wording such as `at least $8,100` under “Most decision-changing assumption” without making the unit or decision value clear. The bare presentation was removed while the breakpoint engine and What-if thresholds remained unchanged.
+
+The second review clarified that the decision-changing assumption itself is important, but Estimate sensitivity and Evidence confidence were weak primary indicators when they collapsed into generic or unavailable readings. The explanation now prioritizes monthly cushion, strongest supported effect, and the closest decision change. A threshold reads as a named input with `/month`, current amount, monthly distance, and resulting profile. The same review added restrained semantic color across Wizard and Results, with words and icons preserving the meaning without color.
 
 ## Verification
 
-RED/GREEN model and server-rendered component tests cover relative meaning, no-range behavior, unavailable components, blocker-cap copy, the absence of the duplicate opening threshold, rule/evidence references, the single page `h1`, and the non-probability boundary. Focused verification passes 17 tests plus the AtlasGuard frontend type-check and research-enabled production build.
+RED/GREEN model, server-rendered component, and money-slider tests cover relative meaning, contextual thresholds, score drivers, semantic financial impact, unavailable components, blocker-cap copy, rule/evidence references, the single page `h1`, and the non-probability boundary. Focused verification passes 22 tests plus the AtlasGuard frontend type-check and research-enabled production build. Full repository verification passes 40 files / 316 tests.
 
 Real system-Chrome checks passed locally and against the exact preview at 1440, 1024, 768, 390, and 320 CSS pixels:
 
-- canonical direct Results score `52`, range `22–82`, and filled-Wizard score `61` bind to their separate verified evaluations;
-- the San Diego-to-Austin Wizard result omits the duplicate opening threshold block identified in review;
+- canonical direct Results and edited Wizard results bind to their separate verified evaluations;
+- the San Diego-to-Austin Wizard result presents a named closest decision change with monthly threshold, current value, distance, and resulting condition;
 - one `h1`, no skipped heading levels, and visible controls/disclosures at least 44 pixels high;
-- relative baseline, interpretation boundary, sensitivity, exact finance, evidence confidence, unavailable dimensions, and calculation references are visible and inspectable;
-- exact decision-changing thresholds remain visible in the named-input What-if section and are absent from the opening score explanation;
+- relative baseline, interpretation boundary, sensitivity, exact finance, evidence, strongest effect, unavailable dimensions, and calculation references are visible and inspectable;
+- exact decision-changing thresholds remain visible in the named-input What-if section while the closest threshold receives full context in the opening explanation;
+- Wizard money changes show labeled helps/reduces-cushion tones, must-have priorities show caution, excluded choices show unavailable, and Results reuse the same semantic language;
 - zero horizontal overflow, console warnings/errors, page errors, `/api/` requests, local-storage writes, or session-storage writes; and
 - desktop and mobile captures preserve the editorial report hierarchy without adding a card grid.
 
-Exact replacement preview deployment `dpl_Du2fseqfE8b4GAu5251JnaSSr612` is READY at:
+Exact replacement preview deployment `dpl_BA1an8tAFwnRdofEwVmWHuoP7rxk` is READY at:
 
-`https://movewise-lvuoiz6k3-fighterz8s-projects.vercel.app/research/wizard`
+`https://movewise-5hvqv9exm-fighterz8s-projects.vercel.app/research/wizard`
 
-The application source in the preview matches commit `5b37cf90567e6ee1494be929848abaa4268f1fe1`, built with the existing research-only Vite gate enabled. The hosted suite passed all 135 browser checks across the five viewport sizes and the added San Diego-to-Austin flow.
+The application source in the preview matches commit `d7b5d7ce006cbf87db2cfbdbac39212e87f9ee2b`, built with the existing research-only Vite gate enabled. The hosted suite passed all 169 browser checks across the five viewport sizes, the edited Wizard money/priority states, and the San Diego-to-Austin flow.
 
 ## Deliberate exclusions and remaining gate
 
