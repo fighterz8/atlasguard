@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — product direction confirmed; calibration policy pending fixture review.
+Accepted — product direction and all 24 calibration outcomes confirmed; exact rule `0.2.0` mechanics remain pending.
 
 ## Date
 
@@ -28,11 +28,12 @@ MoveWise will evolve through a transparent, versioned deterministic model rather
 - Family and individual modes control applicability, not automatic favorability.
 - Exact financial safety gates run before weighted contributions.
 - Registered severe financial blockers prevent a favorable result even when lifestyle signals improve.
-- Explicitly unmet essential family requirements may cap favorability; unresolved essential requirements may create a conditional result. The exact rule remains proposed until fixture calibration is accepted.
+- Explicitly unmet essential requirements may cap favorability. Unresolved essential requirements produce a conditional result that clearly states what happens if confirmation is not supplied.
 - All scored metrics have one owning component and versioned materiality rules.
 - Missing evidence does not redistribute contribution budgets or masquerade as similarity.
 - Every material result remains traceable to accepted inputs, evidence, transformations, rules, and versions.
-- No score rule `0.2.0` implementation begins until the calibration corpus receives human expected-outcome judgments.
+- The strongest favorable condition is `Likely a better move`, qualified by `under these assumptions` in the final review.
+- No score rule `0.2.0` implementation begins until accepted outcomes are translated into machine-readable fixtures and exact mechanics pass a separate design gate.
 
 ## Alternatives Considered
 

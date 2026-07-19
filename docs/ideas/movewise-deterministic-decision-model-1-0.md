@@ -2,7 +2,7 @@
 
 ## Status
 
-Confirmed product direction on 2026-07-19. Calibration and score-rule changes remain pending human fixture review.
+Confirmed product direction and completed 24-fixture human calibration on 2026-07-19. Exact score-rule mechanics and runtime changes remain pending.
 
 ## Problem Statement
 
@@ -25,10 +25,10 @@ Families are the first calibration audience; individuals are the second. Househo
 1. **Applicability layer** — Select family or individual mode and ask only questions with a declared effect on an input, component, blocker, confidence rule, sensitivity range, or insight.
 2. **Safety layer** — Exact financial arithmetic and registered hard blockers run before weighted lifestyle contributions. Severe financial deterioration overrides otherwise favorable lifestyle signals and is explained in the final review.
 3. **Contribution layer** — Registered Financial Security, Daily-life Fit, Opportunity Context, and Household Fit metrics contribute once through versioned materiality rules. Missing evidence never redistributes weight.
-4. **Essential-requirement layer** — An explicitly unmet essential household requirement may cap a favorable result. An unresolved requirement produces a conditional result rather than invented confidence. This policy must be calibrated before activation.
+4. **Essential-requirement layer** — An explicitly unmet essential requirement may cap a favorable result. An unresolved requirement produces a conditional result with an explicit unconfirmed branch rather than invented confidence.
 5. **Explanation layer** — Emit score, band, range, confidence, stability, strongest lift, strongest tradeoff, active blocker, unavailable components, and closest decision-changing condition from the same verified evaluation.
 
-No new contribution budgets or weights are approved by this charter. Fixture judgments come first; score rule `0.2.0` is designed only after those expected behaviors are accepted.
+No new contribution budgets or weights are approved by this charter. All 24 expected fixture behaviors are accepted; score rule `0.2.0` mechanics are designed next under machine-readable regression tests.
 
 ## Why this direction
 
@@ -52,7 +52,7 @@ No new contribution budgets or weights are approved by this charter. Fixture jud
 - A small set of user-supplied family/individual continuity facts that do not require unsupported neighborhood claims.
 - A small set of user-supplied opportunity-readiness facts, such as confirmed employment or remote-work continuity, before adding regional opportunity metrics.
 - Versioned score, blockers, materiality rules, question effects, evidence references, sensitivity ranges, and decision-changing conditions.
-- Synthetic calibration corpus reviewed by Nick before runtime behavior changes.
+- Accepted synthetic calibration corpus converted into machine-readable regression fixtures before runtime behavior changes.
 
 ## Not Doing (and Why)
 
@@ -61,13 +61,13 @@ No new contribution budgets or weights are approved by this charter. Fixture jud
 - **Automatic favorable points for selecting family mode** — household composition is applicability, not evidence of fit.
 - **Unverified school, crime, health-care, or childcare scores** — these require separate source, geography, freshness, and interpretation contracts.
 - **A single hidden optimization target** — the product explains a decision; it does not claim to maximize human happiness.
-- **New runtime weights before fixture review** — apparent mathematical precision would outrun product validation.
+- **New runtime weights before fixture-backed mechanics review** — apparent mathematical precision would outrun product validation.
 - **AI-authored recommendations** — optional narrative assistance may be reconsidered later, but it cannot own score or condition semantics.
 
 ## Open Questions
 
-- Which family requirements should be eligible to cap a favorable result rather than remain ordinary weighted tradeoffs?
-- Should an unverified essential requirement produce `Promising if…` or prevent calculation until answered?
-- How much modest financial deterioration may Household Fit offset before the model becomes too permissive?
+- Which exact Wizard choices may designate an essential requirement, and how do we prevent users from treating every preference as essential?
+- Which score mechanics satisfy all 24 accepted outcomes without overfitting the synthetic corpus?
+- Where should caution zones begin before the exact negative-cushion and 50% housing-burden blockers?
 - Which user-supplied opportunity facts are defensible before nationally comparable metro opportunity evidence is promoted?
-- What task-based human review threshold is sufficient to activate score rule `0.2.0`?
+- What comprehension threshold must a task-based human review meet before activating score rule `0.2.0`?
