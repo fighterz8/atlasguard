@@ -13,6 +13,22 @@ const parseInteger = (value: string | undefined, field: string): number => {
 };
 
 export const extractRentRowsFromOfficialTable = (table: string): RentRows => {
+  return extractRentRowsFromOfficialTableForMetros(
+    table,
+    APPROVED_ACS_RENT_SOURCE.geographies,
+  ) as RentRows;
+};
+
+type MetroGeographyMap = Readonly<
+  Record<string, { readonly acsGeoId: string }>
+>;
+
+export const extractRentRowsFromOfficialTableForMetros = <
+  Metros extends MetroGeographyMap,
+>(
+  table: string,
+  metros: Metros,
+) => {
   const lines = table.trim().split(/\r?\n/);
   const header = lines[0]?.split("|");
   if (header === undefined) {
@@ -25,8 +41,7 @@ export const extractRentRowsFromOfficialTable = (table: string): RentRows => {
     throw new Error("Official ACS B25064 table lacks required columns.");
   }
 
-  const extract = (side: "origin" | "destination") => {
-    const expectedGeoId = APPROVED_ACS_RENT_SOURCE.geographies[side].acsGeoId;
+  const extract = (expectedGeoId: string) => {
     const matches = lines
       .slice(1)
       .map((line) => line.split("|"))
@@ -43,5 +58,10 @@ export const extractRentRowsFromOfficialTable = (table: string): RentRows => {
     };
   };
 
-  return { origin: extract("origin"), destination: extract("destination") };
+  return Object.fromEntries(
+    Object.entries(metros).map(([metroSlug, metro]) => [
+      metroSlug,
+      extract(metro.acsGeoId),
+    ]),
+  );
 };

@@ -105,6 +105,82 @@ export const APPROVED_ACS_RENT_SOURCE = {
   },
 } as const;
 
+/** Independent first-cohort ACS registry; comparison-side registries above remain compatibility locks. */
+export const APPROVED_ACS_METRO_SOURCE = {
+  id: "acs1.2024.movewise-metro-cohort-1",
+  delineationVersion: APPROVED_ACS_COMMUTE_SOURCE.delineationVersion,
+  artifacts: {
+    ...APPROVED_ACS_COMMUTE_SOURCE.artifacts,
+    b25064: APPROVED_ACS_RENT_SOURCE.artifacts.b25064,
+  },
+  metros: {
+    "los-angeles-ca": {
+      slug: "los-angeles-ca",
+      ...APPROVED_ACS_COMMUTE_SOURCE.geographies.origin,
+      commute: APPROVED_ACS_COMMUTE_SOURCE.extractedRows.origin,
+      rent: APPROVED_ACS_RENT_SOURCE.extractedRows.origin,
+    },
+    "seattle-wa": {
+      slug: "seattle-wa",
+      ...APPROVED_ACS_COMMUTE_SOURCE.geographies.destination,
+      commute: APPROVED_ACS_COMMUTE_SOURCE.extractedRows.destination,
+      rent: APPROVED_ACS_RENT_SOURCE.extractedRows.destination,
+    },
+    "austin-tx": {
+      slug: "austin-tx",
+      selectedPlace: { city: "Austin", stateCode: "TX" },
+      cbsaCode: "12420",
+      cbsaLabel: "Austin-Round Rock-San Marcos, TX Metro Area",
+      acsGeoId: "310M700US12420",
+      selectedPlaceMapping: {
+        method: "official_cbsa_title_match",
+        sourceArtifactId: "acs1.2024.geographies",
+      },
+      commute: {
+        aggregateTravelTimeMinutes: {
+          estimate: 30_627_030,
+          marginOfError90: 621_811,
+        },
+        workers16AndOver: {
+          estimate: 1_413_215,
+          marginOfError90: 12_865,
+        },
+        workedFromHome: {
+          estimate: 327_525,
+          marginOfError90: 12_151,
+        },
+      },
+      rent: { estimateDollars: 1_784, marginOfError90Dollars: 20 },
+    },
+    "san-diego-ca": {
+      slug: "san-diego-ca",
+      selectedPlace: { city: "San Diego", stateCode: "CA" },
+      cbsaCode: "41740",
+      cbsaLabel: "San Diego-Chula Vista-Carlsbad, CA Metro Area",
+      acsGeoId: "310M700US41740",
+      selectedPlaceMapping: {
+        method: "official_cbsa_title_match",
+        sourceArtifactId: "acs1.2024.geographies",
+      },
+      commute: {
+        aggregateTravelTimeMinutes: {
+          estimate: 36_610_825,
+          marginOfError90: 648_200,
+        },
+        workers16AndOver: {
+          estimate: 1_674_562,
+          marginOfError90: 12_717,
+        },
+        workedFromHome: {
+          estimate: 269_795,
+          marginOfError90: 8_695,
+        },
+      },
+      rent: { estimateDollars: 2_336, marginOfError90Dollars: 20 },
+    },
+  },
+} as const;
+
 export const APPROVED_NOAA_HEAT_SOURCE = {
   id: "noaa.normals.1991-2020.hot-days.la-seattle",
   dataset: "U.S. Climate Normals 1991-2020 Annual/Seasonal",

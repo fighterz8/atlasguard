@@ -18,7 +18,13 @@ export const COMMUTE_METRIC_REGISTRATION = {
   userFacingEligible: false,
 } as const;
 
-type MetroRecord = VerifiedRawCommuteSnapshot["metros"][number];
+type MetroRecord = Pick<
+  VerifiedRawCommuteSnapshot["metros"][number],
+  | "cbsaCode"
+  | "aggregateTravelTimeMinutes"
+  | "workers16AndOver"
+  | "workedFromHome"
+>;
 
 export type DerivedCommuteMetric = Readonly<{
   cbsaCode: string;

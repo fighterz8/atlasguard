@@ -1,12 +1,16 @@
 import {
   APPROVED_ACS_COMMUTE_SOURCE,
+  APPROVED_ACS_METRO_SOURCE,
   APPROVED_ACS_RENT_SOURCE,
   APPROVED_NOAA_HEAT_SOURCE,
   extractNoaaHeatInventoryStations,
   extractNoaaHeatStation,
   extractCbsaLabelsFromGeographyInventory,
+  extractCbsaLabelsFromGeographyInventoryForMetros,
   extractCommuteRowsFromOfficialTables,
+  extractCommuteRowsFromOfficialTablesForMetros,
   extractRentRowsFromOfficialTable,
+  extractRentRowsFromOfficialTableForMetros,
 } from "@workspace/benchmark-data";
 import { createHash } from "node:crypto";
 
@@ -67,6 +71,25 @@ if (
 ) {
   throw new Error("Official ACS rows do not match the approved extraction.");
 }
+const cohortCommuteRows = extractCommuteRowsFromOfficialTablesForMetros(
+  decoder.decode(b08013),
+  decoder.decode(b08006),
+  APPROVED_ACS_METRO_SOURCE.metros,
+);
+const expectedCohortCommuteRows = Object.fromEntries(
+  Object.entries(APPROVED_ACS_METRO_SOURCE.metros).map(([slug, metro]) => [
+    slug,
+    metro.commute,
+  ]),
+);
+if (
+  JSON.stringify(cohortCommuteRows) !==
+  JSON.stringify(expectedCohortCommuteRows)
+) {
+  throw new Error(
+    "Official ACS cohort commute rows do not match the registry.",
+  );
+}
 const geographyRows = extractCbsaLabelsFromGeographyInventory(
   decoder.decode(geographies),
 );
@@ -82,6 +105,21 @@ const geographyRows = extractCbsaLabelsFromGeographyInventory(
     throw new Error(`Official geography mapping mismatch for ${side}.`);
   }
 });
+const cohortGeographyRows = extractCbsaLabelsFromGeographyInventoryForMetros(
+  decoder.decode(geographies),
+  APPROVED_ACS_METRO_SOURCE.metros,
+);
+Object.entries(APPROVED_ACS_METRO_SOURCE.metros).forEach(([slug, expected]) => {
+  const actual = cohortGeographyRows[slug];
+  if (
+    actual.acsGeoId !== expected.acsGeoId ||
+    actual.cbsaCode !== expected.cbsaCode ||
+    actual.cbsaLabel !== expected.cbsaLabel ||
+    !actual.cbsaLabel.includes(expected.selectedPlace.city)
+  ) {
+    throw new Error(`Official cohort geography mapping mismatch for ${slug}.`);
+  }
+});
 
 const rentRows = extractRentRowsFromOfficialTable(decoder.decode(b25064));
 if (
@@ -91,6 +129,19 @@ if (
   throw new Error(
     "Official ACS rent rows do not match the approved extraction.",
   );
+}
+const cohortRentRows = extractRentRowsFromOfficialTableForMetros(
+  decoder.decode(b25064),
+  APPROVED_ACS_METRO_SOURCE.metros,
+);
+const expectedCohortRentRows = Object.fromEntries(
+  Object.entries(APPROVED_ACS_METRO_SOURCE.metros).map(([slug, metro]) => [
+    slug,
+    metro.rent,
+  ]),
+);
+if (JSON.stringify(cohortRentRows) !== JSON.stringify(expectedCohortRentRows)) {
+  throw new Error("Official ACS cohort rent rows do not match the registry.");
 }
 
 const inventoryStations = extractNoaaHeatInventoryStations(
@@ -141,5 +192,5 @@ stationArtifacts.forEach((bytes) => {
 });
 
 process.stdout.write(
-  "Verified eleven official artifact checksums, two CBSA rows, ten ACS values, and four NOAA station normals.\n",
+  "Verified eleven official artifact checksums, four CBSA rows, sixteen ACS estimate/MOE pairs, and four NOAA station normals.\n",
 );
