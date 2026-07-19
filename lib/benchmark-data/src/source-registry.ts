@@ -291,3 +291,124 @@ export const APPROVED_NOAA_HEAT_SOURCE = {
     },
   },
 } as const;
+
+/** Independent first-cohort NOAA registry with source completeness preserved per station. */
+export const APPROVED_NOAA_METRO_SOURCE = {
+  id: "noaa.normals.1991-2020.hot-days.movewise-metro-cohort-1",
+  dataset: APPROVED_NOAA_HEAT_SOURCE.dataset,
+  observationPeriod: APPROVED_NOAA_HEAT_SOURCE.observationPeriod,
+  metricColumn: APPROVED_NOAA_HEAT_SOURCE.metricColumn,
+  selectionPolicy: {
+    reference:
+      "One NOAA urban reference station named for the selected city with at least Representative completeness",
+    envelope:
+      "The urban reference plus the NOAA primary-airport station named for the selected city, each with at least Representative completeness",
+    uncertainty:
+      "Maximum absolute utility difference between the urban reference and either station in the selected-city envelope",
+    interpretation:
+      "Selected-city station proxy with reference-site selection and source-completeness uncertainty; not a metro-wide or neighborhood forecast",
+  },
+  artifacts: {
+    inventory: APPROVED_NOAA_HEAT_SOURCE.artifacts.inventory,
+    documentation: APPROVED_NOAA_HEAT_SOURCE.artifacts.documentation,
+    stations: {
+      USW00093134: APPROVED_NOAA_HEAT_SOURCE.artifacts.losAngelesUrban,
+      USW00023174: APPROVED_NOAA_HEAT_SOURCE.artifacts.losAngelesAirport,
+      USW00094290: APPROVED_NOAA_HEAT_SOURCE.artifacts.seattleUrban,
+      USW00024233: APPROVED_NOAA_HEAT_SOURCE.artifacts.seattleAirport,
+      USW00013958: {
+        id: "noaa.normals.usw00013958",
+        sourceUrl:
+          "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00013958.csv",
+        sha256:
+          "c6940c36e976545926d3ff6ce8e47ef648d25b3dc52c2e11a6c9e7869ee110e9",
+      },
+      USW00013904: {
+        id: "noaa.normals.usw00013904",
+        sourceUrl:
+          "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00013904.csv",
+        sha256:
+          "e59999d839c58964e73109984180b70e92d21ec3959d326e32ef7fc622caa90b",
+      },
+      USW00003131: {
+        id: "noaa.normals.usw00003131",
+        sourceUrl:
+          "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00003131.csv",
+        sha256:
+          "7c95eda0644d21289dd617d8782b8eba71fba91bfdf9d5237f13375835343baf",
+      },
+      USW00023188: {
+        id: "noaa.normals.usw00023188",
+        sourceUrl:
+          "https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/access/USW00023188.csv",
+        sha256:
+          "2e514f5fba4de05042d2b384c22f548547cfb35e7bae70a62ff66d41f7fce887",
+      },
+    },
+  },
+  metros: {
+    "los-angeles-ca": {
+      slug: "los-angeles-ca",
+      selectedPlace: { city: "Los Angeles", stateCode: "CA" },
+      referenceStationId: "USW00093134",
+      envelopeStationIds: ["USW00093134", "USW00023174"],
+    },
+    "seattle-wa": {
+      slug: "seattle-wa",
+      selectedPlace: { city: "Seattle", stateCode: "WA" },
+      referenceStationId: "USW00094290",
+      envelopeStationIds: ["USW00094290", "USW00024233"],
+    },
+    "austin-tx": {
+      slug: "austin-tx",
+      selectedPlace: { city: "Austin", stateCode: "TX" },
+      referenceStationId: "USW00013958",
+      envelopeStationIds: ["USW00013958", "USW00013904"],
+    },
+    "san-diego-ca": {
+      slug: "san-diego-ca",
+      selectedPlace: { city: "San Diego", stateCode: "CA" },
+      referenceStationId: "USW00003131",
+      envelopeStationIds: ["USW00003131", "USW00023188"],
+    },
+  },
+  stations: {
+    ...APPROVED_NOAA_HEAT_SOURCE.extractedStations,
+    USW00013958: {
+      name: "AUSTIN-CAMP MABRY, TX US",
+      latitude: 30.3208,
+      longitude: -97.7603,
+      elevationMeters: 204.2,
+      annualDaysAbove90F: 122.8,
+      completenessFlag: "S",
+      years: 30,
+    },
+    USW00013904: {
+      name: "AUSTIN BERGSTROM AP, TX US",
+      latitude: 30.1831,
+      longitude: -97.68,
+      elevationMeters: 146.3,
+      annualDaysAbove90F: 123.5,
+      completenessFlag: "S",
+      years: 24,
+    },
+    USW00003131: {
+      name: "SAN DIEGO MONTGOMERY FLD, CA US",
+      latitude: 32.8158,
+      longitude: -117.1394,
+      elevationMeters: 127.1,
+      annualDaysAbove90F: 16,
+      completenessFlag: "R",
+      years: 22,
+    },
+    USW00023188: {
+      name: "SAN DIEGO LINDBERGH FLD, CA US",
+      latitude: 32.7336,
+      longitude: -117.1831,
+      elevationMeters: 4.6,
+      annualDaysAbove90F: 3,
+      completenessFlag: "R",
+      years: 22,
+    },
+  },
+} as const;

@@ -37,7 +37,18 @@ const requiredColumns = [
   `years_${APPROVED_NOAA_HEAT_SOURCE.metricColumn}`,
 ] as const;
 
-export const extractNoaaHeatStation = (text: string) => {
+type ApprovedStationRegistry = Readonly<Record<string, unknown>>;
+
+export const extractNoaaHeatStation = (text: string) =>
+  extractNoaaHeatStationForRegistry(
+    text,
+    APPROVED_NOAA_HEAT_SOURCE.extractedStations,
+  );
+
+export const extractNoaaHeatStationForRegistry = (
+  text: string,
+  approvedStations: ApprovedStationRegistry,
+) => {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length !== 2) {
     throw new Error("Expected one NOAA station header and one data row.");
@@ -53,10 +64,7 @@ export const extractNoaaHeatStation = (text: string) => {
     requiredColumns.map((column) => [column, row[indexOf(column)] ?? ""]),
   );
   const stationId = values.STATION;
-  const approved =
-    APPROVED_NOAA_HEAT_SOURCE.extractedStations[
-      stationId as keyof typeof APPROVED_NOAA_HEAT_SOURCE.extractedStations
-    ];
+  const approved = approvedStations[stationId];
   if (approved === undefined) {
     throw new Error(`NOAA station ${stationId} is not approved.`);
   }
@@ -82,10 +90,17 @@ export const extractNoaaHeatStation = (text: string) => {
   };
 };
 
-export const extractNoaaHeatInventoryStations = (text: string) => {
-  const expectedIds = new Set(
-    Object.keys(APPROVED_NOAA_HEAT_SOURCE.extractedStations),
+export const extractNoaaHeatInventoryStations = (text: string) =>
+  extractNoaaHeatInventoryStationsForRegistry(
+    text,
+    APPROVED_NOAA_HEAT_SOURCE.extractedStations,
   );
+
+export const extractNoaaHeatInventoryStationsForRegistry = (
+  text: string,
+  approvedStations: ApprovedStationRegistry,
+) => {
+  const expectedIds = new Set(Object.keys(approvedStations));
   const extracted = new Map<
     string,
     {

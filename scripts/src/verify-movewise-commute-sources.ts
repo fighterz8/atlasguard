@@ -2,13 +2,13 @@ import {
   APPROVED_ACS_COMMUTE_SOURCE,
   APPROVED_ACS_METRO_SOURCE,
   APPROVED_ACS_RENT_SOURCE,
-  APPROVED_NOAA_HEAT_SOURCE,
-  extractNoaaHeatInventoryStations,
-  extractNoaaHeatStation,
+  APPROVED_NOAA_METRO_SOURCE,
   extractCbsaLabelsFromGeographyInventory,
   extractCbsaLabelsFromGeographyInventoryForMetros,
   extractCommuteRowsFromOfficialTables,
   extractCommuteRowsFromOfficialTablesForMetros,
+  extractNoaaHeatInventoryStationsForRegistry,
+  extractNoaaHeatStationForRegistry,
   extractRentRowsFromOfficialTable,
   extractRentRowsFromOfficialTableForMetros,
 } from "@workspace/benchmark-data";
@@ -40,23 +40,18 @@ const [
   b25064,
   noaaInventory,
   noaaDocumentation,
-  losAngelesUrban,
-  losAngelesAirport,
-  seattleUrban,
-  seattleAirport,
 ] = await Promise.all([
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.cbsaDelineation),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.acsGeographies),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.b08013),
   download(APPROVED_ACS_COMMUTE_SOURCE.artifacts.b08006),
   download(APPROVED_ACS_RENT_SOURCE.artifacts.b25064),
-  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.inventory),
-  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.documentation),
-  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.losAngelesUrban),
-  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.losAngelesAirport),
-  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.seattleUrban),
-  download(APPROVED_NOAA_HEAT_SOURCE.artifacts.seattleAirport),
+  download(APPROVED_NOAA_METRO_SOURCE.artifacts.inventory),
+  download(APPROVED_NOAA_METRO_SOURCE.artifacts.documentation),
 ]);
+const stationArtifacts = await Promise.all(
+  Object.values(APPROVED_NOAA_METRO_SOURCE.artifacts.stations).map(download),
+);
 if (delineation.byteLength === 0 || noaaDocumentation.byteLength === 0) {
   throw new Error("Official source documentation artifact is empty.");
 }
@@ -144,10 +139,11 @@ if (JSON.stringify(cohortRentRows) !== JSON.stringify(expectedCohortRentRows)) {
   throw new Error("Official ACS cohort rent rows do not match the registry.");
 }
 
-const inventoryStations = extractNoaaHeatInventoryStations(
+const inventoryStations = extractNoaaHeatInventoryStationsForRegistry(
   decoder.decode(noaaInventory),
+  APPROVED_NOAA_METRO_SOURCE.stations,
 );
-Object.entries(APPROVED_NOAA_HEAT_SOURCE.extractedStations).forEach(
+Object.entries(APPROVED_NOAA_METRO_SOURCE.stations).forEach(
   ([stationId, expected]) => {
     const inventory = inventoryStations[stationId];
     if (
@@ -162,17 +158,14 @@ Object.entries(APPROVED_NOAA_HEAT_SOURCE.extractedStations).forEach(
   },
 );
 
-const stationArtifacts = [
-  losAngelesUrban,
-  losAngelesAirport,
-  seattleUrban,
-  seattleAirport,
-];
 stationArtifacts.forEach((bytes) => {
-  const actual = extractNoaaHeatStation(decoder.decode(bytes));
+  const actual = extractNoaaHeatStationForRegistry(
+    decoder.decode(bytes),
+    APPROVED_NOAA_METRO_SOURCE.stations,
+  );
   const expected =
-    APPROVED_NOAA_HEAT_SOURCE.extractedStations[
-      actual.stationId as keyof typeof APPROVED_NOAA_HEAT_SOURCE.extractedStations
+    APPROVED_NOAA_METRO_SOURCE.stations[
+      actual.stationId as keyof typeof APPROVED_NOAA_METRO_SOURCE.stations
     ];
   if (
     expected === undefined ||
@@ -192,5 +185,5 @@ stationArtifacts.forEach((bytes) => {
 });
 
 process.stdout.write(
-  "Verified eleven official artifact checksums, four CBSA rows, sixteen ACS estimate/MOE pairs, and four NOAA station normals.\n",
+  "Verified fifteen official artifact checksums, four CBSA rows, sixteen ACS estimate/MOE pairs, and eight NOAA station normals.\n",
 );
