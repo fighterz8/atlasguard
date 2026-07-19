@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and verified internally on 2026-07-19. User-facing activation remains prohibited pending the Product Contract 2.0 comprehension gate.
+Implemented and verified internally on 2026-07-19. A default-off research Results presentation candidate is now recorded in [Phase 4B](./phase-4b-score-results-activation.md); broader/public activation remains prohibited pending human comprehension review.
 
 ## Purpose
 
@@ -117,4 +117,4 @@ The synthetic calibration fixture evaluates to 69 with an estimate-sensitivity r
 
 This slice does not add household or opportunity scoring, adaptive questions, a fifth metro, persistence, provider calls, AI-generated conclusions, or runtime/public API score activation.
 
-Before Results can expose the score, a separate comprehension slice must make the relative meaning, origin comparison, range, evidence confidence, blockers, exact finances, and decision-changing assumptions understandable without implying scientific precision. That review may change presentation and explanatory copy; changing formula semantics requires a new score rule version and recalibration.
+[Phase 4B](./phase-4b-score-results-activation.md) now exposes the score only inside the default-off research Results experience with the relative meaning, origin comparison, range, evidence confidence, blockers, exact finances, unavailable components, and decision-changing assumption visible for human review. The comprehension gate remains open until that review accepts the presentation. Copy and layout may change within Phase 4B; changing formula semantics requires a new score rule version and recalibration.
