@@ -52,6 +52,8 @@ The focused gate covers:
 - existing `0.1.0` score, insight, and Results view-model regression tests;
 - library and Results application type-checking.
 
+Full `pnpm run verify` passes 43 test files / 334 tests, transport drift, formatting, all workspace type-checks, production builds, and the production dependency audit. The existing tooltip sourcemap and bundle-size advisories remain non-blocking.
+
 ## Remaining product-activation gates
 
 Before the Wizard or Results can deliberately select `0.2.0`:
