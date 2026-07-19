@@ -1,5 +1,6 @@
 export * from "./commute-derivation";
 export * from "./climate-source-extraction";
+export * from "./climate-ratings";
 export * from "./climate-derivation";
 export * from "./housing-source-extraction";
 export * from "./la-seattle-commute";
