@@ -8,6 +8,8 @@ import {
 
 export const DETERMINISTIC_MODEL_CALIBRATION_SCHEMA_VERSION = "1.0.0" as const;
 export const DETERMINISTIC_MODEL_RULE_CANDIDATE_VERSION = "0.2.0" as const;
+export const DETERMINISTIC_MODEL_RULE_VERSION =
+  DETERMINISTIC_MODEL_RULE_CANDIDATE_VERSION;
 
 export const DETERMINISTIC_MODEL_CALIBRATION_FIXTURE_IDS = Object.freeze([
   "F01",
@@ -136,6 +138,9 @@ export const DeterministicModelCalibrationInputSchema = z
     }
   });
 
+export const DeterministicModelInputSchema =
+  DeterministicModelCalibrationInputSchema;
+
 const ScenarioExpectedSchema = z
   .object({
     condition: DeterministicModelConditionSchema,
@@ -235,6 +240,7 @@ export type DeterministicModelCalibrationCorpus = z.infer<
 export type DeterministicModelCalibrationInput = z.infer<
   typeof DeterministicModelCalibrationInputSchema
 >;
+export type DeterministicModelInput = DeterministicModelCalibrationInput;
 export type DeterministicModelCalibrationScenarioFixture = z.infer<
   typeof ScenarioFixtureSchema
 >;

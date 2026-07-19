@@ -1,10 +1,10 @@
 import {
-  DeterministicModelCalibrationInputSchema,
-  DETERMINISTIC_MODEL_RULE_CANDIDATE_VERSION,
+  DeterministicModelInputSchema,
+  DETERMINISTIC_MODEL_RULE_VERSION,
 } from "@workspace/contracts";
-import type { DeterministicModelCalibrationInput } from "@workspace/contracts";
+import type { DeterministicModelInput } from "@workspace/contracts";
 
-export type DeterministicModelCandidateResult = Readonly<{
+export type DeterministicModelResult = Readonly<{
   ruleVersion: "0.2.0";
   value: number;
   rawContribution: number;
@@ -36,7 +36,7 @@ export type DeterministicModelCandidateResult = Readonly<{
   }>;
 }>;
 
-type Impact = DeterministicModelCalibrationInput["commuteImpact"];
+type Impact = DeterministicModelInput["commuteImpact"];
 
 const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value));
@@ -44,7 +44,7 @@ const clamp = (value: number, minimum: number, maximum: number): number =>
 const roundHalfAwayFromZero = (value: number): number =>
   value < 0 ? -Math.round(Math.abs(value)) : Math.round(value);
 
-const bandFor = (value: number): DeterministicModelCandidateResult["band"] => {
+const bandFor = (value: number): DeterministicModelResult["band"] => {
   if (value <= 39) return "worse_fit";
   if (value <= 59) return "mixed_or_similar";
   if (value <= 79) return "better_fit";
@@ -91,8 +91,8 @@ const statusForImpact = (
   impact === "excluded" || impact === "unavailable" ? impact : "available";
 
 const evaluatePoint = (
-  input: DeterministicModelCalibrationInput,
-): DeterministicModelCandidateResult => {
+  input: DeterministicModelInput,
+): DeterministicModelResult => {
   const activeBlockerCodes: string[] = [];
   const cautionCodes: string[] = [];
   if (
@@ -186,7 +186,7 @@ const evaluatePoint = (
     appliedCap === null
       ? uncappedRawValue
       : Math.min(uncappedRawValue, appliedCap);
-  let condition: DeterministicModelCandidateResult["condition"];
+  let condition: DeterministicModelResult["condition"];
   if (activeBlockerCodes.length > 0) {
     condition = "high_financial_risk";
   } else if (conditionalRequirementIds.length > 0) {
@@ -202,7 +202,7 @@ const evaluatePoint = (
   }
 
   return deepFreeze({
-    ruleVersion: DETERMINISTIC_MODEL_RULE_CANDIDATE_VERSION,
+    ruleVersion: DETERMINISTIC_MODEL_RULE_VERSION,
     value,
     rawContribution:
       financialContribution +
@@ -266,10 +266,10 @@ export class DeterministicModelPreflightError extends Error {
   }
 }
 
-export const evaluateDeterministicModelCandidate = (
-  rawInput: DeterministicModelCalibrationInput,
-): DeterministicModelCandidateResult => {
-  const input = DeterministicModelCalibrationInputSchema.parse(rawInput);
+export const evaluateDeterministicModel = (
+  rawInput: DeterministicModelInput,
+): DeterministicModelResult => {
+  const input = DeterministicModelInputSchema.parse(rawInput);
   if (input.originMetroSlug === input.destinationMetroSlug) {
     throw new DeterministicModelPreflightError(
       "Deterministic model candidate requires different metros.",

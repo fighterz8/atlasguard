@@ -1,18 +1,18 @@
 import {
   MOVEWISE_SCORE_RULE_VERSION,
-  type DeterministicModelCalibrationInput,
+  type DeterministicModelInput,
 } from "@workspace/contracts";
 import { describe, expect, it } from "vitest";
 
 import {
   DeterministicModelPreflightError,
-  evaluateDeterministicModelCandidate,
+  evaluateDeterministicModel,
 } from "./deterministic-model-0-2";
 import { deterministicModelCalibrationCorpus } from "./fixtures/deterministic-model-calibration-v1";
 
 const baseInput = (
-  overrides: Partial<DeterministicModelCalibrationInput> = {},
-): DeterministicModelCalibrationInput => ({
+  overrides: Partial<DeterministicModelInput> = {},
+): DeterministicModelInput => ({
   originMetroSlug: "origin-metro",
   destinationMetroSlug: "destination-metro",
   monthlyCushionDeltaCents: 0,
@@ -35,7 +35,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
     );
 
     for (const fixture of scenarios) {
-      const result = evaluateDeterministicModelCandidate(fixture.input);
+      const result = evaluateDeterministicModel(fixture.input);
 
       expect(
         {
@@ -60,7 +60,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
           ? [
               [
                 fixture.id,
-                evaluateDeterministicModelCandidate(fixture.input).value,
+                evaluateDeterministicModel(fixture.input).value,
               ],
             ]
           : [],
@@ -96,12 +96,12 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
       throw new Error("F05 must remain a scenario fixture.");
     }
     expect(
-      evaluateDeterministicModelCandidate(conditionalRange.input).range,
+      evaluateDeterministicModel(conditionalRange.input).range,
     ).toEqual({ min: 39, max: 65 });
   });
 
   it("locks the neutral baseline and condition ladder", () => {
-    expect(evaluateDeterministicModelCandidate(baseInput())).toMatchObject({
+    expect(evaluateDeterministicModel(baseInput())).toMatchObject({
       ruleVersion: "0.2.0",
       value: 50,
       band: "mixed_or_similar",
@@ -111,10 +111,10 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
   });
 
   it("distinguishes the exact negative-cushion edge", () => {
-    const zero = evaluateDeterministicModelCandidate(
+    const zero = evaluateDeterministicModel(
       baseInput({ destinationMonthlyCushionCents: 0 }),
     );
-    const negative = evaluateDeterministicModelCandidate(
+    const negative = evaluateDeterministicModel(
       baseInput({ destinationMonthlyCushionCents: -1 }),
     );
 
@@ -129,13 +129,13 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
   });
 
   it("distinguishes housing caution from the exact 50% blocker", () => {
-    const caution = evaluateDeterministicModelCandidate(
+    const caution = evaluateDeterministicModel(
       baseInput({
         monthlyCushionDeltaCents: 100_000,
         destinationHousingBurdenBps: 4_999,
       }),
     );
-    const blocker = evaluateDeterministicModelCandidate(
+    const blocker = evaluateDeterministicModel(
       baseInput({
         monthlyCushionDeltaCents: 100_000,
         destinationHousingBurdenBps: 5_000,
@@ -158,7 +158,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
   });
 
   it("keeps excluded and unavailable metrics distinct without redistribution", () => {
-    const result = evaluateDeterministicModelCandidate(
+    const result = evaluateDeterministicModel(
       baseInput({ commuteImpact: "excluded", climateImpact: "unavailable" }),
     );
 
@@ -170,7 +170,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
   });
 
   it("reruns a blocker-crossing range instead of averaging it away", () => {
-    const result = evaluateDeterministicModelCandidate(
+    const result = evaluateDeterministicModel(
       baseInput({
         destinationMonthlyCushionCents: null,
         destinationMonthlyCushionRangeCents: { min: -1, max: 100_000 },
@@ -191,11 +191,11 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
       monthlyCushionDeltaCents: 50_000,
       commuteImpact: "positive",
     });
-    const first = evaluateDeterministicModelCandidate(forwardInput);
-    const second = evaluateDeterministicModelCandidate(
+    const first = evaluateDeterministicModel(forwardInput);
+    const second = evaluateDeterministicModel(
       structuredClone(forwardInput),
     );
-    const reverse = evaluateDeterministicModelCandidate({
+    const reverse = evaluateDeterministicModel({
       ...forwardInput,
       originMetroSlug: forwardInput.destinationMetroSlug,
       destinationMetroSlug: forwardInput.originMetroSlug,
@@ -208,7 +208,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
     expect(Object.isFrozen(first)).toBe(true);
     expect(Object.isFrozen(first.metricContributions)).toBe(true);
     expect(() =>
-      evaluateDeterministicModelCandidate({
+      evaluateDeterministicModel({
         ...forwardInput,
         destinationMetroSlug: forwardInput.originMetroSlug,
       }),
@@ -218,7 +218,7 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
   it("keeps financial improvement monotonic before caps", () => {
     const values = [-50_000, -25_000, 0, 25_000, 50_000].map(
       (monthlyCushionDeltaCents) =>
-        evaluateDeterministicModelCandidate(
+        evaluateDeterministicModel(
           baseInput({ monthlyCushionDeltaCents }),
         ).value,
     );
@@ -233,14 +233,14 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
         { requirementId: "mobility.car-free", status: "unconfirmed" },
       ],
     });
-    const unconfirmed = evaluateDeterministicModelCandidate(unconfirmedInput);
-    const confirmed = evaluateDeterministicModelCandidate({
+    const unconfirmed = evaluateDeterministicModel(unconfirmedInput);
+    const confirmed = evaluateDeterministicModel({
       ...unconfirmedInput,
       essentialRequirements: [
         { requirementId: "mobility.car-free", status: "confirmed_met" },
       ],
     });
-    const unmet = evaluateDeterministicModelCandidate({
+    const unmet = evaluateDeterministicModel({
       ...unconfirmedInput,
       essentialRequirements: [
         { requirementId: "mobility.car-free", status: "confirmed_unmet" },

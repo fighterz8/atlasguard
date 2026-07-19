@@ -1,8 +1,8 @@
-import type { DeterministicModelCalibrationInput } from "@workspace/contracts";
+import type { DeterministicModelInput } from "@workspace/contracts";
 
 import {
-  evaluateDeterministicModelCandidate,
-  type DeterministicModelCandidateResult,
+  evaluateDeterministicModel,
+  type DeterministicModelResult,
 } from "./deterministic-model-0-2";
 import {
   evaluateMoveWiseAnalysis,
@@ -17,7 +17,7 @@ export type MoveWiseRule010Selection = Readonly<{
 
 export type MoveWiseRule020Selection = Readonly<{
   ruleVersion: "0.2.0";
-  input: DeterministicModelCalibrationInput;
+  input: DeterministicModelInput;
 }>;
 
 export type MoveWiseRuleSelection =
@@ -31,7 +31,7 @@ export type MoveWiseRule010Result = Readonly<{
 
 export type MoveWiseRule020Result = Readonly<{
   ruleVersion: "0.2.0";
-  analysis: DeterministicModelCandidateResult;
+  analysis: DeterministicModelResult;
 }>;
 
 export type MoveWiseRuleResult =
@@ -101,8 +101,8 @@ export function evaluateMoveWiseRule(request: unknown): MoveWiseRuleResult {
     }
     return freezeSelection({
       ruleVersion: "0.2.0",
-      analysis: evaluateDeterministicModelCandidate(
-        request.input as DeterministicModelCalibrationInput,
+      analysis: evaluateDeterministicModel(
+        request.input as DeterministicModelInput,
       ),
     });
   }
