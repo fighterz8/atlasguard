@@ -53,6 +53,72 @@ describe("research results view model", () => {
       confidenceLabel: "Limited evidence",
       stabilityLabel: "Assumption sensitive",
     });
+    expect(model.score).toMatchObject({
+      value: 52,
+      outOf: 100,
+      bandLabel: "Mixed or similar",
+      baselineMeaning:
+        "50 means roughly even with Los Angeles for your current inputs.",
+      boundary:
+        "Not a probability, universal city grade, city ranking, or instruction to move.",
+      range: {
+        label: expect.stringMatching(/^\d+–\d+$/),
+        explanation: expect.stringContaining("estimate sensitivity"),
+      },
+      exactFinance: {
+        label: "Monthly cushion difference",
+        value: "$0",
+      },
+      evidenceConfidence: {
+        label: "Limited evidence",
+        explanation: expect.stringContaining("ACS coverage"),
+      },
+      activeBlocker: null,
+      strongestImprovement: {
+        label: "Typical commute time",
+        contribution: 2,
+        evidenceRefs: ["benchmark.commute_time.acs1.2024.la_seattle"],
+      },
+      strongestTradeoff: null,
+      missingComponents: ["Household fit", "Opportunity context"],
+      decisionChangingAssumption: {
+        label: "Destination housing",
+        threshold: "$1,750",
+        operator: "at or below",
+        changesConditionTo: "Worth a closer look",
+        withinPlausibleRange: true,
+        evidenceRefs: ["input.destination.housing"],
+      },
+      scoreVersion: "0.1.0",
+    });
+  });
+
+  it("does not fabricate a score range and keeps unavailable dimensions visible", () => {
+    const draft = reviewedDraft();
+    draft.commuteImportance = "does_not_matter";
+    draft.climateHeatPreference = "does_not_matter";
+    draft.finances.targetTakeHomeRangeMin = "";
+    draft.finances.targetTakeHomeRangeMax = "";
+    draft.finances.targetHousingRangeMin = "";
+    draft.finances.targetHousingRangeMax = "";
+    draft.finances.targetExpensesRangeMin = "";
+    draft.finances.targetExpensesRangeMax = "";
+    draft.finances.retainedPropertyNetRangeMin = "";
+    draft.finances.retainedPropertyNetRangeMax = "";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation);
+
+    expect(model.score.range).toBeNull();
+    expect(model.score.missingComponents).toEqual([
+      "Daily-life fit",
+      "Household fit",
+      "Opportunity context",
+    ]);
+    expect(model.score.strongestTradeoff).toBeNull();
+    expect(model.score.boundary).toContain("Not a probability");
   });
 
   it("keeps illustrative finances separate from the benchmark metric", () => {

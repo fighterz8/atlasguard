@@ -11,7 +11,10 @@ import type {
   ScenarioInput,
   VerifiedResearchEvaluationResult,
 } from "@workspace/contracts";
-import { evaluateResearchMoveDecision } from "@workspace/decision-core";
+import {
+  evaluateMoveWiseAnalysis,
+  evaluateResearchMoveDecision,
+} from "@workspace/decision-core";
 
 const dollars = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -159,10 +162,55 @@ const stabilityLabels = {
   not_evaluated: "Not evaluated",
 } as const;
 
+const scoreBandLabels = {
+  worse_fit: "Worse fit",
+  mixed_or_similar: "Mixed or similar",
+  better_fit: "Better fit",
+  substantially_better_fit: "Substantially better fit",
+} as const;
+
+const scoreMetricLabels = {
+  financial_cushion_delta: "Monthly financial cushion",
+  commute_time: "Typical commute time",
+  climate_heat: "Climate fit",
+} as const;
+
+const scoreComponentLabels = {
+  financial_security: "Financial security",
+  daily_life_fit: "Daily-life fit",
+  opportunity_context: "Opportunity context",
+  household_fit: "Household fit",
+} as const;
+
+const scoreBlockerCopy = {
+  negative_target_cushion: {
+    label: "Negative destination cushion",
+    explanation:
+      "The destination budget falls below zero, so the registered rule prevents a favorable score.",
+  },
+  target_housing_burden_at_or_above_50_percent: {
+    label: "Housing burden at or above 50%",
+    explanation:
+      "Destination housing reaches at least half of gross income, so the registered rule prevents a favorable score.",
+  },
+} as const;
+
+const scoreThresholdLabels: Record<string, string> = {
+  "finances.destination.takeHomeIncome.monthlyCents":
+    "Destination take-home income",
+  "finances.destination.grossIncome.monthlyCents": "Destination gross income",
+  "finances.destination.housingCost.monthlyCents": "Destination housing",
+  "finances.destination.recurringExpensesExcludingHousing.monthlyCents":
+    "Destination recurring expenses",
+  "finances.destination.retainedPropertyNet.monthlyCents":
+    "Retained-property monthly net",
+};
+
 export const createResearchResultsViewModel = (
   result: VerifiedResearchEvaluationResult = evaluateResearchScenario(),
 ) => {
   const profile = result.decisionProfile;
+  const analysis = evaluateMoveWiseAnalysis(result);
   const housingContext = getResearchMetroHousingContext(
     profile.scenario.origin.slug,
     profile.scenario.destination.slug,
@@ -349,6 +397,95 @@ export const createResearchResultsViewModel = (
       financialDirection: financialChange.classification,
       confidenceLabel: confidenceLabels[profile.confidence.level],
       stabilityLabel: stabilityLabels[profile.stability.level],
+    },
+    score: {
+      value: analysis.score.value,
+      outOf: 100,
+      bandLabel: scoreBandLabels[analysis.score.band],
+      baselineMeaning: `50 means roughly even with ${profile.scenario.origin.selectedPlace.city} for your current inputs.`,
+      boundary:
+        "Not a probability, universal city grade, city ranking, or instruction to move.",
+      range:
+        analysis.score.range === null
+          ? null
+          : {
+              label: `${analysis.score.range.min}–${analysis.score.range.max}`,
+              explanation:
+                "This estimate sensitivity range reruns the accepted low and high financial estimates. It is not a confidence interval.",
+            },
+      exactFinance: {
+        label: "Monthly cushion difference",
+        value: formatMoney(financialChange.monthlyCushionDeltaCents),
+      },
+      evidenceConfidence: {
+        label: confidenceLabels[profile.confidence.level],
+        explanation: confidenceExplanation,
+      },
+      activeBlocker:
+        analysis.insights.activeBlocker === null
+          ? null
+          : {
+              ...scoreBlockerCopy[analysis.insights.activeBlocker.code],
+              scoreCap: analysis.insights.activeBlocker.scoreCap,
+              evidenceRefs: [...analysis.insights.activeBlocker.evidenceRefs],
+              inputPaths: [...analysis.insights.activeBlocker.inputPaths],
+            },
+      strongestImprovement:
+        analysis.insights.strongestImprovement === null
+          ? null
+          : {
+              label:
+                scoreMetricLabels[
+                  analysis.insights.strongestImprovement.metricId
+                ],
+              contribution: analysis.insights.strongestImprovement.contribution,
+              evidenceRefs: [
+                ...analysis.insights.strongestImprovement.evidenceRefs,
+              ],
+            },
+      strongestTradeoff:
+        analysis.insights.strongestTradeoff === null
+          ? null
+          : {
+              label:
+                scoreMetricLabels[analysis.insights.strongestTradeoff.metricId],
+              contribution: analysis.insights.strongestTradeoff.contribution,
+              evidenceRefs: [
+                ...analysis.insights.strongestTradeoff.evidenceRefs,
+              ],
+            },
+      missingComponents: analysis.insights.missingComponents.map(
+        (componentId) => scoreComponentLabels[componentId],
+      ),
+      decisionChangingAssumption:
+        analysis.insights.decisionChangingAssumption === null
+          ? null
+          : {
+              label:
+                scoreThresholdLabels[
+                  analysis.insights.decisionChangingAssumption.inputPath
+                ] ?? analysis.insights.decisionChangingAssumption.inputPath,
+              threshold: formatMoney(
+                analysis.insights.decisionChangingAssumption.thresholdCents,
+              ),
+              operator:
+                analysis.insights.decisionChangingAssumption.operator ===
+                "at_or_above"
+                  ? "at least"
+                  : "at or below",
+              changesConditionTo:
+                conditionCopy[
+                  analysis.insights.decisionChangingAssumption
+                    .changesConditionTo
+                ].label,
+              withinPlausibleRange:
+                analysis.insights.decisionChangingAssumption
+                  .withinPlausibleRange,
+              evidenceRefs: [
+                ...analysis.insights.decisionChangingAssumption.evidenceRefs,
+              ],
+            },
+      scoreVersion: analysis.score.scoreVersion,
     },
     confidence: {
       level: profile.confidence.level,
