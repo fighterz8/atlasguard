@@ -2,14 +2,22 @@ import { calculateMetroProfileChecksum } from "@workspace/contracts";
 import { describe, expect, it } from "vitest";
 
 import {
+  AUSTIN_RESEARCH_METRO_PROFILE_SHA256,
   getSupportedResearchMetroProfile,
   isSupportedResearchMetroProfileSlug,
+  loadAustinResearchMetroProfile,
   loadLosAngelesResearchMetroProfile,
   LOS_ANGELES_RESEARCH_METRO_PROFILE_SHA256,
+  loadSanDiegoResearchMetroProfile,
   loadSeattleResearchMetroProfile,
+  SAN_DIEGO_RESEARCH_METRO_PROFILE_SHA256,
   SEATTLE_RESEARCH_METRO_PROFILE_SHA256,
   supportedResearchMetroProfiles,
 } from "./research-metro-profiles";
+import {
+  resolveSupportedResearchComparison,
+  supportedResearchPlaces,
+} from "./supported-research-locations";
 
 const observation = (
   profile: ReturnType<typeof loadLosAngelesResearchMetroProfile>,
@@ -24,20 +32,24 @@ const observation = (
 };
 
 describe("research metro profiles", () => {
-  it("promotes exactly the two independently verified metros", () => {
+  it("promotes exactly four independent profiles without expanding public routes", () => {
     expect(
       supportedResearchMetroProfiles.map(({ metro }) => metro.slug),
-    ).toEqual(["los-angeles-ca", "seattle-wa"]);
+    ).toEqual(["los-angeles-ca", "seattle-wa", "austin-tx", "san-diego-ca"]);
+    expect(supportedResearchPlaces.map(({ slug }) => slug)).toEqual([
+      "los-angeles-ca",
+      "seattle-wa",
+    ]);
     expect(
-      supportedResearchMetroProfiles.some(({ metro }) =>
-        ["austin-tx", "san-diego-ca"].includes(metro.slug),
-      ),
-    ).toBe(false);
+      resolveSupportedResearchComparison("austin-tx", "san-diego-ca"),
+    ).toBeNull();
   });
 
   it("locks each profile to its declared checksum", () => {
     const losAngeles = loadLosAngelesResearchMetroProfile();
     const seattle = loadSeattleResearchMetroProfile();
+    const austin = loadAustinResearchMetroProfile();
+    const sanDiego = loadSanDiegoResearchMetroProfile();
 
     expect(losAngeles.snapshot.sha256).toBe(
       LOS_ANGELES_RESEARCH_METRO_PROFILE_SHA256,
@@ -49,6 +61,60 @@ describe("research metro profiles", () => {
     expect(calculateMetroProfileChecksum(seattle)).toBe(
       SEATTLE_RESEARCH_METRO_PROFILE_SHA256,
     );
+    expect(austin.snapshot.sha256).toBe(AUSTIN_RESEARCH_METRO_PROFILE_SHA256);
+    expect(sanDiego.snapshot.sha256).toBe(
+      SAN_DIEGO_RESEARCH_METRO_PROFILE_SHA256,
+    );
+    expect(calculateMetroProfileChecksum(austin)).toBe(
+      AUSTIN_RESEARCH_METRO_PROFILE_SHA256,
+    );
+    expect(calculateMetroProfileChecksum(sanDiego)).toBe(
+      SAN_DIEGO_RESEARCH_METRO_PROFILE_SHA256,
+    );
+  });
+
+  it("promotes exact Austin and San Diego observations with NOAA completeness visible", () => {
+    const austin = loadAustinResearchMetroProfile();
+    const sanDiego = loadSanDiegoResearchMetroProfile();
+
+    expect(observation(austin, "commute.mean_minutes").value).toBeCloseTo(
+      28.2097375862,
+      10,
+    );
+    expect(observation(sanDiego, "commute.mean_minutes").value).toBeCloseTo(
+      26.0618486909,
+      10,
+    );
+    expect(observation(austin, "climate.annual_hot_days")).toMatchObject({
+      value: 122.8,
+      quality: {
+        selectionUncertainty: { min: 122.8, max: 123.5 },
+        sourceCompleteness: {
+          classification: "standard",
+          observedYears: 30,
+        },
+      },
+    });
+    expect(observation(sanDiego, "climate.annual_hot_days")).toMatchObject({
+      value: 16,
+      quality: {
+        selectionUncertainty: { min: 3, max: 16 },
+        sourceCompleteness: {
+          classification: "representative",
+          observedYears: 22,
+        },
+      },
+    });
+    expect(observation(austin, "housing.median_gross_rent")).toMatchObject({
+      role: "context_only",
+      value: 178_400,
+      quality: { marginOfError: 2_000 },
+    });
+    expect(observation(sanDiego, "housing.median_gross_rent")).toMatchObject({
+      role: "context_only",
+      value: 233_600,
+      quality: { marginOfError: 2_000 },
+    });
   });
 
   it("stores raw metro observations without route deltas or chosen climate direction", () => {
@@ -118,9 +184,12 @@ describe("research metro profiles", () => {
   it("exposes immutable lookup results and rejects unsupported slugs", () => {
     const losAngeles = getSupportedResearchMetroProfile("los-angeles-ca");
     expect(losAngeles).toEqual(loadLosAngelesResearchMetroProfile());
-    expect(getSupportedResearchMetroProfile("austin-tx")).toBeNull();
+    expect(getSupportedResearchMetroProfile("austin-tx")).toEqual(
+      loadAustinResearchMetroProfile(),
+    );
     expect(isSupportedResearchMetroProfileSlug("seattle-wa")).toBe(true);
-    expect(isSupportedResearchMetroProfileSlug("san-diego-ca")).toBe(false);
+    expect(isSupportedResearchMetroProfileSlug("san-diego-ca")).toBe(true);
+    expect(isSupportedResearchMetroProfileSlug("phoenix-az")).toBe(false);
     expect(Object.isFrozen(losAngeles)).toBe(true);
     expect(() => {
       const mutable = losAngeles as unknown as { metro: { label: string } };

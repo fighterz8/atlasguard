@@ -10,16 +10,24 @@ import {
   deriveCommuteMetric,
 } from "./commute-derivation";
 import { CLIMATE_HEAT_METRIC_REGISTRATION } from "./climate-derivation";
+import {
+  loadAustinResearchMetroProfile,
+  loadSanDiegoResearchMetroProfile,
+} from "./expanded-research-metro-profiles";
 import { acs2024CommuteLaSeattleRawSnapshot } from "./raw/acs1-2024-commute-la-seattle";
 import { acs2024RentLaSeattleRawSnapshot } from "./raw/acs1-2024-rent-la-seattle";
 import { noaa1991To2020HotDaysLaSeattleRawSnapshot } from "./raw/noaa-1991-2020-hot-days-la-seattle";
 import { verifyRawClimateSnapshot } from "./raw-climate-snapshot";
 import { verifyRawHousingSnapshot } from "./raw-housing-snapshot";
 import { verifyRawCommuteSnapshot } from "./raw-snapshot";
-import {
-  getSupportedResearchComparisonPlace,
-  type SupportedResearchPlaceSlug,
-} from "./supported-research-locations";
+import { getSupportedResearchComparisonPlace } from "./supported-research-locations";
+
+export {
+  AUSTIN_RESEARCH_METRO_PROFILE_SHA256,
+  loadAustinResearchMetroProfile,
+  loadSanDiegoResearchMetroProfile,
+  SAN_DIEGO_RESEARCH_METRO_PROFILE_SHA256,
+} from "./expanded-research-metro-profiles";
 
 const PROFILE_VERSION = "1.0.0" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
@@ -357,7 +365,12 @@ export const loadSeattleResearchMetroProfile = () =>
 export const supportedResearchMetroProfiles = Object.freeze([
   loadLosAngelesResearchMetroProfile(),
   loadSeattleResearchMetroProfile(),
+  loadAustinResearchMetroProfile(),
+  loadSanDiegoResearchMetroProfile(),
 ] as const);
+
+export type ResearchMetroProfileSlug =
+  (typeof supportedResearchMetroProfiles)[number]["metro"]["slug"];
 
 export const getSupportedResearchMetroProfile = (
   slug: string,
@@ -373,5 +386,5 @@ export const getResearchMetroProfileForComparisonSide = (
 
 export const isSupportedResearchMetroProfileSlug = (
   slug: string,
-): slug is SupportedResearchPlaceSlug =>
+): slug is ResearchMetroProfileSlug =>
   getSupportedResearchMetroProfile(slug) !== null;

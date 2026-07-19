@@ -67,6 +67,39 @@ const MetroProfileSelectionUncertaintySchema = z
     path: ["max"],
   });
 
+const MetroProfileSourceCompletenessSchema = z
+  .object({
+    classification: z.enum(["standard", "representative"]),
+    observedYears: z.number().int().min(10).max(30),
+    normalPeriodYears: z.literal(30),
+    missingPeriodTreatment: z.literal("surrounding_station_estimates"),
+    rationale: z.string().trim().min(1).max(500),
+  })
+  .strict()
+  .superRefine((completeness, context) => {
+    if (
+      completeness.classification === "standard" &&
+      completeness.observedYears < 24
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "NOAA Standard completeness requires at least 24 years.",
+        path: ["observedYears"],
+      });
+    }
+    if (
+      completeness.classification === "representative" &&
+      completeness.observedYears >= 24
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "NOAA Representative completeness must not be used when Standard completeness applies.",
+        path: ["classification"],
+      });
+    }
+  });
+
 const MetroProfileObservationBaseSchema = z.object({
   metricId: StableIdSchema,
   definition: z.string().trim().min(1).max(500),
@@ -92,6 +125,7 @@ const MetroProfileObservationBaseSchema = z.object({
       missingness: z.enum(["complete", "unavailable"]),
       marginOfError: z.number().nonnegative().nullable(),
       selectionUncertainty: MetroProfileSelectionUncertaintySchema.optional(),
+      sourceCompleteness: MetroProfileSourceCompletenessSchema.optional(),
       coverageBps: BasisPointsSchema.nullable(),
     })
     .strict(),

@@ -219,6 +219,25 @@ describe("MetroProfileSchema", () => {
     );
   });
 
+  it("rejects climate source-completeness labels that contradict observed years", () => {
+    const profile = createProfile() as unknown as {
+      observations: Array<{
+        quality: Record<string, unknown>;
+      }>;
+    };
+    profile.observations[0]!.quality.sourceCompleteness = {
+      classification: "standard",
+      observedYears: 22,
+      normalPeriodYears: 30,
+      missingPeriodTreatment: "surrounding_station_estimates",
+      rationale: "Fixture NOAA completeness disclosure.",
+    };
+
+    expect(issuePaths(profile)).toContain(
+      "observations.0.quality.sourceCompleteness.observedYears",
+    );
+  });
+
   it("keeps context metrics free of scoring transformations", () => {
     const profile = createProfile() as unknown as {
       observations: Array<Record<string, unknown>>;
