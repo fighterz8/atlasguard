@@ -9,6 +9,7 @@ import {
   type ResearchResultsViewModel,
 } from "@/features/research-results/model";
 import { SummaryPanel } from "@/features/research-results/summary-panel";
+import { ScoreExplanation } from "@/features/research-results/score-explanation";
 import { WhatIfPanel } from "@/features/research-results/what-if-panel";
 
 type ResearchResultsExperienceProps = {
@@ -67,6 +68,8 @@ export function ResearchResultsExperience({
 
       <main className="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
         <SummaryPanel {...model} />
+
+        <ScoreExplanation score={model.score} />
 
         <ComparisonOverview
           route={model.route}

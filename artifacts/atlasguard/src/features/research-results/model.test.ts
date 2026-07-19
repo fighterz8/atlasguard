@@ -89,6 +89,10 @@ describe("research results view model", () => {
         withinPlausibleRange: true,
         evidenceRefs: ["input.destination.housing"],
       },
+      calculationEvidenceRefs: expect.arrayContaining([
+        "benchmark.commute_time.acs1.2024.la_seattle",
+        "input.destination.housing",
+      ]),
       scoreVersion: "0.1.0",
     });
   });
@@ -119,6 +123,35 @@ describe("research results view model", () => {
     ]);
     expect(model.score.strongestTradeoff).toBeNull();
     expect(model.score.boundary).toContain("Not a probability");
+  });
+
+  it("surfaces a registered score cap when the destination budget is not viable", () => {
+    const draft = reviewedDraft();
+    draft.finances.targetTakeHome = "2000";
+    draft.finances.targetHousing = "2500";
+    draft.finances.targetExpenses = "1500";
+    draft.finances.targetTakeHomeRangeMin = "";
+    draft.finances.targetTakeHomeRangeMax = "";
+    draft.finances.targetHousingRangeMin = "";
+    draft.finances.targetHousingRangeMax = "";
+    draft.finances.targetExpensesRangeMin = "";
+    draft.finances.targetExpensesRangeMax = "";
+    draft.finances.retainedPropertyNetRangeMin = "";
+    draft.finances.retainedPropertyNetRangeMax = "";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    expect(
+      createResearchResultsViewModel(evaluation.evaluation).score.activeBlocker,
+    ).toMatchObject({
+      label: "Negative destination cushion",
+      scoreCap: 59,
+      explanation: expect.stringContaining("prevents a favorable score"),
+      evidenceRefs: expect.arrayContaining([
+        "derived.financial.destination_monthly_cushion",
+      ]),
+    });
   });
 
   it("keeps illustrative finances separate from the benchmark metric", () => {

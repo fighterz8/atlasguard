@@ -371,6 +371,17 @@ export const createResearchResultsViewModel = (
     climatePriority.weight === 0
       ? "Limited because ACS coverage is not promoted as a percentage and the active comparison currently relies on commute evidence alone."
       : "Limited because ACS coverage is not promoted as a percentage and the supporting hot-day benchmark uses mapped reference sites with selection uncertainty.";
+  const scoreCalculationEvidenceRefs = [
+    ...analysis.score.componentContributions.flatMap((component) =>
+      component.metricContributions.flatMap((metric) => metric.evidenceRefs),
+    ),
+    ...analysis.score.activeBlockers.flatMap((blocker) => blocker.evidenceRefs),
+    ...(analysis.insights.decisionChangingAssumption?.evidenceRefs ?? []),
+  ]
+    .filter(
+      (reference, index, references) => references.indexOf(reference) === index,
+    )
+    .sort();
 
   if (
     housingContext.origin.cbsaCode !== profile.scenario.origin.cbsaCode ||
@@ -485,6 +496,7 @@ export const createResearchResultsViewModel = (
                 ...analysis.insights.decisionChangingAssumption.evidenceRefs,
               ],
             },
+      calculationEvidenceRefs: scoreCalculationEvidenceRefs,
       scoreVersion: analysis.score.scoreVersion,
     },
     confidence: {
