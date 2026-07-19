@@ -268,6 +268,8 @@ type DeepReadonly<Value> = Value extends (...args: never[]) => unknown
       ? { readonly [Key in keyof Value]: DeepReadonly<Value[Key]> }
       : Value;
 
+type ScoreDecisionProfile = DecisionProfile | DeepReadonly<DecisionProfile>;
+
 declare const verifiedMoveWiseScoreBrand: unique symbol;
 export type VerifiedMoveWiseScore = DeepReadonly<MoveWiseScore> & {
   readonly [verifiedMoveWiseScoreBrand]: true;
@@ -302,7 +304,7 @@ const omittedPriorityMetricContribution = (
 });
 
 const priorityMetricContribution = (
-  change: PriorityChange,
+  change: PriorityChange | DeepReadonly<PriorityChange>,
   metricId: ScoredPriorityId,
 ): z.infer<typeof MoveWiseScoreMetricContributionSchema> => {
   const registration = MOVEWISE_SCORE_METRIC_REGISTRY[metricId];
@@ -348,7 +350,9 @@ const priorityMetricContribution = (
   };
 };
 
-const buildMoveWiseScorePoint = (profile: DecisionProfile): MoveWiseScore => {
+const buildMoveWiseScorePoint = (
+  profile: ScoreDecisionProfile,
+): MoveWiseScore => {
   const financialContribution = calculateFinancialSecurityScoreContribution(
     profile.financialPosition.change.monthlyCushionDeltaCents,
     profile.financialPosition.change.materialityThresholdCents,
@@ -497,7 +501,7 @@ export class MoveWiseScoreVerificationError extends Error {
 }
 
 export const calculateMoveWiseScorePoint = (
-  profile: DecisionProfile,
+  profile: ScoreDecisionProfile,
 ): VerifiedMoveWiseScore => {
   const score = MoveWiseScoreSchema.parse(buildMoveWiseScorePoint(profile));
   return deepFreeze(score) as VerifiedMoveWiseScore;
@@ -505,7 +509,7 @@ export const calculateMoveWiseScorePoint = (
 
 export const verifyMoveWiseScore = (
   input: unknown,
-  profile: DecisionProfile,
+  profile: ScoreDecisionProfile,
 ): VerifiedMoveWiseScore => {
   const score = MoveWiseScoreSchema.parse(input);
   const expected = buildMoveWiseScorePoint(profile);
