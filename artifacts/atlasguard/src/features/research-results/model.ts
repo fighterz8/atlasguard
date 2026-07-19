@@ -1,8 +1,8 @@
 import {
   compareResearchMetroClimateRatings,
   getResearchMetroClimateRating,
+  getResearchMetroHousingContext,
   loadLosAngelesToSeattleResearchBenchmark,
-  loadLosAngelesToSeattleHousingContext,
   losAngelesToSeattleBalancedResearchScenario,
 } from "@workspace/benchmark-data";
 import type {
@@ -163,7 +163,15 @@ export const createResearchResultsViewModel = (
   result: VerifiedResearchEvaluationResult = evaluateResearchScenario(),
 ) => {
   const profile = result.decisionProfile;
-  const housingContext = loadLosAngelesToSeattleHousingContext();
+  const housingContext = getResearchMetroHousingContext(
+    profile.scenario.origin.slug,
+    profile.scenario.destination.slug,
+  );
+  if (housingContext === null) {
+    throw new Error(
+      "Research preview requires promoted housing context for the selected metros.",
+    );
+  }
   const commuteMetric = profile.evidence.find(
     (entry): entry is MetricEvidence =>
       entry.kind === "benchmark_metric" && entry.priorityId === "commute_time",
@@ -306,6 +314,15 @@ export const createResearchResultsViewModel = (
     );
   }
   const climateInterpretation = `For your preference for ${heatPreference}, the destination climate ${climatePriority.classification === "similar" ? "does not create a meaningful advantage" : climatePriority.classification}.`;
+  const housingDifference = Math.abs(housingContext.metric.deltaValue);
+  const housingReading =
+    housingContext.metric.deltaValue === 0
+      ? `${profile.scenario.destination.selectedPlace.city}’s 2024 metro median matched ${profile.scenario.origin.selectedPlace.city} at ${formatMoney(housingContext.metric.destinationValue)} in this ACS estimate. That area-level result does not predict what this household would pay.`
+      : `${profile.scenario.destination.selectedPlace.city}’s 2024 metro median was ${formatMoney(housingDifference)} ${housingContext.metric.deltaValue > 0 ? "higher" : "lower"} than ${profile.scenario.origin.selectedPlace.city} in this ACS estimate. That area-level difference does not predict what this household would pay.`;
+  const confidenceExplanation =
+    climatePriority.weight === 0
+      ? "Limited because ACS coverage is not promoted as a percentage and the active comparison currently relies on commute evidence alone."
+      : "Limited because ACS coverage is not promoted as a percentage and the supporting hot-day benchmark uses mapped reference sites with selection uncertainty.";
 
   if (
     housingContext.origin.cbsaCode !== profile.scenario.origin.cbsaCode ||
@@ -335,8 +352,7 @@ export const createResearchResultsViewModel = (
     },
     confidence: {
       level: profile.confidence.level,
-      explanation:
-        "Limited because ACS coverage is not promoted as a percentage and NOAA climate evidence uses mapped station proxies with reference-site selection uncertainty.",
+      explanation: confidenceExplanation,
     },
     stability: {
       level: profile.stability.level,
@@ -417,8 +433,7 @@ export const createResearchResultsViewModel = (
         housingContext.metric.marginOfError90.destination,
       ),
       delta: formatMoney(housingContext.metric.deltaValue),
-      reading:
-        "Seattle’s 2024 metro median was $64 lower in this ACS estimate. That small area-level difference does not predict what this household would pay.",
+      reading: housingReading,
       caveats: [...housingContext.caveats],
       evidence: {
         definition: housingContext.metric.definition,

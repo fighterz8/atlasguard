@@ -163,6 +163,69 @@ describe("research results view model", () => {
     );
   });
 
+  it("builds pair-specific Austin to San Diego results", () => {
+    const draft = reviewedDraft();
+    draft.originSlug = "austin-tx";
+    draft.destinationSlug = "san-diego-ca";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation);
+
+    expect(model.route).toMatchObject({
+      originCity: "Austin",
+      destinationCity: "San Diego",
+    });
+    expect(model.priority).toMatchObject({
+      originValue: "28.2 min",
+      destinationValue: "26.1 min",
+    });
+    expect(model.housingContext).toMatchObject({
+      originValue: "$1,784",
+      destinationValue: "$2,336",
+      delta: "$552",
+      reading: expect.stringContaining(
+        "San Diego’s 2024 metro median was $552 higher than Austin",
+      ),
+    });
+    expect(model.climate).toMatchObject({
+      originSummary: expect.stringContaining("Very hot, humid summers"),
+      destinationSummary: expect.stringContaining("Mild, dry, and sunny"),
+      traitChanges: expect.arrayContaining(["much milder summers"]),
+    });
+  });
+
+  it("reverses pair-specific evidence without retaining forward-route copy", () => {
+    const draft = reviewedDraft();
+    draft.originSlug = "san-diego-ca";
+    draft.destinationSlug = "austin-tx";
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation);
+
+    expect(model.route).toMatchObject({
+      originCity: "San Diego",
+      destinationCity: "Austin",
+    });
+    expect(model.priority).toMatchObject({
+      originValue: "26.1 min",
+      destinationValue: "28.2 min",
+    });
+    expect(model.housingContext).toMatchObject({
+      originValue: "$2,336",
+      destinationValue: "$1,784",
+      delta: "-$552",
+      reading: expect.stringContaining(
+        "Austin’s 2024 metro median was $552 lower than San Diego",
+      ),
+    });
+    expect(model.climate?.traitChanges).toContain("much hotter summers");
+    expect(model.housingContext.reading).not.toContain("Seattle");
+  });
+
   it("omits the commute card when the user says it does not matter", () => {
     const draft = reviewedDraft();
     draft.commuteImportance = "does_not_matter";
@@ -214,6 +277,10 @@ describe("research results view model", () => {
     expect(
       createResearchResultsViewModel(evaluation.evaluation).climateEvidence,
     ).toBeNull();
+    expect(
+      createResearchResultsViewModel(evaluation.evaluation).confidence
+        .explanation,
+    ).not.toContain("NOAA");
   });
 
   it("exposes exact favorable thresholds inside the declared ranges", () => {

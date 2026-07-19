@@ -1,6 +1,6 @@
 # MoveWise Phase 2B Austin and San Diego Profiles
 
-**Status:** Implemented; research-only and not selectable
+**Status:** Implemented; research-only profiles (subsequently activated on 2026-07-19)
 
 **Date:** 2026-07-18
 
@@ -16,6 +16,8 @@ Austin and San Diego now have independently verified, checksum-bound metro profi
 | San Diego | `san-diego-ca` | 41740 | `8c5c7426d680ec3e0b13c4633719a2c2d26b369b622c70d7b9f4a16c7b8f16f1` |
 
 Both profiles remain `research_only`. Profile availability is not route activation: `supportedResearchPlaces` and `resolveSupportedResearchComparison` still expose only Los Angeles to Seattle.
+
+> Historical boundary: this was true when Phase 2B landed. The later four-metro activation now makes Austin and San Diego selectable and generates all different-metro routes from the promoted profiles; the profiles themselves remain `research_only`.
 
 ## Verified observations
 
