@@ -5,6 +5,7 @@ export * from "./decision-profile";
 export * from "./decision-rules";
 export * from "./deterministic-model-calibration";
 export * from "./evaluation-result";
+export * from "./household-answers";
 export * from "./metro-profile";
 export * from "./move-score";
 export * from "./primitives";
