@@ -3,7 +3,6 @@ import {
   verifyMoveWiseScore,
 } from "@workspace/contracts";
 import type {
-  FinancialInputPath,
   ScenarioInput,
   VerifiedEvaluationResult,
   VerifiedMoveWiseScore,
@@ -11,95 +10,11 @@ import type {
 } from "@workspace/contracts";
 
 import { evaluateMoveDecision, evaluateResearchMoveDecision } from "./evaluate";
+import { enumeratePlausibleFinancialEndpoints } from "./financial-range-endpoints";
 
 export type MoveWiseScoreEvaluation =
   | VerifiedEvaluationResult
   | VerifiedResearchEvaluationResult;
-
-type MutableScenarioRange = Readonly<{
-  min: number;
-  max: number;
-}>;
-
-type RangeDescriptor = Readonly<{
-  inputPath: FinancialInputPath;
-  read: (scenario: ScenarioInput) => Readonly<{
-    plausibleRangeCents: MutableScenarioRange | null;
-  }> | null;
-  write: (scenario: ScenarioInput, value: number) => void;
-}>;
-
-const RANGE_DESCRIPTORS: readonly RangeDescriptor[] = [
-  {
-    inputPath: "finances.origin.takeHomeIncome.monthlyCents",
-    read: (scenario) => scenario.finances.origin.takeHomeIncome,
-    write: (scenario, value) => {
-      scenario.finances.origin.takeHomeIncome.monthlyCents = value;
-    },
-  },
-  {
-    inputPath: "finances.origin.housingCost.monthlyCents",
-    read: (scenario) => scenario.finances.origin.housingCost,
-    write: (scenario, value) => {
-      scenario.finances.origin.housingCost.monthlyCents = value;
-    },
-  },
-  {
-    inputPath: "finances.origin.recurringExpensesExcludingHousing.monthlyCents",
-    read: (scenario) =>
-      scenario.finances.origin.recurringExpensesExcludingHousing,
-    write: (scenario, value) => {
-      scenario.finances.origin.recurringExpensesExcludingHousing.monthlyCents =
-        value;
-    },
-  },
-  {
-    inputPath: "finances.destination.takeHomeIncome.monthlyCents",
-    read: (scenario) => scenario.finances.destination.takeHomeIncome,
-    write: (scenario, value) => {
-      scenario.finances.destination.takeHomeIncome.monthlyCents = value;
-    },
-  },
-  {
-    inputPath: "finances.destination.grossIncome.monthlyCents",
-    read: (scenario) => scenario.finances.destination.grossIncome,
-    write: (scenario, value) => {
-      const grossIncome = scenario.finances.destination.grossIncome;
-      if (grossIncome === null) {
-        throw new Error("Cannot vary an unavailable gross-income assumption.");
-      }
-      grossIncome.monthlyCents = value;
-    },
-  },
-  {
-    inputPath: "finances.destination.housingCost.monthlyCents",
-    read: (scenario) => scenario.finances.destination.housingCost,
-    write: (scenario, value) => {
-      scenario.finances.destination.housingCost.monthlyCents = value;
-    },
-  },
-  {
-    inputPath:
-      "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
-    read: (scenario) =>
-      scenario.finances.destination.recurringExpensesExcludingHousing,
-    write: (scenario, value) => {
-      scenario.finances.destination.recurringExpensesExcludingHousing.monthlyCents =
-        value;
-    },
-  },
-  {
-    inputPath: "finances.destination.retainedPropertyNet.monthlyCents",
-    read: (scenario) => scenario.finances.destination.retainedPropertyNet,
-    write: (scenario, value) => {
-      scenario.finances.destination.retainedPropertyNet.monthlyCents = value;
-    },
-  },
-];
-
-const cloneScenario = (
-  scenario: ScenarioInput | MoveWiseScoreEvaluation["scenarioInput"],
-): ScenarioInput => JSON.parse(JSON.stringify(scenario)) as ScenarioInput;
 
 const reevaluate = (
   evaluation: MoveWiseScoreEvaluation,
@@ -130,25 +45,9 @@ export const evaluateMoveWiseScore = (
   }
 
   const pointScore = calculateMoveWiseScorePoint(decisionProfile);
-  const mutableScenarioInput = cloneScenario(scenarioInput);
-  const rangedInputs = RANGE_DESCRIPTORS.flatMap((descriptor) => {
-    const range = descriptor.read(mutableScenarioInput)?.plausibleRangeCents;
-    return range !== null && range !== undefined && range.min < range.max
-      ? [{ ...descriptor, range }]
-      : [];
-  });
-  if (rangedInputs.length === 0) return pointScore;
-
-  let endpointScenarios = [mutableScenarioInput];
-  rangedInputs.forEach((descriptor) => {
-    endpointScenarios = endpointScenarios.flatMap((scenario) =>
-      [descriptor.range.min, descriptor.range.max].map((value) => {
-        const endpoint = cloneScenario(scenario);
-        descriptor.write(endpoint, value);
-        return endpoint;
-      }),
-    );
-  });
+  const { variedInputPaths, scenarios: endpointScenarios } =
+    enumeratePlausibleFinancialEndpoints(scenarioInput);
+  if (endpointScenarios.length === 0) return pointScore;
 
   const endpoints = endpointScenarios
     .map((scenario) => {
@@ -189,7 +88,7 @@ export const evaluateMoveWiseScore = (
         min: minimum.value,
         max: maximum.value,
         method: "plausible_financial_endpoints",
-        variedInputPaths: rangedInputs.map(({ inputPath }) => inputPath).sort(),
+        variedInputPaths,
         minInputFingerprintSha256: minimum.inputFingerprintSha256,
         maxInputFingerprintSha256: maximum.inputFingerprintSha256,
       },

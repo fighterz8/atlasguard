@@ -28,6 +28,7 @@ export type DeterministicModelResult = Readonly<{
   activeBlockerCodes: readonly string[];
   rangeBlockerCodes: readonly string[];
   cautionCodes: readonly string[];
+  rangeCautionCodes: readonly string[];
   conditionalRequirementIds: readonly string[];
   unmetRequirementIds: readonly string[];
   range: Readonly<{ min: number; max: number }> | null;
@@ -247,6 +248,7 @@ const evaluatePoint = (input: ParsedModelInput): DeterministicModelResult => {
     activeBlockerCodes,
     rangeBlockerCodes: [],
     cautionCodes,
+    rangeCautionCodes: [],
     conditionalRequirementIds,
     unmetRequirementIds,
     range: null,
@@ -290,6 +292,44 @@ const deepFreeze = <Value>(value: Value): DeepReadonly<Value> => {
   return value as DeepReadonly<Value>;
 };
 
+export const applyDeterministicModelEndpointRange = (
+  point: DeterministicModelResult,
+  endpointResults: readonly DeterministicModelResult[],
+): DeterministicModelResult => {
+  if (endpointResults.length === 0) {
+    throw new Error("Deterministic-model range evaluation requires endpoints.");
+  }
+  const rangeBlockerCodes = Array.from(
+    new Set(
+      endpointResults.flatMap(({ activeBlockerCodes }) => activeBlockerCodes),
+    ),
+  ).sort();
+  const rangeCautionCodes = Array.from(
+    new Set(endpointResults.flatMap(({ cautionCodes }) => cautionCodes)),
+  ).sort();
+  const values = endpointResults.map(({ value }) => value);
+  const crossesRangeBlocker =
+    rangeBlockerCodes.length > 0 && point.activeBlockerCodes.length === 0;
+  const value = crossesRangeBlocker ? Math.min(point.value, 59) : point.value;
+
+  return deepFreeze({
+    ...point,
+    value,
+    band: bandFor(value),
+    condition: crossesRangeBlocker ? "promising_if" : point.condition,
+    stability:
+      Math.min(...values) === Math.max(...values)
+        ? "stable"
+        : "assumption_sensitive",
+    appliedCap: crossesRangeBlocker
+      ? Math.min(point.appliedCap ?? 59, 59)
+      : point.appliedCap,
+    range: { min: Math.min(...values), max: Math.max(...values) },
+    rangeBlockerCodes,
+    rangeCautionCodes,
+  });
+};
+
 export class DeterministicModelPreflightError extends Error {
   constructor(message: string) {
     super(message);
@@ -319,31 +359,12 @@ const evaluateParsedModel = (
       destinationMonthlyCushionRangeCents: null,
     }),
   );
-  const rangeBlockerCodes = Array.from(
-    new Set(
-      endpointResults.flatMap(({ activeBlockerCodes }) => activeBlockerCodes),
-    ),
-  ).sort();
   const point = evaluatePoint({
     ...input,
     destinationMonthlyCushionCents: null,
     destinationMonthlyCushionRangeCents: null,
   });
-  const values = endpointResults.map(({ value }) => value);
-  const value =
-    rangeBlockerCodes.length > 0 ? Math.min(point.value, 59) : point.value;
-  return deepFreeze({
-    ...point,
-    value,
-    band: bandFor(value),
-    condition: rangeBlockerCodes.length > 0 ? "promising_if" : point.condition,
-    stability:
-      Math.min(...values) === Math.max(...values)
-        ? "stable"
-        : "assumption_sensitive",
-    range: { min: Math.min(...values), max: Math.max(...values) },
-    rangeBlockerCodes,
-  });
+  return applyDeterministicModelEndpointRange(point, endpointResults);
 };
 
 export const evaluateDeterministicModelCalibration = (
