@@ -12,7 +12,7 @@ import type {
   VerifiedResearchEvaluationResult,
 } from "@workspace/contracts";
 import {
-  evaluateMoveWiseAnalysis,
+  evaluateMoveWiseRule,
   evaluateResearchMoveDecision,
 } from "@workspace/decision-core";
 
@@ -226,7 +226,7 @@ export const createResearchResultsViewModel = (
   result: VerifiedResearchEvaluationResult = evaluateResearchScenario(),
 ) => {
   const profile = result.decisionProfile;
-  const analysis = evaluateMoveWiseAnalysis(result);
+  const { analysis } = evaluateMoveWiseRule({ evaluation: result });
   const housingContext = getResearchMetroHousingContext(
     profile.scenario.origin.slug,
     profile.scenario.destination.slug,
