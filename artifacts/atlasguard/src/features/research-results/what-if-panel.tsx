@@ -97,11 +97,17 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
   };
 
   return (
-    <section aria-labelledby="what-if-heading" className="panel lg:col-span-2">
+    <section
+      aria-labelledby="what-if-heading"
+      className="border-t border-slate-300 py-12 sm:py-16"
+    >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-2xl">
           <p className="eyebrow">Assumption sensitivity</p>
-          <h2 id="what-if-heading" className="section-heading">
+          <h2
+            id="what-if-heading"
+            className="mt-3 font-serif text-4xl tracking-[-0.035em] text-slate-950 sm:text-5xl"
+          >
             See what changes the answer
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -109,16 +115,16 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
             valid amount reruns the same decision engine immediately.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-teal-800">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
           <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
-          Deterministic—not a probability
+          Recalculates from the same inputs
         </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="space-y-6">
           {model.controls.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
+            <div className="border-y border-slate-200 py-5 text-sm leading-6 text-slate-600">
               All destination amounts were marked confirmed. Edit an assumption
               if you want to test a different estimate.
             </div>
@@ -126,7 +132,7 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
           {model.controls.map((control) => (
             <div
               key={control.id}
-              className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+              className="border-b border-slate-200 pb-6 last:border-0"
             >
               <div className="flex items-start justify-between gap-4">
                 <label
@@ -157,7 +163,7 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
                     updateInput(control.id, event.currentTarget.value)
                   }
                   onBlur={() => restoreInput(control.id)}
-                  className="control-input pl-7 tabular-nums"
+                  className="control-input bg-white pl-7 tabular-nums"
                 />
               </div>
             </div>
@@ -168,18 +174,20 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                 Exact decision-changing thresholds
               </p>
-              <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <ul className="mt-3 divide-y divide-slate-200 border-y border-slate-200">
                 {model.thresholds.map((threshold) => (
                   <li
                     key={threshold.id}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600"
+                    className="grid gap-1 py-3 text-xs leading-5 text-slate-600 sm:grid-cols-[1fr_auto] sm:gap-4"
                   >
-                    <strong className="block text-slate-950">
+                    <strong className="text-slate-950">
                       {threshold.label}
                     </strong>
-                    {threshold.operator} {threshold.threshold}
-                    <span className="mt-1 block text-slate-500">
-                      Changes to {threshold.changesConditionTo}
+                    <span className="sm:text-right">
+                      {threshold.operator} {threshold.threshold}
+                      <span className="ml-1 text-slate-500">
+                        → {threshold.changesConditionTo}
+                      </span>
                     </span>
                   </li>
                 ))}
@@ -190,7 +198,7 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
 
         <div
           aria-live="polite"
-          className="flex min-h-64 flex-col rounded-2xl bg-slate-950 p-5 text-white"
+          className="flex min-h-64 flex-col bg-slate-950 p-5 text-white sm:p-6"
         >
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-teal-300">
             {isUpdating ? (

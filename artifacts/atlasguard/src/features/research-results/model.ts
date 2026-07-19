@@ -1,4 +1,6 @@
 import {
+  compareResearchMetroClimateRatings,
+  getResearchMetroClimateRating,
   loadLosAngelesToSeattleResearchBenchmark,
   loadLosAngelesToSeattleHousingContext,
   losAngelesToSeattleBalancedResearchScenario,
@@ -61,7 +63,7 @@ const findingText = (finding: Finding) =>
 
 const nextStepCopy: Record<string, string> = {
   review_decision_evidence:
-    "Review the source evidence and add the missing factors that matter to this household.",
+    "Add any household factors that could materially change day-to-day life.",
   resolve_negative_target_cushion:
     "Change income, housing, or recurring-expense assumptions until the destination budget is viable.",
   verify_target_housing_burden:
@@ -145,6 +147,18 @@ const evaluateResearchScenario = (values = baselineWhatIfValues) =>
     loadLosAngelesToSeattleResearchBenchmark("lower"),
   );
 
+const confidenceLabels = {
+  limited: "Limited evidence",
+  moderate: "Moderate evidence",
+  high: "High confidence",
+} as const;
+
+const stabilityLabels = {
+  assumption_sensitive: "Assumption sensitive",
+  stable: "Stable across estimates",
+  not_evaluated: "Not evaluated",
+} as const;
+
 export const createResearchResultsViewModel = (
   result: VerifiedResearchEvaluationResult = evaluateResearchScenario(),
 ) => {
@@ -182,6 +196,77 @@ export const createResearchResultsViewModel = (
   }
 
   const financialChange = profile.financialPosition.change;
+  const originFinances = profile.financialPosition.origin;
+  const destinationFinances = profile.financialPosition.destination;
+  const financialRows = [
+    {
+      id: "monthly_cushion",
+      label: "Monthly cushion",
+      originValue: formatMoney(originFinances.monthlyCushionCents),
+      destinationValue: formatMoney(destinationFinances.monthlyCushionCents),
+      deltaValue: formatMoney(financialChange.monthlyCushionDeltaCents),
+      emphasis: true,
+    },
+    {
+      id: "take_home_income",
+      label: "Take-home income",
+      originValue: formatMoney(originFinances.monthlyTakeHomeIncomeCents),
+      destinationValue: formatMoney(
+        destinationFinances.monthlyTakeHomeIncomeCents,
+      ),
+      deltaValue: formatMoney(
+        destinationFinances.monthlyTakeHomeIncomeCents -
+          originFinances.monthlyTakeHomeIncomeCents,
+      ),
+      emphasis: false,
+    },
+    {
+      id: "housing_cost",
+      label: "Housing",
+      originValue: formatMoney(originFinances.monthlyHousingCostCents),
+      destinationValue: formatMoney(
+        destinationFinances.monthlyHousingCostCents,
+      ),
+      deltaValue: formatMoney(
+        destinationFinances.monthlyHousingCostCents -
+          originFinances.monthlyHousingCostCents,
+      ),
+      emphasis: false,
+    },
+    {
+      id: "recurring_expenses",
+      label: "Other recurring expenses",
+      originValue: formatMoney(originFinances.monthlyRecurringExpensesCents),
+      destinationValue: formatMoney(
+        destinationFinances.monthlyRecurringExpensesCents,
+      ),
+      deltaValue: formatMoney(
+        destinationFinances.monthlyRecurringExpensesCents -
+          originFinances.monthlyRecurringExpensesCents,
+      ),
+      emphasis: false,
+    },
+    ...(originFinances.monthlyRetainedPropertyNetCents !== 0 ||
+    destinationFinances.monthlyRetainedPropertyNetCents !== 0
+      ? [
+          {
+            id: "retained_property_net",
+            label: "Retained-property net",
+            originValue: formatMoney(
+              originFinances.monthlyRetainedPropertyNetCents,
+            ),
+            destinationValue: formatMoney(
+              destinationFinances.monthlyRetainedPropertyNetCents,
+            ),
+            deltaValue: formatMoney(
+              destinationFinances.monthlyRetainedPropertyNetCents -
+                originFinances.monthlyRetainedPropertyNetCents,
+            ),
+            emphasis: false,
+          },
+        ]
+      : []),
+  ];
   const financialReading =
     financialChange.monthlyCushionDeltaCents === 0
       ? "The evaluated finances produce equal monthly cushions, so money does not favor either side."
@@ -200,7 +285,27 @@ export const createResearchResultsViewModel = (
     climateMetric.transformation.preferredDirection === "lower"
       ? "fewer hot days"
       : "more hot days";
-  const climateInterpretation = `For a preference for ${heatPreference}, the registered transformation classifies the station-normal change as ${climatePriority.classification}. The station ranges are shown because these proxies are not metro-wide forecasts.`;
+  const climateComparison = compareResearchMetroClimateRatings(
+    profile.scenario.origin.slug,
+    profile.scenario.destination.slug,
+  );
+  const originClimate = getResearchMetroClimateRating(
+    profile.scenario.origin.slug,
+  );
+  const destinationClimate = getResearchMetroClimateRating(
+    profile.scenario.destination.slug,
+  );
+  if (
+    climatePriority.weight !== 0 &&
+    (climateComparison === null ||
+      originClimate === null ||
+      destinationClimate === null)
+  ) {
+    throw new Error(
+      "An included climate priority requires lightweight ratings for both metros.",
+    );
+  }
+  const climateInterpretation = `For your preference for ${heatPreference}, the destination climate ${climatePriority.classification === "similar" ? "does not create a meaningful advantage" : climatePriority.classification}.`;
 
   if (
     housingContext.origin.cbsaCode !== profile.scenario.origin.cbsaCode ||
@@ -221,6 +326,13 @@ export const createResearchResultsViewModel = (
       destinationMetro: profile.scenario.destination.label,
     },
     condition: conditionCopy[profile.condition.value],
+    decisionMeta: {
+      routeLabel: `${profile.scenario.origin.selectedPlace.city} to ${profile.scenario.destination.selectedPlace.city}`,
+      monthlyDifference: formatMoney(financialChange.monthlyCushionDeltaCents),
+      financialDirection: financialChange.classification,
+      confidenceLabel: confidenceLabels[profile.confidence.level],
+      stabilityLabel: stabilityLabels[profile.stability.level],
+    },
     confidence: {
       level: profile.confidence.level,
       explanation:
@@ -292,6 +404,9 @@ export const createResearchResultsViewModel = (
       classification: financialChange.classification,
       reading: financialReading,
     },
+    comparison: {
+      financialRows,
+    },
     housingContext: {
       decisionUse: housingContext.decisionUse,
       boundary: "Area context—not your budget",
@@ -337,17 +452,15 @@ export const createResearchResultsViewModel = (
       climatePriority.weight === 0
         ? null
         : {
-            label: "Days above 90°F",
+            label: "Climate",
             preference: heatPreference,
-            originValue: `${climateMetric.originValue.toFixed(1)} days/year`,
-            destinationValue: `${climateMetric.destinationValue.toFixed(1)} days/year`,
-            originRange: `${selection.origin.min.toFixed(1)}–${selection.origin.max.toFixed(1)} days`,
-            destinationRange: `${selection.destination.min.toFixed(1)}–${selection.destination.max.toFixed(1)} days`,
-            originStation: climateMetric.geographies.origin.label,
-            destinationStation: climateMetric.geographies.destination.label,
+            originSummary: originClimate?.summary ?? "",
+            destinationSummary: destinationClimate?.summary ?? "",
+            traitChanges:
+              climateComparison?.traits.map(({ description }) => description) ??
+              [],
             classification: climatePriority.classification,
             weight: climatePriority.weight,
-            quality: climateMetric.quality.grade.value,
             interpretation: climateInterpretation,
           },
     findings: {
@@ -356,9 +469,14 @@ export const createResearchResultsViewModel = (
       blockers: profile.findings.blockers.map(findingText),
       assumptions: profile.findings.assumptions.map(findingText),
     },
-    nextSteps: profile.nextSteps.map(
-      (step) => nextStepCopy[step.code] ?? step.code.replaceAll("_", " "),
-    ),
+    nextSteps: [
+      nextStepCopy.review_decision_evidence,
+      ...profile.nextSteps
+        .filter(({ code }) => code !== "review_decision_evidence")
+        .map(
+          (step) => nextStepCopy[step.code] ?? step.code.replaceAll("_", " "),
+        ),
+    ],
     evidence: {
       definition: commuteMetric.definition,
       dataset: commuteMetric.source.dataset,
@@ -379,21 +497,24 @@ export const createResearchResultsViewModel = (
       rawSnapshotSha256: profile.scenario.benchmarkSnapshot.rawSnapshot.sha256,
       delineationVersion: profile.scenario.benchmarkSnapshot.delineationVersion,
     },
-    climateEvidence: {
-      definition: climateMetric.definition,
-      dataset: climateMetric.source.dataset,
-      publisher: climateMetric.source.publisher,
-      sourceUrl: climateMetric.source.sourceUrl,
-      termsUrl: climateMetric.source.termsUrl,
-      observationPeriod: climateMetric.observationPeriod,
-      releasedOn: climateMetric.releasedOn,
-      verifiedOn: climateMetric.verifiedOn,
-      originGeography: climateMetric.geographies.origin.label,
-      destinationGeography: climateMetric.geographies.destination.label,
-      selectionRationale: selection.rationale,
-      transformationId: climateMetric.transformation.id,
-      transformationVersion: climateMetric.transformation.version,
-    },
+    climateEvidence:
+      climatePriority.weight === 0
+        ? null
+        : {
+            definition: climateMetric.definition,
+            dataset: climateMetric.source.dataset,
+            publisher: climateMetric.source.publisher,
+            sourceUrl: climateMetric.source.sourceUrl,
+            termsUrl: climateMetric.source.termsUrl,
+            observationPeriod: climateMetric.observationPeriod,
+            releasedOn: climateMetric.releasedOn,
+            verifiedOn: climateMetric.verifiedOn,
+            originGeography: climateMetric.geographies.origin.label,
+            destinationGeography: climateMetric.geographies.destination.label,
+            selectionRationale: selection.rationale,
+            transformationId: climateMetric.transformation.id,
+            transformationVersion: climateMetric.transformation.version,
+          },
   };
 };
 

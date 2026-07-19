@@ -46,6 +46,13 @@ describe("research results view model", () => {
     expect(model.condition.label).toBe("No clear advantage yet");
     expect(model.confidence.level).toBe("limited");
     expect(model.stability.level).toBe("assumption_sensitive");
+    expect(model.decisionMeta).toEqual({
+      routeLabel: "Los Angeles to Seattle",
+      monthlyDifference: "$0",
+      financialDirection: "similar",
+      confidenceLabel: "Limited evidence",
+      stabilityLabel: "Assumption sensitive",
+    });
   });
 
   it("keeps illustrative finances separate from the benchmark metric", () => {
@@ -65,6 +72,40 @@ describe("research results view model", () => {
     expect(model.condition.label).toBe("No clear advantage yet");
     expect(model.finances.origin.housing).toBe("$2,000");
     expect(model.finances.destination.housing).toBe("$2,000");
+    expect(model.comparison.financialRows).toEqual([
+      {
+        id: "monthly_cushion",
+        label: "Monthly cushion",
+        originValue: "$1,500",
+        destinationValue: "$1,500",
+        deltaValue: "$0",
+        emphasis: true,
+      },
+      {
+        id: "take_home_income",
+        label: "Take-home income",
+        originValue: "$5,000",
+        destinationValue: "$5,000",
+        deltaValue: "$0",
+        emphasis: false,
+      },
+      {
+        id: "housing_cost",
+        label: "Housing",
+        originValue: "$2,000",
+        destinationValue: "$2,000",
+        deltaValue: "$0",
+        emphasis: false,
+      },
+      {
+        id: "recurring_expenses",
+        label: "Other recurring expenses",
+        originValue: "$1,500",
+        destinationValue: "$1,500",
+        deltaValue: "$0",
+        emphasis: false,
+      },
+    ]);
   });
 
   it("exposes verifiable source lineage", () => {
@@ -74,11 +115,8 @@ describe("research results view model", () => {
     expect(model.evidence.observationPeriod).toBe("2024 ACS 1-year estimates");
     expect(model.evidence.snapshotSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(model.evidence.rawSnapshotSha256).toMatch(/^[a-f0-9]{64}$/);
-    expect(model.climateEvidence.publisher).toContain("NOAA");
-    expect(model.climateEvidence.observationPeriod).toBe(
-      "1991-2020 climate normal",
-    );
-    expect(model.nextSteps).toHaveLength(3);
+    expect(model.climateEvidence).toBeNull();
+    expect(model.nextSteps).toHaveLength(4);
     expect(model.housingContext.evidence.tableId).toBe("B25064");
     expect(model.housingContext.evidence.snapshotSha256).toMatch(
       /^[a-f0-9]{64}$/,
@@ -100,12 +138,29 @@ describe("research results view model", () => {
     expect(model.stability.level).not.toBe("not_evaluated");
     expect(model.climate).toMatchObject({
       preference: "fewer hot days",
-      originValue: "25.6 days/year",
-      destinationValue: "2.1 days/year",
-      originRange: "4.8–25.6 days",
-      destinationRange: "2.1–3.8 days",
       classification: "improves",
+      originSummary: expect.stringContaining("Warm to hot"),
+      destinationSummary: expect.stringContaining("Mild summers"),
+      traitChanges: [
+        "noticeably milder summers",
+        "noticeably colder winters",
+        "noticeably more humid",
+        "noticeably wetter",
+        "much less sunny",
+      ],
     });
+    expect(model.climate).not.toHaveProperty("originStation");
+    expect(model.climate).not.toHaveProperty("destinationStation");
+    expect(model.climateEvidence).toMatchObject({
+      publisher: expect.stringContaining("NOAA"),
+      observationPeriod: "1991-2020 climate normal",
+    });
+    expect(model.comparison.financialRows.map(({ id }) => id)).toContain(
+      "retained_property_net",
+    );
+    expect(model.nextSteps[0]).toBe(
+      "Add any household factors that could materially change day-to-day life.",
+    );
   });
 
   it("omits the commute card when the user says it does not matter", () => {
@@ -155,6 +210,9 @@ describe("research results view model", () => {
     if (!evaluation.success) return;
     expect(
       createResearchResultsViewModel(evaluation.evaluation).climate,
+    ).toBeNull();
+    expect(
+      createResearchResultsViewModel(evaluation.evaluation).climateEvidence,
     ).toBeNull();
   });
 
