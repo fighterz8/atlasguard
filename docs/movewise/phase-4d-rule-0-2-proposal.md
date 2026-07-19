@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft proposal for review. This document translates the accepted 24-fixture human calibration corpus into exact mechanics for the next score-rule design gate. It does not implement runtime rule `0.2.0`, change Wizard questions, expose new API behavior, push, merge, or deploy.
+Executable internal candidate for review. This document translates the accepted 24-fixture human calibration corpus into exact mechanics for the next score-rule design gate. The candidate is not exported from the decision-core package entry point and is not selected by the Wizard, Results, API, or production. Live score rule `0.1.0` remains unchanged.
 
 The accepted corpus is now machine-readable in `lib/decision-core/src/fixtures/deterministic-model-calibration-v1.ts`, verified by `lib/contracts/src/deterministic-model-calibration.ts`, and locked by `lib/decision-core/src/deterministic-model-calibration.test.ts`.
 
@@ -29,12 +29,33 @@ Rule `0.2.0` should preserve the ADR-006 score contract and ADR-007 family-first
 
 ## Proposed mechanics
 
+The candidate begins at 50, sums the available contributions below, clamps to 1–100, and then applies the strictest active cap. Excluded, unavailable, or uncollected metrics contribute zero and never redistribute their unused budget.
+
+| Component / metric   |      Normal effect |      Strong effect | Component bound | Candidate status                           |
+| -------------------- | -----------------: | -----------------: | --------------: | ------------------------------------------ |
+| Financial Security   | materiality-scaled | materiality-scaled |             ±30 | Available when cushion delta is supplied   |
+| Commute              |                 ±5 |                ±10 |             ±10 | Available, excluded, or unavailable        |
+| Climate              |                 ±5 |                ±10 |             ±10 | Available, excluded, or unavailable        |
+| Household continuity |                ±10 |                ±15 |             ±30 | Available when user-supplied signals exist |
+| Opportunity Context  |                  0 |                  0 |               0 | Deliberately unavailable in this candidate |
+
+Score bands remain `1–39` worse fit, `40–59` mixed or similar, `60–79` better fit, and `80–100` substantially better fit. Conditions are selected after caps: active financial blocker → high financial risk; blocker-crossing range or unresolved essential → promising if; unmet essential or caution → no clear advantage; otherwise 80+ → likely a better move, 60+ → worth a closer look, and lower values → no clear advantage.
+
+Candidate caps are exact:
+
+- negative destination cushion: `39`;
+- destination housing burden at or above 50%: `59`;
+- low-cushion or 45%–under-50% housing caution: `59`;
+- unresolved or explicitly unmet essential: `59`;
+- strong user-declared household/personal continuity loss: `59`, without mislabeling it as a financial blocker;
+- blocker-crossing accepted range: point result capped at `59`, while both endpoint results remain visible.
+
 ### Financial Security
 
 - Keep negative destination cushion as an exact hard blocker beginning below `$0/month`.
 - Keep destination housing burden as an exact hard blocker beginning at `50%` of gross income.
-- Add a low-cushion caution zone below the hard blocker. Initial proposal: destination cushion above `$0/month` but below the greater of `$500/month` or `10%` of take-home income cannot produce the strongest favorable condition.
-- Add a pre-blocker housing caution zone. Initial proposal: destination housing burden at or above `45%` and below `50%` cannot trigger the hard cap, but must show a visible caution and prevents the strongest favorable condition unless other facts are exceptionally strong and Nick accepts that later.
+- Add a low-cushion caution zone below the hard blocker. The normalized candidate receives an explicit threshold; fixtures use `$500/month`. A later ScenarioInput adapter should derive the proposed real threshold as the greater of `$500/month` or `10%` of destination take-home income, which remains a review item rather than hidden candidate inference.
+- Add a pre-blocker housing caution zone. Initial proposal: destination housing burden at or above `45%` and below `50%` cannot trigger the hard blocker, but must show a visible caution and caps the candidate at a non-favorable result.
 - Treat childcare and other recurring household costs as exact financial inputs only. Do not add a second household penalty for the same cost increase.
 
 ### Household Fit
@@ -49,7 +70,7 @@ Rule `0.2.0` should preserve the ADR-006 score contract and ADR-007 family-first
 ### Opportunity Context
 
 - Begin with user-confirmed facts only: confirmed job, confirmed remote-work continuity, confirmed partner employment, or unconfirmed partner employment range.
-- Confirmed opportunity may contribute when it changes exact finances or continuity; salary alone is never enough if lived monthly cushion worsens.
+- Opportunity Context contributes zero in this candidate. Confirmed salary or job effects belong in exact finances; continuity may affect an essential branch. The same fact is never awarded a second opportunity score.
 - Unconfirmed partner employment that crosses a financial blocker remains conditional and reports both endpoints.
 - Do not add metro-level opportunity scores until a separate source and geography contract exists.
 
@@ -72,10 +93,12 @@ Rule `0.2.0` should preserve the ADR-006 score contract and ADR-007 family-first
 - `F11` proves an explicitly unmet essential caps favorability.
 - `F12` and `B06` require directional recomputation, not score reversal.
 - `B01` and `B04` preserve neutral baseline, missingness, exclusion, and unused budget behavior.
+- The exact candidate resolves accepted flexible bands by returning worse fit for `F12` and `I02`; `I04` also returns worse fit under the negative-cushion cap. Their user-facing conditions remain no clear advantage or high financial risk as accepted.
 
-## Review gates before implementation
+## Review gates before runtime implementation
 
-- Nick accepts or edits the caution-zone thresholds.
-- Runtime `0.2.0` tests instantiate each accepted fixture against the evaluator and assert condition, band, blockers/caps, conditional state, and explanation signals.
-- Existing `0.1.0` behavior remains available for comparison until `0.2.0` is implemented and explicitly selected.
-- Browser comprehension checks prove that users can distinguish hard blockers, caution zones, unresolved essentials, and confirmed favorable results.
+- Nick accepts or edits the exact contribution budgets, caps, and caution-zone thresholds.
+- All 18 decision scenarios and 6 invariant fixtures pass against the internal candidate, including boundaries, endpoint reruns, determinism, direction, same-metro rejection, monotonicity, missingness/exclusion, and both essential-requirement branches.
+- Existing `0.1.0` behavior remains the only live evaluator until a separately approved adapter and score-contract version explicitly select `0.2.0`.
+- Wizard questions must declare their normalized effect and avoid double-counting financial facts before they can feed this candidate.
+- Browser comprehension checks must prove that users distinguish hard blockers, caution zones, unresolved essentials, strong tradeoffs, and confirmed favorable results.

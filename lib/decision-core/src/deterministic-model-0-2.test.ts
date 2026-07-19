@@ -53,6 +53,53 @@ describe("MoveWise deterministic rule 0.2.0 candidate", () => {
     }
   });
 
+  it("locks the exact synthetic point values without presenting them as user evidence", () => {
+    const values = Object.fromEntries(
+      deterministicModelCalibrationCorpus.fixtures.flatMap((fixture) =>
+        fixture.kind === "scenario"
+          ? [
+              [
+                fixture.id,
+                evaluateDeterministicModelCandidate(fixture.input).value,
+              ],
+            ]
+          : [],
+      ),
+    );
+
+    expect(values).toEqual({
+      F01: 39,
+      F02: 40,
+      F03: 100,
+      F04: 59,
+      F05: 59,
+      F06: 59,
+      F07: 59,
+      F08: 43,
+      F09: 59,
+      F10: 67,
+      F11: 59,
+      F12: 5,
+      I01: 90,
+      I02: 29,
+      I03: 50,
+      I04: 30,
+      I05: 59,
+      I06: 59,
+    });
+
+    const conditionalRange = deterministicModelCalibrationCorpus.fixtures.find(
+      ({ id }) => id === "F05",
+    );
+    expect(conditionalRange?.kind).toBe("scenario");
+    if (conditionalRange?.kind !== "scenario") {
+      throw new Error("F05 must remain a scenario fixture.");
+    }
+    expect(
+      evaluateDeterministicModelCandidate(conditionalRange.input).range,
+    ).toEqual({ min: 39, max: 65 });
+  });
+
   it("locks the neutral baseline and condition ladder", () => {
     expect(evaluateDeterministicModelCandidate(baseInput())).toMatchObject({
       ruleVersion: "0.2.0",
