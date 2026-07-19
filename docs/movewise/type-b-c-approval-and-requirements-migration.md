@@ -11,6 +11,8 @@
 **Approval basis:** Nick instructed the team to “Begin implementation” immediately after receiving the July 17 roadmap, which explicitly required approval of this Type B/C redesign before implementation.
 **Applies to:** MoveWise MVP and all implementation after this date
 
+**Amended by:** [MW-CHG-002 Product Contract 2.0 Requirements Migration](./product-contract-2-0-requirements-migration.md)
+
 ## 1. Purpose and authority
 
 This record makes the product-contract change explicit and prevents implementation from drifting between two incompatible designs.
@@ -280,3 +282,5 @@ The generated OpenAPI contract is intentionally structural. Runtime request pars
 - [ADR-003: Make Zod runtime schemas the canonical contract source](../decisions/ADR-003-canonical-runtime-schema.md)
 - [ADR-004: Separate protected evaluation traces from opt-in saved scenarios](../decisions/ADR-004-protected-eval-traces.md)
 - [ADR-005: Keep a TypeScript modular monolith and defer AWS-specific infrastructure](../decisions/ADR-005-typescript-modular-monolith-deployment.md)
+- [ADR-006: Add a relative MoveWise quality-of-life score](../decisions/ADR-006-relative-movewise-quality-score.md)
+- [MW-CHG-002: Product Contract 2.0 Requirements Migration](./product-contract-2-0-requirements-migration.md)

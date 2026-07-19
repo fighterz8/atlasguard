@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted; amended by [ADR-006](./ADR-006-relative-movewise-quality-score.md)
 
 ## Date
 
@@ -65,7 +65,7 @@ A deterministic-only product is viable, but a verified optional paraphrase remai
 - The Wizard and Results contracts change; the legacy requirements remain historical evidence, not implementation authority.
 - Verifier checks are adapted from three-score fidelity to complete Decision Profile fidelity.
 - The 30–40-scenario regression suite remains required before the optional AI path is complete.
-- Any future scientific or universal Move Score requires a new ADR plus calibration evidence.
+- Any future scientific or universal Move Score requires a new ADR plus calibration evidence. ADR-006 does not introduce either: it adds a personalized origin-relative summary derived from the verified Decision Profile.
 
 ## Revisit When
 
