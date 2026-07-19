@@ -58,6 +58,8 @@ Runtime activation is prohibited until one versioned formula passes calibration,
 
 The initial internal formula, estimate-range method, insight selector, and completed technical gates are recorded in [MoveWise Phase 4A](../movewise/phase-4a-score-calibration.md). Score rule version `0.1.0` remains calibration-only. [MoveWise Phase 4B](../movewise/phase-4b-score-results-activation.md) adds a default-off research Results presentation candidate with explicit interpretation safeguards; the human-comprehension gate remains open, so neither phase authorizes broader/public Results activation, public API exposure, or production use.
 
+[MoveWise Phase 4D](../movewise/phase-4d-rule-0-2-proposal.md) records the accepted family-first rule `0.2.0` mechanics. [MoveWise Phase 4E](../movewise/phase-4e-controlled-rule-selection.md) adds a typed internal selector that defaults omitted versions to `0.1.0` and requires explicit, complete normalized input for `0.2.0`. This is an internal integration boundary, not product or production activation.
+
 ## Alternatives Considered
 
 ### Keep the Decision Profile without a score

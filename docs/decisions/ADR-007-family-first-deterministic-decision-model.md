@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — product direction and all 24 calibration outcomes confirmed; exact rule `0.2.0` mechanics remain pending.
+Accepted — product direction, all 24 calibration outcomes, and exact rule `0.2.0` mechanics confirmed; product activation remains pending.
 
 ## Date
 
@@ -33,7 +33,7 @@ MoveWise will evolve through a transparent, versioned deterministic model rather
 - Missing evidence does not redistribute contribution budgets or masquerade as similarity.
 - Every material result remains traceable to accepted inputs, evidence, transformations, rules, and versions.
 - The strongest favorable condition is `Likely a better move`, qualified by `under these assumptions` in the final review.
-- No score rule `0.2.0` implementation begins until accepted outcomes are translated into machine-readable fixtures and exact mechanics pass a separate design gate.
+- Rule `0.2.0` may be selected internally only through a typed, fail-closed boundary with complete normalized inputs. It cannot become the Wizard, Results, public API, or production default until its adapter, lineage, explanation, and comprehension gates pass.
 
 ## Alternatives Considered
 
@@ -68,3 +68,4 @@ MoveWise will evolve through a transparent, versioned deterministic model rather
 - Family factors should begin with user-supplied continuity and essential-requirement facts; unsupported external “family quality” metrics remain prohibited.
 - The model may return mixed, conditional, or incomplete results more often than a conventional recommendation engine.
 - New weights, caps, and contribution rules require a new score version, boundary corpus, monotonicity checks, reversed-route checks, comprehension review, and an accepted amendment to this ADR.
+- Phase 4E provides an internal selector: omitted versions preserve `0.1.0`; `0.2.0` requires explicit selection and complete normalized household/essential inputs. This makes the accepted rule executable without inventing missing Wizard data or activating it for users.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Executable internal candidate for review. This document translates the accepted 24-fixture human calibration corpus into exact mechanics for the next score-rule design gate. The candidate is not exported from the decision-core package entry point and is not selected by the Wizard, Results, API, or production. Live score rule `0.1.0` remains unchanged.
+Accepted internal rule. This document translates the accepted 24-fixture human calibration corpus into exact mechanics for rule `0.2.0`. Nick accepted the contribution budgets, caps, and caution thresholds on 2026-07-19. Phase 4E exports the evaluator only through a typed, fail-closed selector; it is not selected by the Wizard, public API, preview, or production. Research Results still omit a version and therefore select live score rule `0.1.0`.
 
 The accepted corpus is now machine-readable in `lib/decision-core/src/fixtures/deterministic-model-calibration-v1.ts`, verified by `lib/contracts/src/deterministic-model-calibration.ts`, and locked by `lib/decision-core/src/deterministic-model-calibration.test.ts`.
 
@@ -95,10 +95,10 @@ Candidate caps are exact:
 - `B01` and `B04` preserve neutral baseline, missingness, exclusion, and unused budget behavior.
 - The exact candidate resolves accepted flexible bands by returning worse fit for `F12` and `I02`; `I04` also returns worse fit under the negative-cushion cap. Their user-facing conditions remain no clear advantage or high financial risk as accepted.
 
-## Review gates before runtime implementation
+## Gate status and remaining product activation
 
-- Nick accepts or edits the exact contribution budgets, caps, and caution-zone thresholds.
-- All 18 decision scenarios and 6 invariant fixtures pass against the internal candidate, including boundaries, endpoint reruns, determinism, direction, same-metro rejection, monotonicity, missingness/exclusion, and both essential-requirement branches.
-- Existing `0.1.0` behavior remains the only live evaluator until a separately approved adapter and score-contract version explicitly select `0.2.0`.
+- Nick accepted the exact contribution budgets, caps, and caution-zone thresholds.
+- All 18 decision scenarios and 6 invariant fixtures pass against the accepted evaluator, including boundaries, endpoint reruns, determinism, direction, same-metro rejection, monotonicity, missingness/exclusion, and both essential-requirement branches.
+- Phase 4E adds explicit internal rule selection while keeping omitted-version Results behavior on `0.1.0`.
 - Wizard questions must declare their normalized effect and avoid double-counting financial facts before they can feed this candidate.
 - Browser comprehension checks must prove that users distinguish hard blockers, caution zones, unresolved essentials, strong tradeoffs, and confirmed favorable results.
