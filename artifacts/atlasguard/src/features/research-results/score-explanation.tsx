@@ -90,98 +90,60 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
         </div>
       ) : null}
 
-      <div className="mt-10 grid gap-12 lg:grid-cols-2 lg:gap-20">
-        <div aria-labelledby="score-factors-heading">
-          <h3
-            id="score-factors-heading"
-            className="text-lg font-semibold text-slate-950"
-          >
-            Strongest supported signals
-          </h3>
-          <div className="mt-4 border-y border-slate-300">
-            {score.strongestImprovement ? (
-              <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 py-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                    Biggest lift
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-950">
-                    {score.strongestImprovement.label}
-                  </p>
-                </div>
-                <p className="self-center text-sm font-semibold tabular-nums text-teal-900">
-                  {contributionLabel(score.strongestImprovement.contribution)}
+      <div aria-labelledby="score-factors-heading" className="mt-10 max-w-2xl">
+        <h3
+          id="score-factors-heading"
+          className="text-lg font-semibold text-slate-950"
+        >
+          Strongest supported signals
+        </h3>
+        <div className="mt-4 border-y border-slate-300">
+          {score.strongestImprovement ? (
+            <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                  Biggest lift
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">
+                  {score.strongestImprovement.label}
                 </p>
               </div>
-            ) : (
-              <div className="border-b border-slate-200 py-4 text-sm text-slate-600">
-                No supported lift at the point estimates.
-              </div>
-            )}
-            {score.strongestTradeoff ? (
-              <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 py-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                    Biggest tradeoff
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-950">
-                    {score.strongestTradeoff.label}
-                  </p>
-                </div>
-                <p className="self-center text-sm font-semibold tabular-nums text-slate-800">
-                  {contributionLabel(score.strongestTradeoff.contribution)}
-                </p>
-              </div>
-            ) : (
-              <div className="border-b border-slate-200 py-4 text-sm text-slate-600">
-                No supported tradeoff at the point estimates.
-              </div>
-            )}
-            <div className="py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                Not scored yet
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-700">
-                {score.missingComponents.join(" · ")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div aria-labelledby="score-threshold-heading">
-          <h3
-            id="score-threshold-heading"
-            className="text-lg font-semibold text-slate-950"
-          >
-            Most decision-changing assumption
-          </h3>
-          {score.decisionChangingAssumption ? (
-            <div className="mt-4 border-y border-slate-300 py-5">
-              <p className="text-sm font-semibold text-slate-950">
-                {score.decisionChangingAssumption.label}
-              </p>
-              <p className="mt-2 font-serif text-3xl tracking-[-0.025em] text-slate-950">
-                {score.decisionChangingAssumption.operator}{" "}
-                <span className="tabular-nums">
-                  {score.decisionChangingAssumption.threshold}
-                </span>
-              </p>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                At that exact threshold, the Decision Profile changes to{" "}
-                <strong className="font-semibold text-slate-900">
-                  {score.decisionChangingAssumption.changesConditionTo}
-                </strong>
-                .{" "}
-                {score.decisionChangingAssumption.withinPlausibleRange
-                  ? "It falls inside your accepted estimate range."
-                  : "It falls outside the accepted estimate range."}
+              <p className="self-center text-sm font-semibold tabular-nums text-teal-900">
+                {contributionLabel(score.strongestImprovement.contribution)}
               </p>
             </div>
           ) : (
-            <p className="mt-4 border-y border-slate-300 py-5 text-sm leading-6 text-slate-600">
-              No exact financial threshold changes the current Decision Profile.
-            </p>
+            <div className="border-b border-slate-200 py-4 text-sm text-slate-600">
+              No supported lift at the point estimates.
+            </div>
           )}
+          {score.strongestTradeoff ? (
+            <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                  Biggest tradeoff
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">
+                  {score.strongestTradeoff.label}
+                </p>
+              </div>
+              <p className="self-center text-sm font-semibold tabular-nums text-slate-800">
+                {contributionLabel(score.strongestTradeoff.contribution)}
+              </p>
+            </div>
+          ) : (
+            <div className="border-b border-slate-200 py-4 text-sm text-slate-600">
+              No supported tradeoff at the point estimates.
+            </div>
+          )}
+          <div className="py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+              Not scored yet
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-700">
+              {score.missingComponents.join(" · ")}
+            </p>
+          </div>
         </div>
       </div>
 

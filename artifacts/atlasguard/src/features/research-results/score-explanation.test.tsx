@@ -22,7 +22,7 @@ describe("MoveWise score presentation", () => {
     expect(html).toContain("Not a probability");
   });
 
-  it("keeps score sensitivity, evidence, unavailable dimensions, and the closest threshold together", () => {
+  it("keeps score evidence together without duplicating the What-if thresholds", () => {
     const { score } = createResearchResultsViewModel();
     const html = renderToStaticMarkup(<ScoreExplanation score={score} />);
 
@@ -32,9 +32,9 @@ describe("MoveWise score presentation", () => {
     expect(html).toContain("Limited evidence");
     expect(html).toContain("Household fit");
     expect(html).toContain("Opportunity context");
-    expect(html).toContain("Destination housing");
-    expect(html).toContain("$1,750");
-    expect(html).toContain("Worth a closer look");
+    expect(html).not.toContain("Most decision-changing assumption");
+    expect(html).not.toContain("At that exact threshold");
+    expect(html).not.toContain("$1,750");
     expect(html).toContain("input.destination.housing");
     expect(html).toContain("Score rule 0.1.0");
   });

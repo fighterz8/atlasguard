@@ -81,14 +81,6 @@ describe("research results view model", () => {
       },
       strongestTradeoff: null,
       missingComponents: ["Household fit", "Opportunity context"],
-      decisionChangingAssumption: {
-        label: "Destination housing",
-        threshold: "$1,750",
-        operator: "at or below",
-        changesConditionTo: "Worth a closer look",
-        withinPlausibleRange: true,
-        evidenceRefs: ["input.destination.housing"],
-      },
       calculationEvidenceRefs: expect.arrayContaining([
         "benchmark.commute_time.acs1.2024.la_seattle",
         "input.destination.housing",

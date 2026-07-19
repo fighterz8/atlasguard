@@ -195,17 +195,6 @@ const scoreBlockerCopy = {
   },
 } as const;
 
-const scoreThresholdLabels: Record<string, string> = {
-  "finances.destination.takeHomeIncome.monthlyCents":
-    "Destination take-home income",
-  "finances.destination.grossIncome.monthlyCents": "Destination gross income",
-  "finances.destination.housingCost.monthlyCents": "Destination housing",
-  "finances.destination.recurringExpensesExcludingHousing.monthlyCents":
-    "Destination recurring expenses",
-  "finances.destination.retainedPropertyNet.monthlyCents":
-    "Retained-property monthly net",
-};
-
 export const createResearchResultsViewModel = (
   result: VerifiedResearchEvaluationResult = evaluateResearchScenario(),
 ) => {
@@ -468,34 +457,6 @@ export const createResearchResultsViewModel = (
       missingComponents: analysis.insights.missingComponents.map(
         (componentId) => scoreComponentLabels[componentId],
       ),
-      decisionChangingAssumption:
-        analysis.insights.decisionChangingAssumption === null
-          ? null
-          : {
-              label:
-                scoreThresholdLabels[
-                  analysis.insights.decisionChangingAssumption.inputPath
-                ] ?? analysis.insights.decisionChangingAssumption.inputPath,
-              threshold: formatMoney(
-                analysis.insights.decisionChangingAssumption.thresholdCents,
-              ),
-              operator:
-                analysis.insights.decisionChangingAssumption.operator ===
-                "at_or_above"
-                  ? "at least"
-                  : "at or below",
-              changesConditionTo:
-                conditionCopy[
-                  analysis.insights.decisionChangingAssumption
-                    .changesConditionTo
-                ].label,
-              withinPlausibleRange:
-                analysis.insights.decisionChangingAssumption
-                  .withinPlausibleRange,
-              evidenceRefs: [
-                ...analysis.insights.decisionChangingAssumption.evidenceRefs,
-              ],
-            },
       calculationEvidenceRefs: scoreCalculationEvidenceRefs,
       scoreVersion: analysis.score.scoreVersion,
     },
