@@ -50,7 +50,30 @@ const acceptedInput = () => {
   if (fixture?.kind !== "scenario") {
     throw new Error("F03 must remain a scenario fixture.");
   }
-  return clone(fixture.input);
+  const { householdSignals: _historicalSignals, ...historicalInput } = clone(
+    fixture.input,
+  );
+  return {
+    ...historicalInput,
+    householdMode: "family" as const,
+    householdSignals: [
+      { signalId: "space_fit" as const, impact: "positive" as const },
+      { signalId: "support_network" as const, impact: "positive" as const },
+      {
+        signalId: "childcare_continuity" as const,
+        impact: "excluded" as const,
+      },
+      {
+        signalId: "school_continuity" as const,
+        impact: "excluded" as const,
+      },
+      {
+        signalId: "required_services_continuity" as const,
+        impact: "excluded" as const,
+      },
+      { signalId: "car_free_access" as const, impact: "excluded" as const },
+    ],
+  };
 };
 
 describe("MoveWise rule selection", () => {

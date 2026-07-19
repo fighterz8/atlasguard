@@ -1,18 +1,18 @@
 import {
   MOVEWISE_SCORE_RULE_VERSION,
-  type DeterministicModelInput,
+  type DeterministicModelCalibrationInput,
 } from "@workspace/contracts";
 import { describe, expect, it } from "vitest";
 
 import {
   DeterministicModelPreflightError,
-  evaluateDeterministicModel,
+  evaluateDeterministicModelCalibration as evaluateDeterministicModel,
 } from "./deterministic-model-0-2";
 import { deterministicModelCalibrationCorpus } from "./fixtures/deterministic-model-calibration-v1";
 
 const baseInput = (
-  overrides: Partial<DeterministicModelInput> = {},
-): DeterministicModelInput => ({
+  overrides: Partial<DeterministicModelCalibrationInput> = {},
+): DeterministicModelCalibrationInput => ({
   originMetroSlug: "origin-metro",
   destinationMetroSlug: "destination-metro",
   monthlyCushionDeltaCents: 0,

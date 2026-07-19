@@ -1,8 +1,12 @@
 import {
+  DeterministicModelCalibrationInputSchema,
   DeterministicModelInputSchema,
   DETERMINISTIC_MODEL_RULE_VERSION,
 } from "@workspace/contracts";
-import type { DeterministicModelInput } from "@workspace/contracts";
+import type {
+  DeterministicModelCalibrationInput,
+  DeterministicModelInput,
+} from "@workspace/contracts";
 
 export type DeterministicModelResult = Readonly<{
   ruleVersion: "0.2.0";
@@ -31,12 +35,23 @@ export type DeterministicModelResult = Readonly<{
     financial: Readonly<{ status: string; contribution: number }>;
     commute: Readonly<{ status: string; contribution: number }>;
     climate: Readonly<{ status: string; contribution: number }>;
-    household: Readonly<{ status: string; contribution: number }>;
+    household: Readonly<{
+      status: "available" | "partial" | "excluded" | "unavailable";
+      contribution: number;
+      signals: readonly Readonly<{
+        signalId: string;
+        status: "available" | "excluded" | "unavailable";
+        contribution: number;
+      }>[];
+    }>;
     opportunity: Readonly<{ status: string; contribution: number }>;
   }>;
 }>;
 
 type Impact = DeterministicModelInput["commuteImpact"];
+type ParsedModelInput =
+  | DeterministicModelCalibrationInput
+  | DeterministicModelInput;
 
 const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value));
@@ -90,9 +105,20 @@ const statusForImpact = (
 ): "available" | "excluded" | "unavailable" =>
   impact === "excluded" || impact === "unavailable" ? impact : "available";
 
-const evaluatePoint = (
-  input: DeterministicModelInput,
-): DeterministicModelResult => {
+const householdStatusFor = (
+  signals: ParsedModelInput["householdSignals"],
+): DeterministicModelResult["metricContributions"]["household"]["status"] => {
+  const statuses = signals.map(({ impact }) => statusForImpact(impact));
+  if (statuses.includes("available")) {
+    return statuses.includes("unavailable") ? "partial" : "available";
+  }
+  if (statuses.includes("unavailable") || statuses.length === 0) {
+    return "unavailable";
+  }
+  return "excluded";
+};
+
+const evaluatePoint = (input: ParsedModelInput): DeterministicModelResult => {
   const activeBlockerCodes: string[] = [];
   const cautionCodes: string[] = [];
   if (
@@ -145,6 +171,11 @@ const evaluatePoint = (
     -30,
     30,
   );
+  const householdSignals = input.householdSignals.map((signal) => ({
+    signalId: signal.signalId,
+    status: statusForImpact(signal.impact),
+    contribution: householdContributionForImpact(signal.impact),
+  }));
 
   const conditionalRequirementIds = input.essentialRequirements
     .filter(({ status }) => status === "unconfirmed")
@@ -234,9 +265,9 @@ const evaluatePoint = (
         contribution: climateContribution,
       },
       household: {
-        status:
-          input.householdSignals.length === 0 ? "unavailable" : "available",
+        status: householdStatusFor(input.householdSignals),
         contribution: householdContribution,
+        signals: householdSignals,
       },
       opportunity: { status: "unavailable", contribution: 0 },
     },
@@ -266,10 +297,9 @@ export class DeterministicModelPreflightError extends Error {
   }
 }
 
-export const evaluateDeterministicModel = (
-  rawInput: DeterministicModelInput,
+const evaluateParsedModel = (
+  input: ParsedModelInput,
 ): DeterministicModelResult => {
-  const input = DeterministicModelInputSchema.parse(rawInput);
   if (input.originMetroSlug === input.destinationMetroSlug) {
     throw new DeterministicModelPreflightError(
       "Deterministic model candidate requires different metros.",
@@ -315,3 +345,13 @@ export const evaluateDeterministicModel = (
     rangeBlockerCodes,
   });
 };
+
+export const evaluateDeterministicModelCalibration = (
+  rawInput: DeterministicModelCalibrationInput,
+): DeterministicModelResult =>
+  evaluateParsedModel(DeterministicModelCalibrationInputSchema.parse(rawInput));
+
+export const evaluateDeterministicModel = (
+  rawInput: DeterministicModelInput,
+): DeterministicModelResult =>
+  evaluateParsedModel(DeterministicModelInputSchema.parse(rawInput));

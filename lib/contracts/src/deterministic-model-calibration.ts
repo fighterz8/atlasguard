@@ -1,6 +1,12 @@
 import { z } from "zod/v4";
 
 import {
+  MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE,
+  MoveWiseHouseholdFactorIdSchema,
+  MoveWiseHouseholdImpactSchema,
+  MoveWiseHouseholdModeSchema,
+} from "./household-answers";
+import {
   MetroSlugSchema,
   SafeIntegerSchema,
   StableIdSchema,
@@ -99,47 +105,128 @@ const EssentialRequirementSchema = z
   })
   .strict();
 
+const deterministicModelScalarFields = {
+  originMetroSlug: MetroSlugSchema,
+  destinationMetroSlug: MetroSlugSchema,
+  monthlyCushionDeltaCents: SafeIntegerSchema.nullable(),
+  destinationMonthlyCushionCents: SafeIntegerSchema.nullable(),
+  destinationMonthlyCushionRangeCents: RangeSchema.nullable(),
+  financialMaterialityThresholdCents: SafeIntegerSchema.positive(),
+  lowCushionCautionThresholdCents: SafeIntegerSchema.positive(),
+  destinationHousingBurdenBps: SafeIntegerSchema.min(0).max(10_000).nullable(),
+  commuteImpact: DeterministicModelImpactSchema,
+  climateImpact: DeterministicModelImpactSchema,
+} as const;
+
+const reportDuplicateIds = (
+  entries: readonly [string, readonly string[]][],
+  context: z.core.$RefinementCtx,
+) => {
+  for (const [path, values] of entries) {
+    if (new Set(values).size !== values.length) {
+      context.addIssue({
+        code: "custom",
+        message: `${path} identifiers must be unique.`,
+        path: [path],
+      });
+    }
+  }
+};
+
 export const DeterministicModelCalibrationInputSchema = z
   .object({
-    originMetroSlug: MetroSlugSchema,
-    destinationMetroSlug: MetroSlugSchema,
-    monthlyCushionDeltaCents: SafeIntegerSchema.nullable(),
-    destinationMonthlyCushionCents: SafeIntegerSchema.nullable(),
-    destinationMonthlyCushionRangeCents: RangeSchema.nullable(),
-    financialMaterialityThresholdCents: SafeIntegerSchema.positive(),
-    lowCushionCautionThresholdCents: SafeIntegerSchema.positive(),
-    destinationHousingBurdenBps: SafeIntegerSchema.min(0)
-      .max(10_000)
-      .nullable(),
-    commuteImpact: DeterministicModelImpactSchema,
-    climateImpact: DeterministicModelImpactSchema,
+    ...deterministicModelScalarFields,
     householdSignals: z.array(HouseholdSignalSchema),
     essentialRequirements: z.array(EssentialRequirementSchema),
   })
   .strict()
+  .superRefine((input, context) =>
+    reportDuplicateIds(
+      [
+        [
+          "householdSignals",
+          input.householdSignals.map(({ signalId }) => signalId),
+        ],
+        [
+          "essentialRequirements",
+          input.essentialRequirements.map(({ requirementId }) => requirementId),
+        ],
+      ],
+      context,
+    ),
+  );
+
+const RuntimeHouseholdSignalSchema = z
+  .object({
+    signalId: MoveWiseHouseholdFactorIdSchema,
+    impact: MoveWiseHouseholdImpactSchema,
+  })
+  .strict();
+
+const RuntimeEssentialRequirementSchema = z
+  .object({
+    requirementId: MoveWiseHouseholdFactorIdSchema,
+    status: z.enum(["confirmed_met", "confirmed_unmet", "unconfirmed"]),
+  })
+  .strict();
+
+export const DeterministicModelInputSchema = z
+  .object({
+    ...deterministicModelScalarFields,
+    householdMode: MoveWiseHouseholdModeSchema,
+    householdSignals: z.array(RuntimeHouseholdSignalSchema),
+    essentialRequirements: z.array(RuntimeEssentialRequirementSchema),
+  })
+  .strict()
   .superRefine((input, context) => {
-    for (const [path, values] of [
+    reportDuplicateIds(
       [
-        "householdSignals",
-        input.householdSignals.map(({ signalId }) => signalId),
+        [
+          "householdSignals",
+          input.householdSignals.map(({ signalId }) => signalId),
+        ],
+        [
+          "essentialRequirements",
+          input.essentialRequirements.map(({ requirementId }) => requirementId),
+        ],
       ],
-      [
-        "essentialRequirements",
-        input.essentialRequirements.map(({ requirementId }) => requirementId),
-      ],
-    ] as const) {
-      if (new Set(values).size !== values.length) {
+      context,
+    );
+
+    const expected = MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE[input.householdMode];
+    const actual = input.householdSignals.map(({ signalId }) => signalId);
+    if (
+      actual.length !== expected.length ||
+      actual.some((signalId, index) => signalId !== expected[index])
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Deterministic-model household signals must include every mode-applicable factor exactly once in canonical order.",
+        path: ["householdSignals"],
+      });
+    }
+
+    let previousRequirementIndex = -1;
+    input.essentialRequirements.forEach((requirement, index) => {
+      const signalIndex = actual.indexOf(requirement.requirementId);
+      const signal = input.householdSignals[signalIndex];
+      if (
+        signalIndex < 0 ||
+        signal?.impact === "excluded" ||
+        signalIndex <= previousRequirementIndex
+      ) {
         context.addIssue({
           code: "custom",
-          message: `${path} identifiers must be unique.`,
-          path: [path],
+          message:
+            "Essential requirements must reference non-excluded, mode-applicable household signals in canonical order.",
+          path: ["essentialRequirements", index, "requirementId"],
         });
+      } else {
+        previousRequirementIndex = signalIndex;
       }
-    }
+    });
   });
-
-export const DeterministicModelInputSchema =
-  DeterministicModelCalibrationInputSchema;
 
 const ScenarioExpectedSchema = z
   .object({
@@ -240,7 +327,9 @@ export type DeterministicModelCalibrationCorpus = z.infer<
 export type DeterministicModelCalibrationInput = z.infer<
   typeof DeterministicModelCalibrationInputSchema
 >;
-export type DeterministicModelInput = DeterministicModelCalibrationInput;
+export type DeterministicModelInput = z.infer<
+  typeof DeterministicModelInputSchema
+>;
 export type DeterministicModelCalibrationScenarioFixture = z.infer<
   typeof ScenarioFixtureSchema
 >;
