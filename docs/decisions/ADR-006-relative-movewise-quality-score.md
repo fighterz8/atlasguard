@@ -56,6 +56,8 @@ Missing evidence produces no invented gain or loss and never triggers silent wei
 
 Runtime activation is prohibited until one versioned formula passes calibration, boundary, monotonicity, determinism, missingness, blocker-precedence, reversed-comparison, and comprehension gates specified in Product Contract 2.0.
 
+The initial internal formula, estimate-range method, insight selector, and completed technical gates are recorded in [MoveWise Phase 4A](../movewise/phase-4a-score-calibration.md). That implementation remains calibration-only at score rule version `0.1.0`; the user-comprehension gate is still open, so ADR acceptance does not authorize Results or public API activation.
+
 ## Alternatives Considered
 
 ### Keep the Decision Profile without a score

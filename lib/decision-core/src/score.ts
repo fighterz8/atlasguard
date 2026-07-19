@@ -12,7 +12,7 @@ import type {
 
 import { evaluateMoveDecision, evaluateResearchMoveDecision } from "./evaluate";
 
-type ScoreEvaluation =
+export type MoveWiseScoreEvaluation =
   | VerifiedEvaluationResult
   | VerifiedResearchEvaluationResult;
 
@@ -98,13 +98,13 @@ const RANGE_DESCRIPTORS: readonly RangeDescriptor[] = [
 ];
 
 const cloneScenario = (
-  scenario: ScenarioInput | ScoreEvaluation["scenarioInput"],
+  scenario: ScenarioInput | MoveWiseScoreEvaluation["scenarioInput"],
 ): ScenarioInput => JSON.parse(JSON.stringify(scenario)) as ScenarioInput;
 
 const reevaluate = (
-  evaluation: ScoreEvaluation,
+  evaluation: MoveWiseScoreEvaluation,
   scenario: ScenarioInput,
-): ScoreEvaluation =>
+): MoveWiseScoreEvaluation =>
   evaluation.releaseStatus === "research_only"
     ? evaluateResearchMoveDecision(scenario, evaluation.benchmarkComparison)
     : evaluateMoveDecision(scenario, evaluation.benchmarkComparison);
@@ -117,7 +117,7 @@ export class MoveWiseScorePreflightError extends Error {
 }
 
 export const evaluateMoveWiseScore = (
-  evaluation: ScoreEvaluation,
+  evaluation: MoveWiseScoreEvaluation,
 ): VerifiedMoveWiseScore => {
   const { decisionProfile, scenarioInput } = evaluation;
   if (
