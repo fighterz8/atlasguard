@@ -5,63 +5,74 @@ import {
 import type {
   ContextMetricComparison,
   VerifiedContextMetricComparison,
+  VerifiedMetroProfile,
 } from "@workspace/contracts";
 
-import { acs2024RentLaSeattleRawSnapshot } from "./raw/acs1-2024-rent-la-seattle";
 import {
-  verifyRawHousingSnapshot,
-  type VerifiedRawHousingSnapshot,
-} from "./raw-housing-snapshot";
-import { getSupportedResearchComparisonPlace } from "./supported-research-locations";
+  cloneJson,
+  composeProfileSourceArtifacts,
+  getContextProfileObservation,
+  getProfileRawSnapshot,
+} from "./metro-profile-comparison";
+import {
+  loadLosAngelesResearchMetroProfile,
+  loadSeattleResearchMetroProfile,
+} from "./research-metro-profiles";
+import type { VerifiedRawHousingSnapshot } from "./raw-housing-snapshot";
 
 const COMPARISON_VERSION = "1.0.0" as const;
 const ZERO_SHA = "0".repeat(64);
+const RAW_SNAPSHOT_ID = "acs1.2024.median-gross-rent.la-seattle.raw";
+const METRIC_ID = "housing.median_gross_rent";
+const SOURCE_ARTIFACT_ORDER = [
+  "acs1.2024.geographies",
+  "acs1.2024.b25064",
+] as const;
+
 export const LOS_ANGELES_SEATTLE_HOUSING_CONTEXT_SHA256 =
   "8becaa3c5daf2f8e40c37e220279ed09ee3b7f6ba4abb9088b6e11412dfe52eb";
 
-const recordFor = (
-  snapshot: VerifiedRawHousingSnapshot,
-  side: "origin" | "destination",
-) => {
-  const record = snapshot.metros.find((candidate) => candidate.side === side);
-  if (record === undefined) throw new Error(`Housing snapshot lacks ${side}.`);
-  return record;
-};
-
-const metroRef = (
-  snapshot: VerifiedRawHousingSnapshot,
-  side: "origin" | "destination",
-) => {
-  const record = recordFor(snapshot, side);
-  const place = getSupportedResearchComparisonPlace(side);
-  if (
-    record.cbsaCode !== place.cbsaCode ||
-    record.cbsaLabel !== place.metro ||
-    record.selectedPlace.city !== place.city ||
-    record.selectedPlace.stateCode !== place.state
-  ) {
-    throw new Error("Verified housing geography differs from the catalog.");
-  }
-  return {
-    slug: place.slug,
-    cbsaCode: record.cbsaCode,
-    label: record.cbsaLabel,
-    selectedPlace: record.selectedPlace,
-    selectedPlaceMapping: {
-      method: "official_cbsa_title_match" as const,
-      sourceArtifactId: snapshot.artifacts.acsGeographies.id,
-      sourceUrl: snapshot.artifacts.acsGeographies.sourceUrl,
-      sourceArtifactSha256: snapshot.artifacts.acsGeographies.sha256,
-      verifiedOn: snapshot.verifiedOn,
-    },
-  };
-};
-
-export const promoteLosAngelesToSeattleHousingContext = (
-  snapshot: VerifiedRawHousingSnapshot,
+export const promoteLosAngelesToSeattleHousingContextFromProfiles = (
+  originProfile: VerifiedMetroProfile,
+  destinationProfile: VerifiedMetroProfile,
 ): VerifiedContextMetricComparison => {
-  const origin = recordFor(snapshot, "origin");
-  const destination = recordFor(snapshot, "destination");
+  const origin = getContextProfileObservation(originProfile, METRIC_ID);
+  const destination = getContextProfileObservation(
+    destinationProfile,
+    METRIC_ID,
+  );
+  if (
+    origin.value === null ||
+    destination.value === null ||
+    origin.quality.marginOfError === null ||
+    destination.quality.marginOfError === null ||
+    origin.source.termsUrl === null
+  ) {
+    throw new Error("Housing context profiles lack complete ACS values.");
+  }
+  const originRawSnapshot = getProfileRawSnapshot(
+    originProfile,
+    RAW_SNAPSHOT_ID,
+  );
+  const destinationRawSnapshot = getProfileRawSnapshot(
+    destinationProfile,
+    RAW_SNAPSHOT_ID,
+  );
+  if (originRawSnapshot.sha256 !== destinationRawSnapshot.sha256) {
+    throw new Error("Metro profiles disagree on the housing raw snapshot.");
+  }
+  const artifacts = composeProfileSourceArtifacts(
+    [originProfile, destinationProfile],
+    RAW_SNAPSHOT_ID,
+  );
+  const orderedArtifacts = SOURCE_ARTIFACT_ORDER.map((id) => {
+    const artifact = artifacts.find((candidate) => candidate.id === id);
+    if (artifact === undefined) {
+      throw new Error(`Metro profiles lack housing artifact ${id}.`);
+    }
+    return artifact;
+  });
+  const metricArtifact = orderedArtifacts[1];
   const draft: ContextMetricComparison = {
     schemaVersion: "1.0.0",
     decisionUse: "context_only",
@@ -71,61 +82,44 @@ export const promoteLosAngelesToSeattleHousingContext = (
       version: COMPARISON_VERSION,
       sha256: ZERO_SHA,
       admissionStatus: "research_only",
-      rawSnapshot: { id: snapshot.id, sha256: snapshot.sha256 },
-      sourceArtifacts: Object.values(snapshot.artifacts).map((artifact) => ({
-        id: artifact.id,
-        sourceUrl: artifact.sourceUrl,
-        sha256: artifact.sha256,
-      })),
+      rawSnapshot: cloneJson(originRawSnapshot),
+      sourceArtifacts: orderedArtifacts,
       derivation: { id: "acs.usd-to-cents", version: "1.0.0" },
-      delineationVersion: snapshot.delineationVersion,
-      verifiedOn: snapshot.verifiedOn,
+      delineationVersion: "OMB Bulletin 23-01 / Census July 2023",
+      verifiedOn: origin.verifiedOn,
     },
-    origin: metroRef(snapshot, "origin"),
-    destination: metroRef(snapshot, "destination"),
+    origin: cloneJson(originProfile.metro),
+    destination: cloneJson(destinationProfile.metro),
     metric: {
       id: "housing.median-gross-rent.acs1.2024",
-      definition:
-        "Median gross rent for renter-occupied housing units, including contract rent and ACS-defined tenant-paid utilities.",
-      unit: "usd_cents",
-      originValue: origin.medianGrossRentDollars * 100,
-      destinationValue: destination.medianGrossRentDollars * 100,
-      deltaValue:
-        (destination.medianGrossRentDollars - origin.medianGrossRentDollars) *
-        100,
+      definition: origin.definition,
+      unit: origin.unit,
+      originValue: origin.value,
+      destinationValue: destination.value,
+      deltaValue: destination.value - origin.value,
       marginOfError90: {
-        origin: origin.marginOfError90Dollars * 100,
-        destination: destination.marginOfError90Dollars * 100,
+        origin: origin.quality.marginOfError,
+        destination: destination.quality.marginOfError,
       },
       source: {
-        artifactId: snapshot.artifacts.b25064.id,
-        artifactSha256: snapshot.artifacts.b25064.sha256,
-        dataset: snapshot.dataset,
-        publisher: snapshot.publisher,
+        artifactId: metricArtifact.id,
+        artifactSha256: metricArtifact.sha256,
+        dataset: origin.source.dataset,
+        publisher: origin.source.publisher,
         tableId: "b25064",
-        sourceUrl: snapshot.artifacts.b25064.sourceUrl,
-        termsUrl: snapshot.termsUrl,
+        sourceUrl: origin.source.sourceUrl,
+        termsUrl: origin.source.termsUrl,
       },
       sourceRows: {
-        origin: `GEO_ID=${origin.acsGeoId}`,
-        destination: `GEO_ID=${destination.acsGeoId}`,
+        origin: `GEO_ID=310M700US${originProfile.metro.cbsaCode}`,
+        destination: `GEO_ID=310M700US${destinationProfile.metro.cbsaCode}`,
       },
-      observationPeriod: snapshot.observationPeriod,
-      releasedOn: snapshot.releasedOn,
-      verifiedOn: snapshot.verifiedOn,
+      observationPeriod: origin.observationPeriod,
+      releasedOn: origin.releasedOn,
+      verifiedOn: origin.verifiedOn,
       geographies: {
-        origin: {
-          kind: "cbsa",
-          code: origin.cbsaCode,
-          label: origin.cbsaLabel,
-          matchQuality: "exact",
-        },
-        destination: {
-          kind: "cbsa",
-          code: destination.cbsaCode,
-          label: destination.cbsaLabel,
-          matchQuality: "exact",
-        },
+        origin: cloneJson(origin.geography),
+        destination: cloneJson(destination.geography),
       },
       snapshotVersion: COMPARISON_VERSION,
       snapshotSha256: ZERO_SHA,
@@ -150,7 +144,24 @@ export const promoteLosAngelesToSeattleHousingContext = (
   });
 };
 
+/** Compatibility wrapper for the original raw-snapshot promotion API. */
+export const promoteLosAngelesToSeattleHousingContext = (
+  snapshot: VerifiedRawHousingSnapshot,
+): VerifiedContextMetricComparison => {
+  const originProfile = loadLosAngelesResearchMetroProfile();
+  const destinationProfile = loadSeattleResearchMetroProfile();
+  const profileSnapshot = getProfileRawSnapshot(originProfile, snapshot.id);
+  if (profileSnapshot.sha256 !== snapshot.sha256) {
+    throw new Error("Raw housing snapshot differs from the promoted profiles.");
+  }
+  return promoteLosAngelesToSeattleHousingContextFromProfiles(
+    originProfile,
+    destinationProfile,
+  );
+};
+
 export const loadLosAngelesToSeattleHousingContext = () =>
-  promoteLosAngelesToSeattleHousingContext(
-    verifyRawHousingSnapshot(acs2024RentLaSeattleRawSnapshot),
+  promoteLosAngelesToSeattleHousingContextFromProfiles(
+    loadLosAngelesResearchMetroProfile(),
+    loadSeattleResearchMetroProfile(),
   );

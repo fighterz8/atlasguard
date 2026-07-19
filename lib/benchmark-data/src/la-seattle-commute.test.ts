@@ -9,6 +9,7 @@ import { deriveCommuteMetric } from "./commute-derivation";
 import {
   loadLosAngelesToSeattleCommuteBenchmark,
   LOS_ANGELES_SEATTLE_COMMUTE_COMPARISON_SHA256,
+  promoteLosAngelesToSeattleCommuteBenchmark,
 } from "./la-seattle-commute";
 import { acs2024CommuteLaSeattleRawSnapshot } from "./raw/acs1-2024-commute-la-seattle";
 import { verifyRawCommuteSnapshot } from "./raw-snapshot";
@@ -76,6 +77,16 @@ describe("Los Angeles to Seattle ACS commute benchmark", () => {
       sourceArtifactId: "acs1.2024.geographies",
     });
     expect(Object.isFrozen(benchmark)).toBe(true);
+  });
+
+  it("preserves the original raw-snapshot promotion API", () => {
+    const snapshot = verifyRawCommuteSnapshot(
+      acs2024CommuteLaSeattleRawSnapshot,
+    );
+
+    expect(promoteLosAngelesToSeattleCommuteBenchmark(snapshot)).toEqual(
+      loadLosAngelesToSeattleCommuteBenchmark(),
+    );
   });
 
   it("rejects a promoted-evidence mutation under the snapshot checksum", () => {

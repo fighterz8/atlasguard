@@ -147,7 +147,7 @@ This approval freezes direction; it does not activate a numeric formula, new met
 Implementation sequence:
 
 1. Product Contract 2.0 decision and requirements freeze.
-2. Independent metro-profile architecture plus verified Austin/San Diego evidence.
+2. Independent metro-profile architecture, split into a checksum-preserving Los Angeles/Seattle migration followed by separately verified Austin/San Diego evidence.
 3. Additive MoveWise Score contract, formula calibration, and verification.
 4. Adaptive questions and benchmark-assisted estimate flow.
 5. Editorial Results redesign.

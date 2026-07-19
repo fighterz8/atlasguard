@@ -227,7 +227,7 @@ Product Contract 2.0 is a behavioral and scope amendment. It does not mutate the
 Implementation proceeds in bounded slices:
 
 1. Freeze this contract and its decision/requirements records.
-2. Generalize metro profiles and add Austin/San Diego evidence.
+2. Generalize metro profiles, first by migrating verified Los Angeles/Seattle evidence without output drift, then by admitting Austin/San Diego through the same gates.
 3. Implement and calibrate the MoveWise Score as an additive verified contract.
 4. Implement adaptive questions and benchmark-assisted estimates.
 5. Redesign Results around the editorial hierarchy.

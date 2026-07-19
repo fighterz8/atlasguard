@@ -1,28 +1,42 @@
 import {
   calculateBenchmarkComparisonChecksum,
-  deriveMetricQualityGrade,
   sha256Hex,
   sortJsonKeys,
   verifyBenchmarkComparison,
 } from "@workspace/contracts";
 import type {
   BenchmarkComparison,
-  MetricEvidence,
   VerifiedBenchmarkComparison,
+  VerifiedMetroProfile,
 } from "@workspace/contracts";
 
+import { CLIMATE_HEAT_METRIC_REGISTRATION } from "./climate-derivation";
+import { promoteLosAngelesToSeattleCommuteBenchmarkFromProfiles } from "./la-seattle-commute";
 import {
-  CLIMATE_HEAT_METRIC_REGISTRATION,
-  deriveClimateHeatMetric,
-} from "./climate-derivation";
-import { loadLosAngelesToSeattleCommuteBenchmark } from "./la-seattle-commute";
-import { noaa1991To2020HotDaysLaSeattleRawSnapshot } from "./raw/noaa-1991-2020-hot-days-la-seattle";
-import { verifyRawClimateSnapshot } from "./raw-climate-snapshot";
+  cloneJson,
+  composeMetricEvidenceFromProfiles,
+  composeProfileSourceArtifacts,
+  getProfileRawSnapshot,
+} from "./metro-profile-comparison";
+import {
+  loadLosAngelesResearchMetroProfile,
+  loadSeattleResearchMetroProfile,
+} from "./research-metro-profiles";
 
 export type ClimateHeatDirection = "lower" | "higher";
 
 const SNAPSHOT_VERSION = "1.0.0" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
+const CLIMATE_RAW_SNAPSHOT_ID = "noaa.normals.1991-2020.hot-days.la-seattle";
+const CLIMATE_SOURCE_ARTIFACT_ORDER = [
+  "noaa.normals.1991-2020.station-inventory",
+  "noaa.normals.1991-2020.annual-documentation",
+  "noaa.normals.usw00093134",
+  "noaa.normals.usw00023174",
+  "noaa.normals.usw00094290",
+  "noaa.normals.usw00024233",
+] as const;
+
 export const LOS_ANGELES_SEATTLE_RESEARCH_RAW_SHA256 =
   "e55acaa5e0a5a0db3cb3db221a5f48bbdd04601d5c37b5c44feee85735368008";
 export const LOS_ANGELES_SEATTLE_RESEARCH_COMPARISON_SHA256 = {
@@ -30,14 +44,10 @@ export const LOS_ANGELES_SEATTLE_RESEARCH_COMPARISON_SHA256 = {
   higher: "e31415468b2de1c9acc9c5ca2a8fdbd4fc1f329d56df09eb17563ae945a305d2",
 } as const;
 
-const climateSnapshot = verifyRawClimateSnapshot(
-  noaa1991To2020HotDaysLaSeattleRawSnapshot,
-);
-
-const cloneJson = <Value>(value: Value): Value =>
-  JSON.parse(JSON.stringify(value)) as Value;
-
-const calculateCompositeRawChecksum = (commuteRawSha256: string): string =>
+const calculateCompositeRawChecksum = (
+  commuteRawSha256: string,
+  climateRawSha256: string,
+): string =>
   sha256Hex(
     JSON.stringify(
       sortJsonKeys({
@@ -46,111 +56,66 @@ const calculateCompositeRawChecksum = (commuteRawSha256: string): string =>
           sha256: commuteRawSha256,
         },
         climate: {
-          id: climateSnapshot.id,
-          sha256: climateSnapshot.sha256,
+          id: CLIMATE_RAW_SNAPSHOT_ID,
+          sha256: climateRawSha256,
         },
       }),
     ),
   );
 
-const buildClimateEvidence = (
-  direction: ClimateHeatDirection,
-  snapshotSha256: string,
-): MetricEvidence => {
-  const origin = deriveClimateHeatMetric(climateSnapshot, "origin", direction);
-  const destination = deriveClimateHeatMetric(
-    climateSnapshot,
-    "destination",
-    direction,
+const orderedClimateSourceArtifacts = (
+  originProfile: VerifiedMetroProfile,
+  destinationProfile: VerifiedMetroProfile,
+) => {
+  const artifacts = composeProfileSourceArtifacts(
+    [originProfile, destinationProfile],
+    CLIMATE_RAW_SNAPSHOT_ID,
   );
-  const grade = deriveMetricQualityGrade({
-    freshness: "current",
-    missingness: "complete",
-    coverageBps: null,
-    originGeographyMatch: "mapped_proxy",
-    destinationGeographyMatch: "mapped_proxy",
-    originUncertaintyBps: origin.utilityUncertaintyBps,
-    destinationUncertaintyBps: destination.utilityUncertaintyBps,
+  return CLIMATE_SOURCE_ARTIFACT_ORDER.map((id) => {
+    const artifact = artifacts.find((candidate) => candidate.id === id);
+    if (artifact === undefined) {
+      throw new Error(`Metro profiles lack climate artifact ${id}.`);
+    }
+    return artifact;
   });
-
-  return {
-    kind: "benchmark_metric",
-    id: "benchmark.climate_heat.noaa_normals.1991_2020.la_seattle",
-    metricId: CLIMATE_HEAT_METRIC_REGISTRATION.metricId,
-    definition: CLIMATE_HEAT_METRIC_REGISTRATION.definition,
-    priorityId: CLIMATE_HEAT_METRIC_REGISTRATION.priorityId,
-    unit: CLIMATE_HEAT_METRIC_REGISTRATION.unit,
-    originValue: origin.annualDaysAbove90F,
-    destinationValue: destination.annualDaysAbove90F,
-    deltaValue: destination.annualDaysAbove90F - origin.annualDaysAbove90F,
-    source: {
-      dataset: climateSnapshot.dataset,
-      publisher: climateSnapshot.publisher,
-      sourceUrl: climateSnapshot.artifacts.documentation.sourceUrl,
-      termsUrl: climateSnapshot.termsUrl,
-    },
-    observationPeriod: climateSnapshot.observationPeriod,
-    releasedOn: climateSnapshot.releasedOn,
-    verifiedOn: climateSnapshot.verifiedOn,
-    geographies: {
-      origin: {
-        kind: "station",
-        code: origin.referenceStationId,
-        label: origin.referenceStationName,
-        matchQuality: "mapped_proxy",
-      },
-      destination: {
-        kind: "station",
-        code: destination.referenceStationId,
-        label: destination.referenceStationName,
-        matchQuality: "mapped_proxy",
-      },
-    },
-    snapshotVersion: SNAPSHOT_VERSION,
-    snapshotSha256,
-    transformation: {
-      id: CLIMATE_HEAT_METRIC_REGISTRATION.transformationId,
-      version: CLIMATE_HEAT_METRIC_REGISTRATION.transformationVersion,
-      preferredDirection: direction,
-      outputs: {
-        originUtilityBps: origin.utilityBps,
-        destinationUtilityBps: destination.utilityBps,
-        originUncertaintyBps: origin.utilityUncertaintyBps,
-        destinationUncertaintyBps: destination.utilityUncertaintyBps,
-      },
-    },
-    materialityPolicy: {
-      utilityDeltaBps: CLIMATE_HEAT_METRIC_REGISTRATION.materialityThresholdBps,
-      rationale: CLIMATE_HEAT_METRIC_REGISTRATION.materialityRationale,
-    },
-    quality: {
-      freshness: "current",
-      missingness: "complete",
-      marginOfError: null,
-      selectionUncertainty: {
-        kind: "reference_site_range",
-        origin: { min: origin.envelopeMinDays, max: origin.envelopeMaxDays },
-        destination: {
-          min: destination.envelopeMinDays,
-          max: destination.envelopeMaxDays,
-        },
-        rationale: climateSnapshot.selectionPolicy.uncertainty,
-      },
-      coverageBps: null,
-      grade: { value: grade, policyVersion: "1.0.0" },
-    },
-  };
 };
 
 const buildDraft = (direction: ClimateHeatDirection): BenchmarkComparison => {
-  const commute = loadLosAngelesToSeattleCommuteBenchmark();
+  const originProfile = loadLosAngelesResearchMetroProfile();
+  const destinationProfile = loadSeattleResearchMetroProfile();
+  const commute = promoteLosAngelesToSeattleCommuteBenchmarkFromProfiles(
+    originProfile,
+    destinationProfile,
+  );
+  const climateRawSnapshot = getProfileRawSnapshot(
+    originProfile,
+    CLIMATE_RAW_SNAPSHOT_ID,
+  );
+  const destinationClimateRawSnapshot = getProfileRawSnapshot(
+    destinationProfile,
+    CLIMATE_RAW_SNAPSHOT_ID,
+  );
+  if (climateRawSnapshot.sha256 !== destinationClimateRawSnapshot.sha256) {
+    throw new Error("Metro profiles disagree on the climate raw snapshot.");
+  }
   const compositeRawSha256 = calculateCompositeRawChecksum(
     commute.snapshot.rawSnapshot.sha256,
+    climateRawSnapshot.sha256,
   );
   if (compositeRawSha256 !== LOS_ANGELES_SEATTLE_RESEARCH_RAW_SHA256) {
     throw new Error("Composite research raw-snapshot checksum changed.");
   }
   const commutePriority = commute.priorities[0];
+  const climateEvidence = composeMetricEvidenceFromProfiles({
+    originProfile,
+    destinationProfile,
+    metricId: CLIMATE_HEAT_METRIC_REGISTRATION.metricId,
+    evidenceId: "benchmark.climate_heat.noaa_normals.1991_2020.la_seattle",
+    preferredDirection: direction,
+    snapshotVersion: SNAPSHOT_VERSION,
+    snapshotSha256: CHECKSUM_PLACEHOLDER,
+  });
+
   return {
     snapshot: {
       id: "movewise.research.2026-07-18.la-seattle.acs-noaa",
@@ -162,12 +127,8 @@ const buildDraft = (direction: ClimateHeatDirection): BenchmarkComparison => {
         sha256: compositeRawSha256,
       },
       sourceArtifacts: [
-        ...commute.snapshot.sourceArtifacts,
-        ...Object.values(climateSnapshot.artifacts).map((artifact) => ({
-          id: artifact.id,
-          sourceUrl: artifact.sourceUrl,
-          sha256: artifact.sha256,
-        })),
+        ...commute.snapshot.sourceArtifacts.map(cloneJson),
+        ...orderedClimateSourceArtifacts(originProfile, destinationProfile),
       ],
       derivation: {
         id: "movewise.research.compose.acs-noaa",
@@ -189,19 +150,16 @@ const buildDraft = (direction: ClimateHeatDirection): BenchmarkComparison => {
         },
       },
       {
-        priorityId: CLIMATE_HEAT_METRIC_REGISTRATION.priorityId,
-        originUtilityBps: buildClimateEvidence(direction, CHECKSUM_PLACEHOLDER)
-          .transformation.outputs.originUtilityBps,
-        destinationUtilityBps: buildClimateEvidence(
-          direction,
-          CHECKSUM_PLACEHOLDER,
-        ).transformation.outputs.destinationUtilityBps,
+        priorityId: climateEvidence.priorityId,
+        originUtilityBps:
+          climateEvidence.transformation.outputs.originUtilityBps,
+        destinationUtilityBps:
+          climateEvidence.transformation.outputs.destinationUtilityBps,
         materialityThresholdBps:
-          CLIMATE_HEAT_METRIC_REGISTRATION.materialityThresholdBps,
-        transformationId: CLIMATE_HEAT_METRIC_REGISTRATION.transformationId,
-        transformationVersion:
-          CLIMATE_HEAT_METRIC_REGISTRATION.transformationVersion,
-        evidence: buildClimateEvidence(direction, CHECKSUM_PLACEHOLDER),
+          climateEvidence.materialityPolicy.utilityDeltaBps,
+        transformationId: climateEvidence.transformation.id,
+        transformationVersion: climateEvidence.transformation.version,
+        evidence: climateEvidence,
       },
     ],
   };
@@ -213,7 +171,7 @@ export const loadLosAngelesToSeattleResearchBenchmark = (
   const draft = buildDraft(direction);
   const checksum = calculateBenchmarkComparisonChecksum(draft);
   const expected = LOS_ANGELES_SEATTLE_RESEARCH_COMPARISON_SHA256[direction];
-  if (!/^0+$/.test(expected) && checksum !== expected) {
+  if (checksum !== expected) {
     throw new Error(
       `Combined LA-to-Seattle research comparison changed: received ${checksum}.`,
     );

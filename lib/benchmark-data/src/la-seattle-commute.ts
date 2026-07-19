@@ -1,196 +1,112 @@
 import {
   calculateBenchmarkComparisonChecksum,
-  deriveMetricQualityGrade,
   verifyBenchmarkComparison,
 } from "@workspace/contracts";
 import type {
   BenchmarkComparison,
-  MetricEvidence,
   VerifiedBenchmarkComparison,
+  VerifiedMetroProfile,
 } from "@workspace/contracts";
 
+import { COMMUTE_METRIC_REGISTRATION } from "./commute-derivation";
 import {
-  COMMUTE_METRIC_REGISTRATION,
-  deriveCommuteMetric,
-} from "./commute-derivation";
-import { acs2024CommuteLaSeattleRawSnapshot } from "./raw/acs1-2024-commute-la-seattle";
+  cloneJson,
+  composeMetricEvidenceFromProfiles,
+  composeProfileSourceArtifacts,
+  getProfileRawSnapshot,
+} from "./metro-profile-comparison";
 import {
-  verifyRawCommuteSnapshot,
-  type VerifiedRawCommuteSnapshot,
-} from "./raw-snapshot";
-import { getSupportedResearchComparisonPlace } from "./supported-research-locations";
+  loadLosAngelesResearchMetroProfile,
+  loadSeattleResearchMetroProfile,
+} from "./research-metro-profiles";
+import type { VerifiedRawCommuteSnapshot } from "./raw-snapshot";
 
 const COMPARISON_SNAPSHOT_VERSION = "1.0.0" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
+const RAW_SNAPSHOT_ID = "acs1.2024.commute.la-seattle";
+const SOURCE_ARTIFACT_ORDER = [
+  "census.cbsa-delineation.2023-07",
+  "acs1.2024.geographies",
+  "acs1.2024.b08013",
+  "acs1.2024.b08006",
+] as const;
+
 export const LOS_ANGELES_SEATTLE_COMMUTE_COMPARISON_SHA256 =
   "36f70b3adf17c480a766f4f47dc0de166aa075587360bcdd197666c5498ce9bb";
 
-const metroRef = (
-  record: VerifiedRawCommuteSnapshot["metros"][number],
-  snapshot: VerifiedRawCommuteSnapshot,
+const orderedSourceArtifacts = (
+  originProfile: VerifiedMetroProfile,
+  destinationProfile: VerifiedMetroProfile,
 ) => {
-  const place = getSupportedResearchComparisonPlace(record.side);
-  if (
-    record.cbsaCode !== place.cbsaCode ||
-    record.cbsaLabel !== place.metro ||
-    record.selectedPlace.city !== place.city ||
-    record.selectedPlace.stateCode !== place.state
-  ) {
-    throw new Error("Verified commute geography differs from the catalog.");
-  }
-
-  return {
-    slug: place.slug,
-    cbsaCode: record.cbsaCode,
-    label: record.cbsaLabel,
-    selectedPlace: record.selectedPlace,
-    selectedPlaceMapping: {
-      method: "official_cbsa_title_match" as const,
-      sourceArtifactId: snapshot.artifacts.acsGeographies.id,
-      sourceUrl: snapshot.artifacts.acsGeographies.sourceUrl,
-      sourceArtifactSha256: snapshot.artifacts.acsGeographies.sha256,
-      verifiedOn: snapshot.verifiedOn,
-    },
-  };
-};
-
-const buildEvidence = (
-  snapshot: VerifiedRawCommuteSnapshot,
-  snapshotSha256: string,
-): MetricEvidence => {
-  const originRecord = snapshot.metros.find(
-    (record) => record.side === "origin",
+  const artifacts = composeProfileSourceArtifacts(
+    [originProfile, destinationProfile],
+    RAW_SNAPSHOT_ID,
   );
-  const destinationRecord = snapshot.metros.find(
-    (record) => record.side === "destination",
-  );
-  if (originRecord === undefined || destinationRecord === undefined) {
-    throw new Error("Verified snapshot lacks a comparison side.");
-  }
-  const origin = deriveCommuteMetric(originRecord);
-  const destination = deriveCommuteMetric(destinationRecord);
-  const grade = deriveMetricQualityGrade({
-    freshness: "current",
-    missingness: "complete",
-    coverageBps: null,
-    originGeographyMatch: "exact",
-    destinationGeographyMatch: "exact",
-    originUncertaintyBps: origin.utilityUncertaintyBps,
-    destinationUncertaintyBps: destination.utilityUncertaintyBps,
+  return SOURCE_ARTIFACT_ORDER.map((id) => {
+    const artifact = artifacts.find((candidate) => candidate.id === id);
+    if (artifact === undefined) {
+      throw new Error(`Metro profiles lack commute artifact ${id}.`);
+    }
+    return artifact;
   });
-
-  return {
-    kind: "benchmark_metric",
-    id: "benchmark.commute_time.acs1.2024.la_seattle",
-    metricId: COMMUTE_METRIC_REGISTRATION.metricId,
-    definition: COMMUTE_METRIC_REGISTRATION.definition,
-    priorityId: COMMUTE_METRIC_REGISTRATION.priorityId,
-    unit: COMMUTE_METRIC_REGISTRATION.unit,
-    originValue: origin.meanMinutes,
-    destinationValue: destination.meanMinutes,
-    deltaValue: destination.meanMinutes - origin.meanMinutes,
-    source: {
-      dataset: snapshot.dataset,
-      publisher: snapshot.publisher,
-      sourceUrl: snapshot.artifacts.b08013.sourceUrl,
-      termsUrl: snapshot.termsUrl,
-    },
-    observationPeriod: snapshot.observationPeriod,
-    releasedOn: snapshot.releasedOn,
-    verifiedOn: snapshot.verifiedOn,
-    geographies: {
-      origin: {
-        kind: "cbsa",
-        code: originRecord.cbsaCode,
-        label: originRecord.cbsaLabel,
-        matchQuality: "exact",
-      },
-      destination: {
-        kind: "cbsa",
-        code: destinationRecord.cbsaCode,
-        label: destinationRecord.cbsaLabel,
-        matchQuality: "exact",
-      },
-    },
-    snapshotVersion: COMPARISON_SNAPSHOT_VERSION,
-    snapshotSha256,
-    transformation: {
-      id: COMMUTE_METRIC_REGISTRATION.transformationId,
-      version: COMMUTE_METRIC_REGISTRATION.transformationVersion,
-      preferredDirection: COMMUTE_METRIC_REGISTRATION.preferredDirection,
-      outputs: {
-        originUtilityBps: origin.utilityBps,
-        destinationUtilityBps: destination.utilityBps,
-        originUncertaintyBps: origin.utilityUncertaintyBps,
-        destinationUncertaintyBps: destination.utilityUncertaintyBps,
-      },
-    },
-    materialityPolicy: {
-      utilityDeltaBps: COMMUTE_METRIC_REGISTRATION.materialityThresholdBps,
-      rationale: COMMUTE_METRIC_REGISTRATION.materialityRationale,
-    },
-    quality: {
-      freshness: "current",
-      missingness: "complete",
-      marginOfError: {
-        origin: origin.marginOfError90Minutes,
-        destination: destination.marginOfError90Minutes,
-      },
-      coverageBps: null,
-      grade: { value: grade, policyVersion: "1.0.0" },
-    },
-  };
 };
 
-export const promoteLosAngelesToSeattleCommuteBenchmark = (
-  snapshot: VerifiedRawCommuteSnapshot,
+export const promoteLosAngelesToSeattleCommuteBenchmarkFromProfiles = (
+  originProfile: VerifiedMetroProfile,
+  destinationProfile: VerifiedMetroProfile,
 ): VerifiedBenchmarkComparison => {
-  const originRecord = snapshot.metros.find(
-    (record) => record.side === "origin",
+  const originRawSnapshot = getProfileRawSnapshot(
+    originProfile,
+    RAW_SNAPSHOT_ID,
   );
-  const destinationRecord = snapshot.metros.find(
-    (record) => record.side === "destination",
+  const destinationRawSnapshot = getProfileRawSnapshot(
+    destinationProfile,
+    RAW_SNAPSHOT_ID,
   );
-  if (originRecord === undefined || destinationRecord === undefined) {
-    throw new Error("Verified snapshot lacks a comparison side.");
+  if (originRawSnapshot.sha256 !== destinationRawSnapshot.sha256) {
+    throw new Error("Metro profiles disagree on the commute raw snapshot.");
   }
-  const placeholderEvidence = buildEvidence(snapshot, CHECKSUM_PLACEHOLDER);
+
+  const placeholderEvidence = composeMetricEvidenceFromProfiles({
+    originProfile,
+    destinationProfile,
+    metricId: COMMUTE_METRIC_REGISTRATION.metricId,
+    evidenceId: "benchmark.commute_time.acs1.2024.la_seattle",
+    preferredDirection: COMMUTE_METRIC_REGISTRATION.preferredDirection,
+    snapshotVersion: COMPARISON_SNAPSHOT_VERSION,
+    snapshotSha256: CHECKSUM_PLACEHOLDER,
+  });
   const draft = {
     snapshot: {
       id: "acs1.2024.commute.la_seattle",
       version: COMPARISON_SNAPSHOT_VERSION,
       sha256: CHECKSUM_PLACEHOLDER,
       admissionStatus: "research_only",
-      rawSnapshot: {
-        id: snapshot.id,
-        sha256: snapshot.sha256,
-      },
-      sourceArtifacts: Object.values(snapshot.artifacts).map((artifact) => ({
-        id: artifact.id,
-        sourceUrl: artifact.sourceUrl,
-        sha256: artifact.sha256,
-      })),
+      rawSnapshot: cloneJson(originRawSnapshot),
+      sourceArtifacts: orderedSourceArtifacts(
+        originProfile,
+        destinationProfile,
+      ),
       derivation: {
         id: "acs.commute_mean.b08013_b08006",
         version: "1.0.0",
       },
-      delineationVersion: snapshot.delineationVersion,
-      verifiedOn: snapshot.verifiedOn,
+      delineationVersion: "OMB Bulletin 23-01 / Census July 2023",
+      verifiedOn: "2026-07-17",
     },
-    origin: metroRef(originRecord, snapshot),
-    destination: metroRef(destinationRecord, snapshot),
+    origin: cloneJson(originProfile.metro),
+    destination: cloneJson(destinationProfile.metro),
     priorities: [
       {
-        priorityId: COMMUTE_METRIC_REGISTRATION.priorityId,
+        priorityId: placeholderEvidence.priorityId,
         originUtilityBps:
           placeholderEvidence.transformation.outputs.originUtilityBps,
         destinationUtilityBps:
           placeholderEvidence.transformation.outputs.destinationUtilityBps,
         materialityThresholdBps:
-          COMMUTE_METRIC_REGISTRATION.materialityThresholdBps,
-        transformationId: COMMUTE_METRIC_REGISTRATION.transformationId,
-        transformationVersion:
-          COMMUTE_METRIC_REGISTRATION.transformationVersion,
+          placeholderEvidence.materialityPolicy.utilityDeltaBps,
+        transformationId: placeholderEvidence.transformation.id,
+        transformationVersion: placeholderEvidence.transformation.version,
         evidence: placeholderEvidence,
       },
     ],
@@ -201,7 +117,15 @@ export const promoteLosAngelesToSeattleCommuteBenchmark = (
       `Promoted LA-to-Seattle comparison changed without a versioned checksum update: received ${checksum}.`,
     );
   }
-  const evidence = buildEvidence(snapshot, checksum);
+  const evidence = composeMetricEvidenceFromProfiles({
+    originProfile,
+    destinationProfile,
+    metricId: COMMUTE_METRIC_REGISTRATION.metricId,
+    evidenceId: "benchmark.commute_time.acs1.2024.la_seattle",
+    preferredDirection: COMMUTE_METRIC_REGISTRATION.preferredDirection,
+    snapshotVersion: COMPARISON_SNAPSHOT_VERSION,
+    snapshotSha256: checksum,
+  });
 
   return verifyBenchmarkComparison({
     ...draft,
@@ -210,7 +134,24 @@ export const promoteLosAngelesToSeattleCommuteBenchmark = (
   });
 };
 
+/** Compatibility wrapper for the original raw-snapshot promotion API. */
+export const promoteLosAngelesToSeattleCommuteBenchmark = (
+  snapshot: VerifiedRawCommuteSnapshot,
+): VerifiedBenchmarkComparison => {
+  const originProfile = loadLosAngelesResearchMetroProfile();
+  const destinationProfile = loadSeattleResearchMetroProfile();
+  const profileSnapshot = getProfileRawSnapshot(originProfile, snapshot.id);
+  if (profileSnapshot.sha256 !== snapshot.sha256) {
+    throw new Error("Raw commute snapshot differs from the promoted profiles.");
+  }
+  return promoteLosAngelesToSeattleCommuteBenchmarkFromProfiles(
+    originProfile,
+    destinationProfile,
+  );
+};
+
 export const loadLosAngelesToSeattleCommuteBenchmark = () =>
-  promoteLosAngelesToSeattleCommuteBenchmark(
-    verifyRawCommuteSnapshot(acs2024CommuteLaSeattleRawSnapshot),
+  promoteLosAngelesToSeattleCommuteBenchmarkFromProfiles(
+    loadLosAngelesResearchMetroProfile(),
+    loadSeattleResearchMetroProfile(),
   );

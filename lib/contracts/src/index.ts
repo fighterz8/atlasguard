@@ -4,6 +4,7 @@ export * from "./context-metric";
 export * from "./decision-profile";
 export * from "./decision-rules";
 export * from "./evaluation-result";
+export * from "./metro-profile";
 export * from "./primitives";
 export * from "./scenario-input";
 export * from "./sensitivity";

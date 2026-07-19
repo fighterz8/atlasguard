@@ -11,6 +11,7 @@ export * from "./raw-housing-snapshot";
 export * from "./raw-climate-snapshot";
 export * from "./raw/noaa-1991-2020-hot-days-la-seattle";
 export * from "./raw-snapshot";
+export * from "./research-metro-profiles";
 export * from "./research-scenarios/la-seattle-balanced";
 export * from "./source-registry";
 export * from "./source-extraction";

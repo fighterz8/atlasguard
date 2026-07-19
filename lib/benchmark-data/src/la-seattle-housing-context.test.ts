@@ -5,7 +5,10 @@ import { calculateContextMetricComparisonChecksum } from "@workspace/contracts";
 import {
   loadLosAngelesToSeattleHousingContext,
   LOS_ANGELES_SEATTLE_HOUSING_CONTEXT_SHA256,
+  promoteLosAngelesToSeattleHousingContext,
 } from "./la-seattle-housing-context";
+import { acs2024RentLaSeattleRawSnapshot } from "./raw/acs1-2024-rent-la-seattle";
+import { verifyRawHousingSnapshot } from "./raw-housing-snapshot";
 
 describe("LA to Seattle housing context", () => {
   it("promotes exact ACS values as context-only evidence", () => {
@@ -44,6 +47,14 @@ describe("LA to Seattle housing context", () => {
     });
     expect(comparison.snapshot.rawSnapshot.sha256).toBe(
       "a281fd6f24152a9908bf51d62119a701b653adec91d5633fc5f70c8e683608c1",
+    );
+  });
+
+  it("preserves the original raw-snapshot promotion API", () => {
+    const snapshot = verifyRawHousingSnapshot(acs2024RentLaSeattleRawSnapshot);
+
+    expect(promoteLosAngelesToSeattleHousingContext(snapshot)).toEqual(
+      loadLosAngelesToSeattleHousingContext(),
     );
   });
 });
