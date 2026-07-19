@@ -1,4 +1,4 @@
-import { loadLosAngelesToSeattleResearchBenchmark } from "@workspace/benchmark-data";
+import { getResearchMetroBenchmark } from "@workspace/benchmark-data";
 import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 import { evaluateResearchMoveDecision } from "@workspace/decision-core";
 
@@ -27,14 +27,22 @@ export function evaluateWizardDraft(
       errors: { scenario: "Choose a supported hot-day preference." },
     };
   }
+  const benchmark = getResearchMetroBenchmark(
+    adapted.scenario.originMetroSlug,
+    adapted.scenario.destinationMetroSlug,
+    climatePriority.preferredDirection,
+  );
+  if (benchmark === null) {
+    return {
+      success: false,
+      errors: {
+        scenario: "Choose two different locations from the supported cohort.",
+      },
+    };
+  }
 
   return {
     success: true,
-    evaluation: evaluateResearchMoveDecision(
-      adapted.scenario,
-      loadLosAngelesToSeattleResearchBenchmark(
-        climatePriority.preferredDirection,
-      ),
-    ),
+    evaluation: evaluateResearchMoveDecision(adapted.scenario, benchmark),
   };
 }

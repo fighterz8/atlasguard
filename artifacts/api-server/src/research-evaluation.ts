@@ -1,5 +1,5 @@
 import {
-  loadLosAngelesToSeattleResearchBenchmark,
+  getResearchMetroBenchmark,
   resolveSupportedResearchComparison,
 } from "@workspace/benchmark-data";
 import type {
@@ -41,7 +41,7 @@ const unsupported = (
   issues: [{ code, message, path }],
 });
 
-export const evaluateLosAngelesToSeattleResearchScenario = (
+export const evaluateResearchMetroScenario = (
   scenario: ScenarioInput,
 ): ResearchEvaluationAttempt => {
   const comparison = resolveSupportedResearchComparison(
@@ -51,7 +51,7 @@ export const evaluateLosAngelesToSeattleResearchScenario = (
   if (comparison === null) {
     return unsupported(
       "unsupported_location_pair",
-      "Research evaluation currently supports only the Los Angeles to Seattle comparison.",
+      "Research evaluation currently supports only the promoted four-metro cohort.",
       [],
     );
   }
@@ -69,14 +69,21 @@ export const evaluateLosAngelesToSeattleResearchScenario = (
   }
 
   try {
+    const benchmark = getResearchMetroBenchmark(
+      scenario.originMetroSlug,
+      scenario.destinationMetroSlug,
+      climatePriority.preferredDirection,
+    );
+    if (benchmark === null) {
+      return unsupported(
+        "unsupported_location_pair",
+        "Research evaluation currently supports only the promoted four-metro cohort.",
+        [],
+      );
+    }
     return {
       success: true,
-      result: evaluateResearchMoveDecision(
-        scenario,
-        loadLosAngelesToSeattleResearchBenchmark(
-          climatePriority.preferredDirection,
-        ),
-      ),
+      result: evaluateResearchMoveDecision(scenario, benchmark),
     };
   } catch (error) {
     if (error instanceof MoveDecisionPreflightError) {
@@ -90,9 +97,12 @@ export const evaluateLosAngelesToSeattleResearchScenario = (
   }
 };
 
+export const evaluateLosAngelesToSeattleResearchScenario =
+  evaluateResearchMetroScenario;
+
 export const researchEvaluationCapability: EvaluationCapability = Object.freeze(
   {
     mode: "research",
-    evaluate: evaluateLosAngelesToSeattleResearchScenario,
+    evaluate: evaluateResearchMetroScenario,
   },
 );

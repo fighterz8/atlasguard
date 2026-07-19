@@ -53,9 +53,14 @@ describe("Wizard prototype model", () => {
       originSlug: "seattle-wa" as const,
       destinationSlug: "los-angeles-ca" as const,
     };
-    expect(validateWizardStep("move", reverse).destinationSlug).toBe(
-      "This research slice currently supports Los Angeles to Seattle only.",
-    );
+    expect(validateWizardStep("move", reverse)).toEqual({});
+
+    const expanded = {
+      ...empty,
+      originSlug: "austin-tx" as const,
+      destinationSlug: "san-diego-ca" as const,
+    };
+    expect(validateWizardStep("move", expanded)).toEqual({});
   });
 
   it("accepts a signed retained-property monthly net", () => {

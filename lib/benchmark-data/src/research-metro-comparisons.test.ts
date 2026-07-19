@@ -18,7 +18,7 @@ describe("internal four-metro comparisons", () => {
     internalResearchMetroComparisons.forEach((comparison) => {
       expect(comparison.origin.slug).not.toBe(comparison.destination.slug);
       expect(comparison.admissionStatus).toBe("research_only");
-      expect(comparison.userFacingEligible).toBe(false);
+      expect(comparison.userFacingEligible).toBe(true);
       expect(Object.isFrozen(comparison.metrics.climate.traits)).toBe(true);
     });
   });
@@ -103,7 +103,7 @@ describe("internal four-metro comparisons", () => {
     });
   });
 
-  it("fails closed for same or unknown metros and does not expand public support", () => {
+  it("fails closed for same or unknown metros and exposes only the cohort", () => {
     expect(
       getInternalResearchMetroComparison("austin-tx", "austin-tx"),
     ).toBeNull();
@@ -113,9 +113,14 @@ describe("internal four-metro comparisons", () => {
     expect(supportedResearchPlaces.map(({ slug }) => slug)).toEqual([
       "los-angeles-ca",
       "seattle-wa",
+      "austin-tx",
+      "san-diego-ca",
     ]);
     expect(
       resolveSupportedResearchComparison("austin-tx", "seattle-wa"),
-    ).toBeNull();
+    ).toMatchObject({
+      origin: { slug: "austin-tx" },
+      destination: { slug: "seattle-wa" },
+    });
   });
 });

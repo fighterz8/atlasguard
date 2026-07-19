@@ -132,8 +132,9 @@ export function MoveStep({ draft, errors, onChange }: MoveStepProps) {
       </div>
 
       <div className="mt-8 rounded-xl border border-caution/25 bg-caution-surface p-4 text-sm leading-6 text-caution">
-        This prototype supports Los Angeles and Seattle only. A selected city is
-        preserved separately from the metro used for regional evidence.
+        This research cohort supports Los Angeles, Seattle, Austin, and San
+        Diego. The selected city stays separate from the metro used for regional
+        evidence.
       </div>
     </div>
   );

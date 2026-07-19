@@ -252,7 +252,7 @@ export function validateWizardStep(
       ) === null
     ) {
       errors.destinationSlug =
-        "This research slice currently supports Los Angeles to Seattle only.";
+        "This comparison is not available in the current four-metro research cohort.";
     }
   }
 

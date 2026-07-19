@@ -32,17 +32,22 @@ const observation = (
 };
 
 describe("research metro profiles", () => {
-  it("promotes exactly four independent profiles without expanding public routes", () => {
+  it("promotes exactly four independent profiles and the controlled cohort", () => {
     expect(
       supportedResearchMetroProfiles.map(({ metro }) => metro.slug),
     ).toEqual(["los-angeles-ca", "seattle-wa", "austin-tx", "san-diego-ca"]);
     expect(supportedResearchPlaces.map(({ slug }) => slug)).toEqual([
       "los-angeles-ca",
       "seattle-wa",
+      "austin-tx",
+      "san-diego-ca",
     ]);
     expect(
       resolveSupportedResearchComparison("austin-tx", "san-diego-ca"),
-    ).toBeNull();
+    ).toMatchObject({
+      origin: { slug: "austin-tx" },
+      destination: { slug: "san-diego-ca" },
+    });
   });
 
   it("locks each profile to its declared checksum", () => {

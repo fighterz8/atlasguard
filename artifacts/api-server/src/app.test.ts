@@ -180,6 +180,37 @@ describe("MoveWise API request parsing", () => {
     ).toMatchObject({ classification: "improves" });
   });
 
+  it("evaluates another promoted metro pair through the HTTP boundary", async () => {
+    const scenario: ScenarioInput = structuredClone(
+      losAngelesToSeattleBalancedResearchScenario,
+    );
+    scenario.originMetroSlug = "austin-tx";
+    scenario.destinationMetroSlug = "san-diego-ca";
+
+    const response = await fetch(`${researchBaseUrl}/evaluate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(scenario),
+    });
+    const result = ResearchEvaluationResultSchema.parse(await response.json());
+
+    expect(response.status).toBe(200);
+    expect(result.decisionProfile.scenario).toMatchObject({
+      origin: { slug: "austin-tx", cbsaCode: "12420" },
+      destination: { slug: "san-diego-ca", cbsaCode: "41740" },
+    });
+    expect(
+      result.decisionProfile.evidence.find(
+        (evidence) =>
+          evidence.kind === "benchmark_metric" &&
+          evidence.priorityId === "commute_time",
+      ),
+    ).toMatchObject({
+      originValue: expect.closeTo(28.2097375862, 10),
+      destinationValue: expect.closeTo(26.0618486909, 10),
+    });
+  });
+
   it("selects the opposite verified benchmark for a more-hot-days preference", async () => {
     const scenario: ScenarioInput = structuredClone(
       losAngelesToSeattleBalancedResearchScenario,
@@ -226,7 +257,7 @@ describe("MoveWise API request parsing", () => {
         {
           code: "unsupported_location_pair",
           message:
-            "Research evaluation currently supports only the Los Angeles to Seattle comparison.",
+            "Research evaluation currently supports only the promoted four-metro cohort.",
           path: [],
         },
       ],

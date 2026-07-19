@@ -142,7 +142,7 @@ const composeInternalResearchMetroComparison = (
     id: `research-metro-comparison.${originProfile.metro.slug}.to.${destinationProfile.metro.slug}.1-0-0`,
     version: INTERNAL_RESEARCH_METRO_COMPARISON_VERSION,
     admissionStatus: "research_only" as const,
-    userFacingEligible: false as const,
+    userFacingEligible: true as const,
     origin: {
       slug: originProfile.metro.slug,
       label: originProfile.metro.label,

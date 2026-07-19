@@ -123,17 +123,17 @@ describe("Wizard scenario adapter", () => {
     },
   );
 
-  it("fails closed for the unsupported reverse comparison", () => {
+  it("adapts a reverse comparison from the promoted cohort", () => {
     const draft = validDraft();
     draft.originSlug = "seattle-wa";
     draft.destinationSlug = "los-angeles-ca";
 
-    expect(adaptWizardDraftToScenarioInput(draft)).toEqual({
-      success: false,
-      errors: {
-        destinationSlug:
-          "This research slice currently supports Los Angeles to Seattle only.",
-      },
+    const result = adaptWizardDraftToScenarioInput(draft);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.scenario).toMatchObject({
+      originMetroSlug: "seattle-wa",
+      destinationMetroSlug: "los-angeles-ca",
     });
   });
 

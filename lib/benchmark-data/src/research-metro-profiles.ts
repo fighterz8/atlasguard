@@ -20,7 +20,6 @@ import { noaa1991To2020HotDaysLaSeattleRawSnapshot } from "./raw/noaa-1991-2020-
 import { verifyRawClimateSnapshot } from "./raw-climate-snapshot";
 import { verifyRawHousingSnapshot } from "./raw-housing-snapshot";
 import { verifyRawCommuteSnapshot } from "./raw-snapshot";
-import { getSupportedResearchComparisonPlace } from "./supported-research-locations";
 
 export {
   AUSTIN_RESEARCH_METRO_PROFILE_SHA256,
@@ -31,6 +30,10 @@ export {
 
 const PROFILE_VERSION = "1.0.0" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
+const LA_SEATTLE_PROFILE_SLUGS = {
+  origin: "los-angeles-ca",
+  destination: "seattle-wa",
+} as const;
 
 export const LOS_ANGELES_RESEARCH_METRO_PROFILE_SHA256 =
   "a7cbf056c5f3eb929b9a9bf67faa43159281afee2d32b5877ad2c237955aac90";
@@ -74,27 +77,22 @@ const sourceArtifact = (
 });
 
 const assertSharedGeography = (side: ComparisonSide): void => {
-  const place = getSupportedResearchComparisonPlace(side);
   const commute = recordFor(commuteSnapshot.metros, side);
   const housing = recordFor(housingSnapshot.metros, side);
   const climate = recordFor(climateSnapshot.places, side);
-  const candidates = [commute, housing];
-
-  candidates.forEach((candidate) => {
-    if (
-      candidate.cbsaCode !== place.cbsaCode ||
-      candidate.cbsaLabel !== place.metro ||
-      candidate.selectedPlace.city !== place.city ||
-      candidate.selectedPlace.stateCode !== place.state
-    ) {
-      throw new Error(`Verified ${side} geography differs from the catalog.`);
-    }
-  });
   if (
-    climate.selectedPlace.city !== place.city ||
-    climate.selectedPlace.stateCode !== place.state
+    housing.cbsaCode !== commute.cbsaCode ||
+    housing.cbsaLabel !== commute.cbsaLabel ||
+    housing.selectedPlace.city !== commute.selectedPlace.city ||
+    housing.selectedPlace.stateCode !== commute.selectedPlace.stateCode
   ) {
-    throw new Error(`Verified ${side} climate place differs from the catalog.`);
+    throw new Error(`Verified ${side} ACS geographies disagree.`);
+  }
+  if (
+    climate.selectedPlace.city !== commute.selectedPlace.city ||
+    climate.selectedPlace.stateCode !== commute.selectedPlace.stateCode
+  ) {
+    throw new Error(`Verified ${side} climate place differs from ACS.`);
   }
 };
 
@@ -138,7 +136,7 @@ const assembleResearchMetroProfile = (
   side: ComparisonSide,
 ): VerifiedMetroProfile => {
   assertSharedGeography(side);
-  const place = getSupportedResearchComparisonPlace(side);
+  const slug = LA_SEATTLE_PROFILE_SLUGS[side];
   const commuteRecord = recordFor(commuteSnapshot.metros, side);
   const housingRecord = recordFor(housingSnapshot.metros, side);
   const commute = deriveCommuteMetric(commuteRecord);
@@ -172,7 +170,7 @@ const assembleResearchMetroProfile = (
 
   const draft = MetroProfileSchema.parse({
     snapshot: {
-      id: `metro-profile.${place.slug}.2026-07-18`,
+      id: `metro-profile.${slug}.2026-07-18`,
       version: PROFILE_VERSION,
       sha256: CHECKSUM_PLACEHOLDER,
       admissionStatus: "research_only",
@@ -191,7 +189,7 @@ const assembleResearchMetroProfile = (
       verifiedOn: "2026-07-18",
     },
     metro: {
-      slug: place.slug,
+      slug,
       cbsaCode: commuteRecord.cbsaCode,
       label: commuteRecord.cbsaLabel,
       selectedPlace: commuteRecord.selectedPlace,
@@ -346,7 +344,7 @@ const assembleResearchMetroProfile = (
       : SEATTLE_RESEARCH_METRO_PROFILE_SHA256;
   if (!/^0+$/.test(expected) && checksum !== expected) {
     throw new Error(
-      `Promoted ${place.slug} metro profile changed without a versioned checksum update: received ${checksum}.`,
+      `Promoted ${slug} metro profile changed without a versioned checksum update: received ${checksum}.`,
     );
   }
 
@@ -370,7 +368,10 @@ export const supportedResearchMetroProfiles = Object.freeze([
 ] as const);
 
 export type ResearchMetroProfileSlug =
-  (typeof supportedResearchMetroProfiles)[number]["metro"]["slug"];
+  | "los-angeles-ca"
+  | "seattle-wa"
+  | "austin-tx"
+  | "san-diego-ca";
 
 export const getSupportedResearchMetroProfile = (
   slug: string,

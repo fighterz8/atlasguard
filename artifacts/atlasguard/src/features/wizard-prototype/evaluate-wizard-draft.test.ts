@@ -130,4 +130,29 @@ describe("Wizard deterministic evaluation", () => {
       },
     });
   });
+
+  it("evaluates an Austin to San Diego move from the selected profiles", () => {
+    const draft = reviewedDraft();
+    draft.originSlug = "austin-tx";
+    draft.destinationSlug = "san-diego-ca";
+
+    const result = evaluateWizardDraft(draft);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    expect(result.evaluation.decisionProfile.scenario).toMatchObject({
+      origin: { slug: "austin-tx", cbsaCode: "12420" },
+      destination: { slug: "san-diego-ca", cbsaCode: "41740" },
+    });
+    expect(
+      result.evaluation.decisionProfile.evidence.find(
+        (evidence) =>
+          evidence.kind === "benchmark_metric" &&
+          evidence.priorityId === "commute_time",
+      ),
+    ).toMatchObject({
+      originValue: expect.closeTo(28.2097375862, 10),
+      destinationValue: expect.closeTo(26.0618486909, 10),
+    });
+  });
 });
