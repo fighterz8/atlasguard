@@ -1,16 +1,22 @@
 import { Copy, Home, Landmark } from "lucide-react";
+import React from "react";
 
 import { MoneyComparisonCard, moneyComparisons } from "./money-comparison-card";
 import type { BasisKey, FinanceKey, ValueKey } from "./money-control-types";
 import { MoneyInput } from "./money-input";
 import type {
   AssumptionBasis,
+  SupportedPlaceSlug,
   WizardErrors,
   WizardPrototypeDraft,
 } from "./model";
+import { getStateIncomeTaxContext } from "./state-income-tax-context";
+import { StatusBadge } from "../ux-system/status-badge";
 
 type MoneyStepProps = {
   finances: WizardPrototypeDraft["finances"];
+  originSlug: SupportedPlaceSlug | "";
+  destinationSlug: SupportedPlaceSlug | "";
   errors: WizardErrors;
   onValueChange: (key: ValueKey, value: string) => void;
   onBasisChange: (key: BasisKey, value: AssumptionBasis) => void;
@@ -20,12 +26,25 @@ type MoneyStepProps = {
 
 export function MoneyStep({
   finances,
+  originSlug,
+  destinationSlug,
   errors,
   onValueChange,
   onBasisChange,
   onGrossKnownChange,
   onCopyCurrent,
 }: MoneyStepProps) {
+  const taxContext =
+    originSlug === "" || destinationSlug === ""
+      ? null
+      : getStateIncomeTaxContext(originSlug, destinationSlug);
+  const taxTone =
+    taxContext?.direction === "destination_may_increase_take_home"
+      ? ("favorable" as const)
+      : taxContext?.direction === "destination_may_reduce_take_home"
+        ? ("caution" as const)
+        : ("neutral" as const);
+
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
@@ -45,6 +64,45 @@ export function MoneyStep({
         Enter what is true today, then use the sliders to explore what might
         change after the move. You can always type an exact amount.
       </p>
+
+      {taxContext ? (
+        <aside className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge tone={taxTone}>Official state context</StatusBadge>
+            <span className="text-xs font-medium text-slate-500">
+              State wage taxes only
+            </span>
+          </div>
+          <h2 className="mt-3 text-base font-semibold text-slate-950">
+            {taxContext.headline}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {taxContext.explanation}
+          </p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            {taxContext.boundary}
+          </p>
+          <details className="mt-3 border-t border-slate-200 pt-3">
+            <summary className="min-h-11 cursor-pointer py-2 text-xs font-semibold text-slate-700">
+              Official sources · {taxContext.version}
+            </summary>
+            <ul className="space-y-2 pb-1 text-xs text-slate-600">
+              {taxContext.sources.map((source) => (
+                <li key={source.url}>
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-teal-800 underline decoration-teal-300 underline-offset-2 hover:text-teal-950"
+                  >
+                    {source.publisher} · {source.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </aside>
+      ) : null}
 
       <div className="mt-6 flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

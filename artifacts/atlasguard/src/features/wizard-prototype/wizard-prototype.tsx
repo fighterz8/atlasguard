@@ -467,6 +467,8 @@ export function WizardPrototype({
                   {step === "money" ? (
                     <MoneyStep
                       finances={draft.finances}
+                      originSlug={draft.originSlug}
+                      destinationSlug={draft.destinationSlug}
                       errors={errors}
                       onValueChange={updateFinanceValue}
                       onBasisChange={updateBasis}
