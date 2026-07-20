@@ -20,6 +20,7 @@ export * from "./research-metro-profiles";
 export * from "./research-metro-comparisons";
 export * from "./research-metro-benchmark";
 export * from "./research-metro-housing-context";
+export * from "./research-metro-income-guidance";
 export * from "./research-scenarios/la-seattle-balanced";
 export * from "./source-registry";
 export * from "./source-extraction";
