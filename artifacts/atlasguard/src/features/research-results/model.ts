@@ -635,18 +635,25 @@ export const createResearchResultsViewModel = (
       ? {
           label: `${unmetCount} essential ${unmetCount === 1 ? "need" : "needs"} not met`,
           tone: "risk" as const,
+          active: true,
         }
       : conditionalCount > 0
         ? {
             label: `${conditionalCount} essential ${conditionalCount === 1 ? "need" : "needs"} not confirmed`,
             tone: "caution" as const,
+            active: true,
           }
         : confirmedEssentialCount > 0
           ? {
               label: `${confirmedEssentialCount} essential ${confirmedEssentialCount === 1 ? "need" : "needs"} confirmed`,
               tone: "favorable" as const,
+              active: true,
             }
-          : { label: "No essentials marked", tone: "neutral" as const }
+          : {
+              label: "No essentials marked",
+              tone: "neutral" as const,
+              active: false,
+            }
     : null;
   const deterministicHousehold =
     deterministicResult && deterministicAnswers

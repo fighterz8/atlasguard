@@ -329,6 +329,7 @@ describe("research results view model", () => {
       essentialSummary: {
         label: "1 essential need not confirmed",
         tone: "caution",
+        active: true,
       },
     });
     expect(model.comparison.financialRows).toEqual(

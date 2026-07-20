@@ -74,6 +74,25 @@ describe("MoveWise score presentation", () => {
     expect(html).toContain("prevents a favorable score");
   });
 
+  it("does not announce an essential override when no essentials are marked", () => {
+    const { score } = createResearchResultsViewModel();
+    const html = renderToStaticMarkup(
+      <ScoreExplanation
+        score={{
+          ...score,
+          mode: "deterministic",
+          essentialSummary: {
+            label: "No essentials marked",
+            tone: "neutral",
+            active: false,
+          },
+        }}
+      />,
+    );
+
+    expect(html).not.toContain("Essential-needs override");
+  });
+
   it("explains deterministic essentials and user-supplied household factors", () => {
     const draft = createInitialWizardDraft();
     Object.assign(draft, {

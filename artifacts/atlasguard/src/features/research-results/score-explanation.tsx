@@ -137,7 +137,7 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
         </StatusBadge>
       </div>
 
-      {score.mode === "deterministic" && score.essentialSummary ? (
+      {score.mode === "deterministic" && score.essentialSummary?.active ? (
         <div className="mt-6 border-l-4 border-caution bg-caution-surface px-5 py-4">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-caution">
             Essential-needs override
