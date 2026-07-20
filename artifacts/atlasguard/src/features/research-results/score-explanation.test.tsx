@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { ScoreExplanation } from "./score-explanation";
 import { HouseholdFit } from "./household-fit";
+import { DecisionNotes } from "./decision-notes";
 import { createResearchResultsViewModel } from "./model";
 import { SummaryPanel } from "./summary-panel";
 import { evaluateWizardDraft } from "../wizard-prototype/evaluate-wizard-draft";
@@ -150,6 +151,9 @@ describe("MoveWise score presentation", () => {
     const householdHtml = renderToStaticMarkup(
       <HouseholdFit household={model.household} />,
     );
+    const decisionNotesHtml = renderToStaticMarkup(
+      <DecisionNotes {...model} />,
+    );
 
     expect(summaryHtml).toContain("No clear advantage yet");
     expect(summaryHtml).toContain("Deterministic 0.2.0");
@@ -167,5 +171,7 @@ describe("MoveWise score presentation", () => {
     expect(householdHtml).not.toContain("Expected change");
     expect(householdHtml).not.toContain("Household score effect");
     expect(householdHtml).not.toContain("Not sure yet");
+    expect(decisionNotesHtml).not.toContain("Verify the expected destination");
+    expect(decisionNotesHtml).not.toContain("Assumptions to watch");
   });
 });

@@ -413,6 +413,7 @@ describe("research results view model", () => {
     expect(model.score.readiness.explanation).not.toContain(
       "Needs confirmation",
     );
+    expect(model.nextSteps).toEqual([]);
   });
 
   it("labels public estimates, baselines, overrides, and transition tenure separately", () => {

@@ -1,3 +1,5 @@
+import React from "react";
+
 import type { ResearchResultsViewModel } from "./model";
 
 type DecisionNotesProps = Pick<
@@ -20,7 +22,13 @@ export function DecisionNotes({
 
   return (
     <section className="border-t border-slate-300 py-12 sm:py-16">
-      <div className="grid gap-12 lg:grid-cols-2 lg:gap-20">
+      <div
+        className={
+          nextSteps.length > 0
+            ? "grid gap-12 lg:grid-cols-2 lg:gap-20"
+            : "max-w-3xl"
+        }
+      >
         <div aria-labelledby="decision-notes-heading">
           <p className="eyebrow">The reasoning</p>
           <h2
@@ -67,28 +75,32 @@ export function DecisionNotes({
           ) : null}
         </div>
 
-        <div aria-labelledby="next-steps-heading">
-          <p className="eyebrow">Before you decide</p>
-          <h2
-            id="next-steps-heading"
-            className="mt-3 font-serif text-4xl tracking-[-0.035em] text-slate-950"
-          >
-            Close the important gaps
-          </h2>
-          <ol className="mt-7 border-y border-slate-300">
-            {nextSteps.map((step, index) => (
-              <li
-                key={`${index}-${step}`}
-                className="grid grid-cols-[2rem_1fr] gap-3 border-b border-slate-200 py-4 last:border-0"
-              >
-                <span className="font-serif text-xl text-teal-800">
-                  {index + 1}
-                </span>
-                <span className="text-sm leading-6 text-slate-700">{step}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
+        {nextSteps.length > 0 ? (
+          <div aria-labelledby="next-steps-heading">
+            <p className="eyebrow">Before you decide</p>
+            <h2
+              id="next-steps-heading"
+              className="mt-3 font-serif text-4xl tracking-[-0.035em] text-slate-950"
+            >
+              Close the important gaps
+            </h2>
+            <ol className="mt-7 border-y border-slate-300">
+              {nextSteps.map((step, index) => (
+                <li
+                  key={`${index}-${step}`}
+                  className="grid grid-cols-[2rem_1fr] gap-3 border-b border-slate-200 py-4 last:border-0"
+                >
+                  <span className="font-serif text-xl text-teal-800">
+                    {index + 1}
+                  </span>
+                  <span className="text-sm leading-6 text-slate-700">
+                    {step}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
       </div>
     </section>
   );

@@ -1081,10 +1081,12 @@ export const createResearchResultsViewModel = (
       drivers: profile.findings.drivers.map(findingText),
       tradeoffs: profile.findings.tradeoffs.map(findingText),
       blockers: profile.findings.blockers.map(findingText),
-      assumptions: profile.findings.assumptions.map(findingText),
+      assumptions: deterministicResult
+        ? []
+        : profile.findings.assumptions.map(findingText),
     },
     nextSteps: deterministicResult
-      ? [...deterministicHouseholdSteps, ...profileVerificationSteps]
+      ? deterministicHouseholdSteps
       : [nextStepCopy.review_decision_evidence, ...profileVerificationSteps],
     evidence: {
       definition: commuteMetric.definition,
