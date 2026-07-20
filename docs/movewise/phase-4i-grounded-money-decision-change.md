@@ -55,6 +55,19 @@ Commit `fa88906` removes those runtime requirements from application code, uses 
 
 The replacement immutable preview was opened from a new hosted-browser tab and verified at 390×844 and 1440×1000. The Wizard rendered, the startup fallback was replaced, the filled research example advanced to Money, all static assets returned HTTP 200, and there were no console errors, page errors, unexpected API requests, or horizontal overflow. This bounds the code/deployment defect; confirmation on the originally affected physical device remains the final acceptance check.
 
+### iPhone Chrome follow-up
+
+Nick confirmed that the replacement still remained on the server-rendered loading message in Chrome on an iPhone 16. Because all iOS browsers use Apple's WebKit engine, Chromium viewport emulation was not a sufficient compatibility test. The page HTML and hashed assets returned HTTP 200, localizing the remaining failure to module bootstrap or execution before React mounted; the precise device-side exception was not observable remotely.
+
+Commit `c744c20` removes that dependency entirely for this preview by emitting one Babel-transformed classic SystemJS application bundle with usage-derived polyfills and no `type="module"` scripts. The raw HTML also replaces an endless loading state with bounded `MW-BOOT-01` through `MW-BOOT-03` startup codes if JavaScript stalls, throws, or rejects before React mounts. Source-level regression tests lock both requirements.
+
+Full verification passes 52 test files / 376 tests. The exact hosted replacement contains zero module scripts and passes the complete four-step desktop and 320px flow without console errors, page errors, duplicate IDs, horizontal overflow, browser storage writes, or unexpected API requests. Physical iPhone confirmation remains the final acceptance gate.
+
+Second replacement preview:
+
+- Deployment: `dpl_Cfzae6m9nv5RL5BCLLaZT78uPn1M`
+- Wizard: `https://movewise-eyz0toi8e-fighterz8s-projects.vercel.app/research/wizard`
+
 ## Preserved boundaries
 
 This slice does not change accepted rule-`0.2.0` scoring, weights, caps, conditions, or fixture outcomes. It adds no minimum-evidence gate, rule `0.3.0`, numeric tax calculator, storage, public API activation, external data provider, push, merge, or production deployment.
