@@ -114,8 +114,8 @@ describe("MoveWise score presentation", () => {
       type: "apartment_or_condo",
       bedrooms: "2",
       bathrooms: "1",
-      maxMonthlyCost: "2000",
-      stopsMove: "no",
+      maxMonthlyCost: "1700",
+      stopsMove: "yes",
       assessment: "positive",
     };
     draft.householdPlan.supportNetwork = {
@@ -151,9 +151,9 @@ describe("MoveWise score presentation", () => {
       <HouseholdFit household={model.household} />,
     );
 
-    expect(summaryHtml).toContain("Promising if…");
+    expect(summaryHtml).toContain("No clear advantage yet");
     expect(summaryHtml).toContain("Deterministic 0.2.0");
-    expect(summaryHtml).toContain("1 essential need not confirmed");
+    expect(summaryHtml).toContain("1 essential need not met");
     expect(scoreHtml).toContain("Closest decision change");
     expect(scoreHtml).toContain("Essential-needs override");
     expect(scoreHtml).toContain("High financial risk under these assumptions");
@@ -162,8 +162,8 @@ describe("MoveWise score presentation", () => {
     expect(scoreHtml).toContain("housing-burden safety check could not run");
     expect(scoreHtml).toContain("Score rule 0.2.0");
     expect(householdHtml).toContain("Suitable housing");
-    expect(householdHtml).toContain("Somewhat easier");
-    expect(householdHtml).toContain("+10 points");
+    expect(householdHtml).not.toContain("Somewhat easier");
+    expect(householdHtml).not.toContain("+10 points");
     expect(householdHtml).toContain("Not sure yet");
     expect(householdHtml).toContain("Not part of my decision");
     expect(householdHtml).toContain("No score change");

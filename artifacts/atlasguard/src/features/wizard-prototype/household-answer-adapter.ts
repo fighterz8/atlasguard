@@ -1,7 +1,7 @@
 import {
   MOVEWISE_HOUSEHOLD_ANSWER_SCHEMA_VERSION,
+  MOVEWISE_HOUSEHOLD_EVIDENCE_PLAN_QUESTION_VERSION,
   MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE,
-  MOVEWISE_HOUSEHOLD_SCORED_PLAN_QUESTION_VERSION,
   createMoveWiseHouseholdAnswers,
 } from "@workspace/contracts";
 import type {
@@ -21,38 +21,19 @@ export type WizardHouseholdAnswerAdapterResult =
 
 type HouseholdFactorAnswer = MoveWiseHouseholdAnswerPayload["factors"][number];
 
-const assessedAnswer = (
+const excludedAnswer = (
   factorId: HouseholdFactorAnswer["factorId"],
-  stopsMove: "yes" | "no",
-  impact: HouseholdFactorAnswer["impact"] | undefined,
 ): HouseholdFactorAnswer => ({
   factorId,
-  importance: stopsMove === "yes" ? "essential" : "important",
-  impact: impact ?? "unavailable",
-  essentialStatus:
-    stopsMove === "no"
-      ? null
-      : impact === "strong_negative" || impact === "negative"
-        ? "confirmed_unmet"
-        : impact === undefined || impact === "unavailable"
-          ? "unconfirmed"
-          : "confirmed_met",
+  importance: "not_applicable",
+  impact: "excluded",
+  essentialStatus: null,
 });
 
-const conditionalAnswer = (
-  factorId: HouseholdFactorAnswer["factorId"],
-  needed: "yes" | "no",
-  stopsMove: "yes" | "no" | "",
-  impact: HouseholdFactorAnswer["impact"] | undefined,
-): HouseholdFactorAnswer =>
-  needed === "no"
-    ? {
-        factorId,
-        importance: "not_applicable",
-        impact: "excluded",
-        essentialStatus: null,
-      }
-    : assessedAnswer(factorId, stopsMove as "yes" | "no", impact);
+const parseWholeDollars = (value: string): number | null => {
+  const normalized = value.trim().replace(/,/g, "");
+  return /^\d+$/.test(normalized) ? Number(normalized) : null;
+};
 
 export function adaptWizardDraftToHouseholdAnswers(
   draft: WizardPrototypeDraft,
@@ -63,45 +44,39 @@ export function adaptWizardDraftToHouseholdAnswers(
   }
 
   const { householdPlan } = draft;
+  const destinationRent = parseWholeDollars(draft.finances.targetHousing);
+  const maximumRent = parseWholeDollars(householdPlan.housing.maxMonthlyCost);
+  if (destinationRent === null || maximumRent === null) {
+    return {
+      success: false,
+      errors: {
+        scenario:
+          "MoveWise needs a destination rent estimate and rent ceiling to evaluate the rental plan.",
+      },
+    };
+  }
+  const rentIsEssential = householdPlan.housing.stopsMove === "yes";
   const answersByFactor: Record<
     HouseholdFactorAnswer["factorId"],
     HouseholdFactorAnswer
   > = {
-    space_fit: assessedAnswer(
-      "space_fit",
-      householdPlan.housing.stopsMove as "yes" | "no",
-      householdPlan.housing.assessment,
-    ),
-    support_network: conditionalAnswer(
-      "support_network",
-      householdPlan.supportNetwork.needed as "yes" | "no",
-      householdPlan.supportNetwork.stopsMove,
-      householdPlan.supportNetwork.assessment,
-    ),
-    childcare_continuity: conditionalAnswer(
-      "childcare_continuity",
-      householdPlan.childcare.needed as "yes" | "no",
-      householdPlan.childcare.stopsMove,
-      householdPlan.childcare.assessment,
-    ),
-    school_continuity: conditionalAnswer(
-      "school_continuity",
-      householdPlan.school.needed as "yes" | "no",
-      householdPlan.school.stopsMove,
-      householdPlan.school.assessment,
-    ),
-    required_services_continuity: conditionalAnswer(
+    space_fit: {
+      factorId: "space_fit",
+      importance: rentIsEssential ? "essential" : "important",
+      impact: "unavailable",
+      essentialStatus: rentIsEssential
+        ? destinationRent <= maximumRent
+          ? "confirmed_met"
+          : "confirmed_unmet"
+        : null,
+    },
+    support_network: excludedAnswer("support_network"),
+    childcare_continuity: excludedAnswer("childcare_continuity"),
+    school_continuity: excludedAnswer("school_continuity"),
+    required_services_continuity: excludedAnswer(
       "required_services_continuity",
-      householdPlan.requiredServices.needed as "yes" | "no",
-      householdPlan.requiredServices.stopsMove,
-      householdPlan.requiredServices.assessment,
     ),
-    car_free_access: conditionalAnswer(
-      "car_free_access",
-      householdPlan.carFreeAccess.needed as "yes" | "no",
-      householdPlan.carFreeAccess.stopsMove,
-      householdPlan.carFreeAccess.assessment,
-    ),
+    car_free_access: excludedAnswer("car_free_access"),
   };
   const factors = MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE[
     draft.householdMode
@@ -111,7 +86,7 @@ export function adaptWizardDraftToHouseholdAnswers(
     success: true,
     answers: createMoveWiseHouseholdAnswers({
       schemaVersion: MOVEWISE_HOUSEHOLD_ANSWER_SCHEMA_VERSION,
-      questionVersion: MOVEWISE_HOUSEHOLD_SCORED_PLAN_QUESTION_VERSION,
+      questionVersion: MOVEWISE_HOUSEHOLD_EVIDENCE_PLAN_QUESTION_VERSION,
       mode: draft.householdMode,
       factors,
     }),

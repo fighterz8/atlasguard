@@ -206,7 +206,7 @@ describe("Wizard prototype model", () => {
     });
   });
 
-  it("requires a concrete individual household plan without role or impact fields", () => {
+  it("requires only the rent-first facts MoveWise can evaluate in v1", () => {
     const empty = createInitialWizardDraft();
     empty.householdMode = "individual";
 
@@ -214,30 +214,21 @@ describe("Wizard prototype model", () => {
       "householdPlan.housing.tenure": "Choose whether you plan to rent or buy.",
       "householdPlan.housing.maxMonthlyCost":
         "Enter the most you want to spend on housing each month.",
-      "householdPlan.supportNetwork.needed":
-        "Choose whether nearby support matters for this move.",
+      "householdPlan.housing.bedrooms":
+        "Choose the minimum number of bedrooms.",
+      "householdPlan.housing.stopsMove":
+        "Choose whether the rent ceiling is non-negotiable.",
     });
     expect(validateWizardStep("household", validDraft())).toEqual({});
   });
 
-  it("asks families for childcare and school details only when needed", () => {
+  it("does not require unsupported family opinion inputs in v1", () => {
     const draft = validDraft();
     draft.householdMode = "family";
     draft.householdPlan.childcare.needed = "yes";
     draft.householdPlan.school.needed = "yes";
 
-    expect(validateWizardStep("household", draft)).toMatchObject({
-      "householdPlan.childcare.arrangement":
-        "Choose the childcare arrangement you need.",
-      "householdPlan.childcare.stopsMove":
-        "Choose whether missing workable childcare would stop the move.",
-      "householdPlan.school.gradeBand":
-        "Choose the grade band you need to plan for.",
-      "householdPlan.school.preference":
-        "Choose the school path you are open to.",
-      "householdPlan.school.stopsMove":
-        "Choose whether missing a suitable school path would stop the move.",
-    });
+    expect(validateWizardStep("household", draft)).toEqual({});
 
     draft.householdPlan.childcare = {
       needed: "no",

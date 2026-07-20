@@ -497,9 +497,11 @@ export function WizardPrototype({
                     />
                   ) : null}
                   {step === "household" ? (
-                    <HouseholdStep
-                      mode={draft.householdMode}
-                      plan={draft.householdPlan}
+      <HouseholdStep
+        mode={draft.householdMode}
+        originSlug={draft.originSlug}
+        destinationSlug={draft.destinationSlug}
+        plan={draft.householdPlan}
                       errors={errors}
                       onPlanChange={updateHouseholdPlan}
                     />

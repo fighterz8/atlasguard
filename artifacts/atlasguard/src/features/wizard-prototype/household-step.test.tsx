@@ -6,56 +6,67 @@ import { HouseholdStep } from "./household-step";
 import { createInitialWizardDraft } from "./model";
 
 describe("HouseholdStep", () => {
-  it("shows only mode-applicable factors with explicitly labeled controls", () => {
+  it("asks for rent-first facts and supplies the bedroom-aware comparison", () => {
     const draft = createInitialWizardDraft();
+    Object.assign(draft, {
+      originSlug: "san-diego-ca",
+      destinationSlug: "austin-tx",
+    });
+    Object.assign(draft.householdPlan.housing, {
+      tenure: "rent_then_buy",
+      bedrooms: "4_plus",
+      maxMonthlyCost: "2800",
+      stopsMove: "yes",
+    });
     const html = renderToStaticMarkup(
       <HouseholdStep
         mode="individual"
-        plan={draft.householdPlan}
-        errors={{
-          "householdPlan.supportNetwork.needed":
-            "Choose whether nearby support matters for this move.",
-        }}
-        onPlanChange={vi.fn()}
-      />,
-    );
-
-    expect(html).toContain("Step 4 of 4");
-    expect(html).toContain("Your household plan");
-    expect(html).toContain("What kind of home needs to work?");
-    expect(html).toContain("Maximum monthly housing cost");
-    expect(html).toContain("Would missing this housing plan stop the move?");
-    expect(html).toContain("Nearby support");
-    expect(html).toContain("Required services");
-    expect(html).toContain("Car-free routines");
-    expect(html).not.toContain("Childcare plan");
-    expect(html).not.toContain("School plan");
-    expect(html).not.toContain("What role does this play");
-    expect(html).not.toContain("Choose the expected change");
-    expect(html).not.toContain("Essential —");
-    expect(html).toContain('id="householdPlan-housing-tenure"');
-    expect(html).toContain('id="householdPlan-supportNetwork-needed"');
-    expect(html).toContain('aria-invalid="true"');
-  });
-
-  it("adds concrete childcare and school planning for a family", () => {
-    const draft = createInitialWizardDraft();
-    draft.householdPlan.childcare.needed = "yes";
-    draft.householdPlan.school.needed = "yes";
-    const html = renderToStaticMarkup(
-      <HouseholdStep
-        mode="family"
+        originSlug={draft.originSlug}
+        destinationSlug={draft.destinationSlug}
         plan={draft.householdPlan}
         errors={{}}
         onPlanChange={vi.fn()}
       />,
     );
 
-    expect(html).toContain("Childcare plan");
-    expect(html).toContain("What childcare arrangement do you need?");
-    expect(html).toContain("School plan");
-    expect(html).toContain("Which grade band should we plan for?");
-    expect(html).toContain("What must a workable school path support?");
-    expect(html).toContain("This does not rate schools or predict placement");
+    expect(html).toContain("Step 4 of 4");
+    expect(html).toContain("Your first rental plan");
+    expect(html).toContain("Minimum bedrooms");
+    expect(html).toContain("Maximum monthly rent");
+    expect(html).toContain("Is this rent ceiling non-negotiable?");
+    expect(html).toContain("MoveWise rent estimate");
+    expect(html).toContain("Austin");
+    expect(html).toContain("$2,491");
+    expect(html).toContain("$1,010 less");
+    expect(html).toContain("7.8%");
+    expect(html).not.toContain("Compared with");
+    expect(html).not.toContain("easier");
+    expect(html).not.toContain("harder");
+    expect(html).not.toContain("+15");
+    expect(html).not.toContain("Childcare plan");
+    expect(html).not.toContain("School plan");
+    expect(html).not.toContain("Nearby support");
+    expect(html).not.toContain("Required services");
+    expect(html).not.toContain("Car-free routines");
+    expect(html).toContain('id="householdPlan-housing-tenure"');
+    expect(html).toContain('id="householdPlan-housing-bedrooms"');
+  });
+
+  it("keeps the same evidence-backed v1 scope for a family", () => {
+    const draft = createInitialWizardDraft();
+    const html = renderToStaticMarkup(
+      <HouseholdStep
+        mode="family"
+        originSlug="los-angeles-ca"
+        destinationSlug="seattle-wa"
+        plan={draft.householdPlan}
+        errors={{}}
+        onPlanChange={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("Rent-first v1 scope");
+    expect(html).not.toContain("Childcare plan");
+    expect(html).not.toContain("School plan");
   });
 });

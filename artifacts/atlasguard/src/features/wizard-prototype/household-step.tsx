@@ -1,17 +1,36 @@
-import { Baby, Home, School, Users } from "lucide-react";
+import {
+  RESEARCH_METRO_RENT_SOURCE,
+  getResearchMetroRentGuidance,
+  getSupportedResearchPlace,
+} from "@workspace/benchmark-data";
+import { Home, Users } from "lucide-react";
 import React from "react";
 import type { MoveWiseHouseholdMode } from "@workspace/contracts";
 
-import type { HouseholdPlanDraft, WizardErrors } from "./model";
+import type {
+  HouseholdPlanDraft,
+  SupportedPlaceSlug,
+  WizardErrors,
+} from "./model";
 
 type HouseholdStepProps = {
   mode: MoveWiseHouseholdMode | "";
+  originSlug: SupportedPlaceSlug | "";
+  destinationSlug: SupportedPlaceSlug | "";
   plan: HouseholdPlanDraft;
   errors: WizardErrors;
   onPlanChange: (plan: HouseholdPlanDraft) => void;
 };
 
 type SelectOption = { value: string; label: string };
+
+const dollars = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+const percent = (basisPoints: number) => `${(basisPoints / 100).toFixed(1)}%`;
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
@@ -109,17 +128,10 @@ function YesNoQuestion({
 }
 
 const tenureOptions = [
-  { value: "rent", label: "Rent" },
-  { value: "buy", label: "Buy" },
+  { value: "rent", label: "Rent for the first stage" },
   { value: "rent_then_buy", label: "Rent first, buy later" },
-  { value: "either", label: "Open to either" },
 ] as const;
-const housingTypeOptions = [
-  { value: "apartment_or_condo", label: "Apartment or condo" },
-  { value: "townhome", label: "Townhome" },
-  { value: "detached", label: "Detached home" },
-  { value: "flexible", label: "Flexible" },
-] as const;
+
 const bedroomOptions = [
   { value: "studio", label: "Studio" },
   { value: "1", label: "1 bedroom" },
@@ -127,23 +139,11 @@ const bedroomOptions = [
   { value: "3", label: "3 bedrooms" },
   { value: "4_plus", label: "4 or more bedrooms" },
 ] as const;
-const bathroomOptions = [
-  { value: "1", label: "1 bathroom" },
-  { value: "1_5", label: "1.5 bathrooms" },
-  { value: "2", label: "2 bathrooms" },
-  { value: "3_plus", label: "3 or more bathrooms" },
-] as const;
-const householdFitOptions = [
-  { value: "strong_positive", label: "Much easier to make work (+15)" },
-  { value: "positive", label: "Somewhat easier (+10)" },
-  { value: "neutral", label: "About the same (0)" },
-  { value: "negative", label: "Somewhat harder (-10)" },
-  { value: "strong_negative", label: "Much harder to make work (-15)" },
-  { value: "unavailable", label: "Not sure yet (0)" },
-] as const;
 
 export function HouseholdStep({
   mode,
+  originSlug,
+  destinationSlug,
   plan,
   errors,
   onPlanChange,
@@ -157,466 +157,154 @@ export function HouseholdStep({
       housing: { ...plan.housing, [key]: value },
     } as HouseholdPlanDraft);
 
-  const updateNeed = (
-    key: "supportNetwork" | "requiredServices" | "carFreeAccess",
-    field: "needed" | "stopsMove",
-    value: "yes" | "no",
-  ) =>
-    onPlanChange({
-      ...plan,
-      [key]: {
-        ...plan[key],
-        [field]: value,
-        ...(field === "needed" && value === "no"
-          ? { stopsMove: "", assessment: "unavailable" as const }
-          : {}),
-      },
-    });
+  const guidance =
+    originSlug === "" || destinationSlug === ""
+      ? null
+      : getResearchMetroRentGuidance(
+          originSlug,
+          destinationSlug,
+          plan.housing.bedrooms,
+        );
+  const origin = originSlug === "" ? null : getSupportedResearchPlace(originSlug);
+  const destination =
+    destinationSlug === "" ? null : getSupportedResearchPlace(destinationSlug);
+  const normalizedBudget = plan.housing.maxMonthlyCost
+    .trim()
+    .replace(/,/g, "");
+  const budget = /^\d+$/.test(normalizedBudget)
+    ? Number(normalizedBudget)
+    : null;
+  const destinationRent = guidance?.destination.monthlyGrossRentDollars;
+  const budgetDifference =
+    budget === null || destinationRent === undefined
+      ? null
+      : budget - destinationRent;
+  const rentDifference = guidance?.monthlyDifferenceDollars ?? 0;
 
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="eyebrow">Step 4 of 4</p>
-          <h1
-            id="wizard-step-heading"
-            tabIndex={-1}
-            className="section-heading"
-          >
-            Your household plan
+          <h1 id="wizard-step-heading" tabIndex={-1} className="section-heading">
+            Your first rental plan
           </h1>
         </div>
         <Users aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Describe what the move needs to support, then compare the destination
-        plan with your current situation. Each comparison changes the score by
-        -15 to +15 points; household fit is capped at -30 to +30 overall.
+        Tell MoveWise what the first home needs to support. We will price the
+        requested bedroom count with public metro evidence and compare it with
+        your rent ceiling—no opinion score required.
       </p>
 
-      <div className="mt-7 space-y-5">
-        <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
-              <Home aria-hidden="true" className="h-4 w-4" />
-            </span>
-            <div>
-              <h2 className="font-semibold text-slate-950">
-                What kind of home needs to work?
-              </h2>
-              <p className="mt-1 text-sm leading-5 text-slate-600">
-                We will use this plan to find relevant housing evidence. Area
-                median rent is context—not a quote for this home.
+      <section className="mt-7 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
+            <Home aria-hidden="true" className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="font-semibold text-slate-950">Rent-first v1 scope</h2>
+            <p className="mt-1 text-sm leading-5 text-slate-600">
+              V1 evaluates the immediate rental stage. A later purchase remains
+              visible in your plan but does not enter this score.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <SelectField
+            id="householdPlan-housing-tenure"
+            label="Housing plan after the move"
+            value={plan.housing.tenure}
+            options={tenureOptions}
+            error={errors["householdPlan.housing.tenure"]}
+            onChange={(value) => updateHousing("tenure", value)}
+          />
+          <SelectField
+            id="householdPlan-housing-bedrooms"
+            label="Minimum bedrooms"
+            value={plan.housing.bedrooms}
+            options={bedroomOptions}
+            error={errors["householdPlan.housing.bedrooms"]}
+            onChange={(value) => updateHousing("bedrooms", value)}
+          />
+          <div>
+            <label
+              htmlFor="householdPlan-housing-maxMonthlyCost"
+              className="text-sm font-semibold text-slate-800"
+            >
+              Maximum monthly rent
+            </label>
+            <div className="relative mt-2">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
+                $
+              </span>
+              <input
+                id="householdPlan-housing-maxMonthlyCost"
+                inputMode="numeric"
+                value={plan.housing.maxMonthlyCost}
+                aria-invalid={
+                  errors["householdPlan.housing.maxMonthlyCost"]
+                    ? "true"
+                    : undefined
+                }
+                aria-describedby={
+                  errors["householdPlan.housing.maxMonthlyCost"]
+                    ? "householdPlan-housing-maxMonthlyCost-error"
+                    : undefined
+                }
+                onChange={(event) =>
+                  updateHousing("maxMonthlyCost", event.currentTarget.value)
+                }
+                className="control-input pl-7"
+              />
+            </div>
+            <FieldError
+              id="householdPlan-housing-maxMonthlyCost-error"
+              message={errors["householdPlan.housing.maxMonthlyCost"]}
+            />
+          </div>
+          <YesNoQuestion
+            id="householdPlan-housing-stopsMove"
+            legend="Is this rent ceiling non-negotiable?"
+            value={plan.housing.stopsMove}
+            error={errors["householdPlan.housing.stopsMove"]}
+            onChange={(value) => updateHousing("stopsMove", value)}
+          />
+        </div>
+
+        {guidance && origin && destination ? (
+          <aside className="mt-6 rounded-lg border border-teal-200 bg-teal-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-teal-800">
+              MoveWise rent estimate
+            </p>
+            <p className="mt-2 text-base font-semibold text-teal-950">
+              {destination.city}: {dollars.format(destinationRent!)} per month
+            </p>
+            <p className="mt-2 text-sm leading-6 text-teal-950/80">
+              That is {dollars.format(Math.abs(rentDifference))} {rentDifference <= 0 ? "less" : "more"} than the same bedroom category in {origin.city}. {guidance.stockCategoryLabel.replace(/^./, (letter) => letter.toUpperCase())} make up {percent(guidance.destination.renterStockShareBps)} of {destination.city} renter-occupied homes versus {percent(guidance.origin.renterStockShareBps)} in {origin.city}.
+            </p>
+            {budgetDifference !== null ? (
+              <p className={`mt-3 text-sm font-semibold ${budgetDifference >= 0 ? "text-teal-950" : "text-risk"}`}>
+                {budgetDifference >= 0
+                  ? `${dollars.format(destinationRent!)} is ${dollars.format(budgetDifference)} under your ceiling.`
+                  : `${dollars.format(destinationRent!)} is ${dollars.format(Math.abs(budgetDifference))} over your ceiling.`}
               </p>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <SelectField
-              id="householdPlan-housing-tenure"
-              label="Housing plan after the move"
-              value={plan.housing.tenure}
-              options={tenureOptions}
-              error={errors["householdPlan.housing.tenure"]}
-              onChange={(value) => updateHousing("tenure", value)}
-            />
-            <SelectField
-              id="householdPlan-housing-type"
-              label="Home type"
-              value={plan.housing.type}
-              options={housingTypeOptions}
-              error={errors["householdPlan.housing.type"]}
-              onChange={(value) => updateHousing("type", value)}
-            />
-            <SelectField
-              id="householdPlan-housing-bedrooms"
-              label="Minimum bedrooms"
-              value={plan.housing.bedrooms}
-              options={bedroomOptions}
-              error={errors["householdPlan.housing.bedrooms"]}
-              onChange={(value) => updateHousing("bedrooms", value)}
-            />
-            <SelectField
-              id="householdPlan-housing-bathrooms"
-              label="Minimum bathrooms"
-              value={plan.housing.bathrooms}
-              options={bathroomOptions}
-              error={errors["householdPlan.housing.bathrooms"]}
-              onChange={(value) => updateHousing("bathrooms", value)}
-            />
-            <div>
-              <label
-                htmlFor="householdPlan-housing-maxMonthlyCost"
-                className="text-sm font-semibold text-slate-800"
-              >
-                Maximum monthly housing cost
-              </label>
-              <div className="relative mt-2">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
-                  $
-                </span>
-                <input
-                  id="householdPlan-housing-maxMonthlyCost"
-                  inputMode="numeric"
-                  value={plan.housing.maxMonthlyCost}
-                  aria-invalid={
-                    errors["householdPlan.housing.maxMonthlyCost"]
-                      ? "true"
-                      : undefined
-                  }
-                  aria-describedby={
-                    errors["householdPlan.housing.maxMonthlyCost"]
-                      ? "householdPlan-housing-maxMonthlyCost-error"
-                      : undefined
-                  }
-                  onChange={(event) =>
-                    updateHousing("maxMonthlyCost", event.currentTarget.value)
-                  }
-                  className="control-input pl-7"
-                />
-              </div>
-              <FieldError
-                id="householdPlan-housing-maxMonthlyCost-error"
-                message={errors["householdPlan.housing.maxMonthlyCost"]}
-              />
-            </div>
-            <YesNoQuestion
-              id="householdPlan-housing-stopsMove"
-              legend="Would missing this housing plan stop the move?"
-              value={plan.housing.stopsMove}
-              error={errors["householdPlan.housing.stopsMove"]}
-              onChange={(value) => updateHousing("stopsMove", value)}
-            />
-            <div className="sm:col-span-2">
-              <SelectField
-                id="householdPlan-housing-assessment"
-                label="Compared with your current housing, how workable does this destination plan look?"
-                value={plan.housing.assessment}
-                options={householdFitOptions}
-                error={errors["householdPlan.housing.assessment"]}
-                onChange={(value) => updateHousing("assessment", value)}
-              />
-            </div>
-          </div>
-        </section>
-
-        {mode === "family" ? (
-          <>
-            <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <div className="flex items-start gap-3">
-                <Baby
-                  aria-hidden="true"
-                  className="mt-0.5 h-5 w-5 text-teal-700"
-                />
-                <div>
-                  <h2 className="font-semibold text-slate-950">
-                    Childcare plan
-                  </h2>
-                  <p className="mt-1 text-sm leading-5 text-slate-600">
-                    Childcare cost belongs in your monthly expenses. This asks
-                    only what arrangement must be workable.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 space-y-4">
-                <YesNoQuestion
-                  id="householdPlan-childcare-needed"
-                  legend="Will your household need childcare after the move?"
-                  value={plan.childcare.needed}
-                  error={errors["householdPlan.childcare.needed"]}
-                  onChange={(value) =>
-                    onPlanChange({
-                      ...plan,
-                      childcare: {
-                        ...plan.childcare,
-                        needed: value,
-                        ...(value === "no"
-                          ? {
-                              arrangement: "" as const,
-                              stopsMove: "" as const,
-                              assessment: "unavailable" as const,
-                            }
-                          : {}),
-                      },
-                    })
-                  }
-                />
-                {plan.childcare.needed === "yes" ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <SelectField
-                      id="householdPlan-childcare-arrangement"
-                      label="What childcare arrangement do you need?"
-                      value={plan.childcare.arrangement}
-                      options={[
-                        { value: "center", label: "Childcare center" },
-                        { value: "home_based", label: "Home-based provider" },
-                        {
-                          value: "in_home_caregiver",
-                          label: "In-home caregiver",
-                        },
-                        {
-                          value: "family_or_friend",
-                          label: "Family or friend care",
-                        },
-                        {
-                          value: "before_after_school",
-                          label: "Before- or after-school care",
-                        },
-                        {
-                          value: "flexible",
-                          label: "Flexible or open to options",
-                        },
-                      ]}
-                      error={errors["householdPlan.childcare.arrangement"]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          childcare: { ...plan.childcare, arrangement: value },
-                        } as HouseholdPlanDraft)
-                      }
-                    />
-                    <YesNoQuestion
-                      id="householdPlan-childcare-stopsMove"
-                      legend="Would no workable childcare stop the move?"
-                      value={plan.childcare.stopsMove}
-                      error={errors["householdPlan.childcare.stopsMove"]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          childcare: { ...plan.childcare, stopsMove: value },
-                        })
-                      }
-                    />
-                    <SelectField
-                      id="householdPlan-childcare-assessment"
-                      label="Compared with your current childcare, how workable does this destination plan look?"
-                      value={plan.childcare.assessment}
-                      options={householdFitOptions}
-                      error={errors["householdPlan.childcare.assessment"]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          childcare: {
-                            ...plan.childcare,
-                            assessment: value,
-                          },
-                        } as HouseholdPlanDraft)
-                      }
-                    />
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <div className="flex items-start gap-3">
-                <School
-                  aria-hidden="true"
-                  className="mt-0.5 h-5 w-5 text-teal-700"
-                />
-                <div>
-                  <h2 className="font-semibold text-slate-950">School plan</h2>
-                  <p className="mt-1 text-sm leading-5 text-slate-600">
-                    This does not rate schools or predict placement. It records
-                    the path MoveWise should help you verify.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 space-y-4">
-                <YesNoQuestion
-                  id="householdPlan-school-needed"
-                  legend="Does your household need a school path after the move?"
-                  value={plan.school.needed}
-                  error={errors["householdPlan.school.needed"]}
-                  onChange={(value) =>
-                    onPlanChange({
-                      ...plan,
-                      school: {
-                        ...plan.school,
-                        needed: value,
-                        ...(value === "no"
-                          ? {
-                              gradeBand: "" as const,
-                              preference: "" as const,
-                              requirements: "",
-                              stopsMove: "" as const,
-                              assessment: "unavailable" as const,
-                            }
-                          : {}),
-                      },
-                    })
-                  }
-                />
-                {plan.school.needed === "yes" ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <SelectField
-                      id="householdPlan-school-gradeBand"
-                      label="Which grade band should we plan for?"
-                      value={plan.school.gradeBand}
-                      options={[
-                        { value: "preschool", label: "Preschool" },
-                        { value: "elementary", label: "Elementary" },
-                        { value: "middle", label: "Middle school" },
-                        { value: "high", label: "High school" },
-                        { value: "multiple", label: "Multiple grade bands" },
-                      ]}
-                      error={errors["householdPlan.school.gradeBand"]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          school: { ...plan.school, gradeBand: value },
-                        } as HouseholdPlanDraft)
-                      }
-                    />
-                    <SelectField
-                      id="householdPlan-school-preference"
-                      label="What school path are you open to?"
-                      value={plan.school.preference}
-                      options={[
-                        { value: "public", label: "Public" },
-                        { value: "private", label: "Private" },
-                        { value: "either", label: "Open to either" },
-                      ]}
-                      error={errors["householdPlan.school.preference"]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          school: { ...plan.school, preference: value },
-                        } as HouseholdPlanDraft)
-                      }
-                    />
-                    <div className="sm:col-span-2">
-                      <label
-                        htmlFor="householdPlan-school-requirements"
-                        className="text-sm font-semibold text-slate-800"
-                      >
-                        What must a workable school path support?
-                      </label>
-                      <textarea
-                        id="householdPlan-school-requirements"
-                        value={plan.school.requirements}
-                        maxLength={500}
-                        rows={3}
-                        placeholder="Optional: program, services, schedule, or other requirement"
-                        onChange={(event) =>
-                          onPlanChange({
-                            ...plan,
-                            school: {
-                              ...plan.school,
-                              requirements: event.currentTarget.value,
-                            },
-                          })
-                        }
-                        className="control-input mt-2 resize-y"
-                      />
-                    </div>
-                    <YesNoQuestion
-                      id="householdPlan-school-stopsMove"
-                      legend="Would no suitable school path stop the move?"
-                      value={plan.school.stopsMove}
-                      error={errors["householdPlan.school.stopsMove"]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          school: { ...plan.school, stopsMove: value },
-                        })
-                      }
-                    />
-                    <SelectField
-                      id="householdPlan-school-assessment"
-                      label="Compared with the current school path, how workable does this destination plan look?"
-                      value={plan.school.assessment}
-                      options={householdFitOptions}
-                      error={errors["householdPlan.school.assessment"]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          school: { ...plan.school, assessment: value },
-                        } as HouseholdPlanDraft)
-                      }
-                    />
-                  </div>
-                ) : null}
-              </div>
-            </section>
-          </>
+            ) : null}
+            <p className="mt-3 text-xs leading-5 text-teal-900/70">
+              U.S. Census Bureau · {RESEARCH_METRO_RENT_SOURCE.observationPeriod} · tables B25031 and B25042. Occupied rental stock is a market proxy, not live listing availability or a guarantee of a matching home.
+            </p>
+          </aside>
         ) : null}
+      </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h2 className="font-semibold text-slate-950">
-            Other needs to verify
-          </h2>
-          <p className="mt-1 text-sm leading-5 text-slate-600">
-            Include only needs that actually apply. MoveWise will keep unknowns
-            visible instead of treating them as favorable.
-          </p>
-          <div className="mt-5 space-y-6">
-            {(
-              [
-                [
-                  "supportNetwork",
-                  "Nearby support",
-                  "Do you need to be near people you rely on?",
-                  "Compared with your current support access, how workable does the destination look?",
-                ],
-                [
-                  "requiredServices",
-                  "Required services",
-                  "Do healthcare, therapy, disability, or other services need to continue?",
-                  "Compared with current service access, how workable does the destination look?",
-                ],
-                [
-                  "carFreeAccess",
-                  "Car-free routines",
-                  "Do essential routines need to work without driving?",
-                  "Compared with your current routines, how workable does the destination look?",
-                ],
-              ] as const
-            ).map(([key, label, question, comparisonQuestion]) => (
-              <div
-                key={key}
-                className="grid gap-4 border-t border-slate-100 pt-5 first:border-0 first:pt-0 sm:grid-cols-2"
-              >
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-950">
-                    {label}
-                  </h3>
-                  <YesNoQuestion
-                    id={`householdPlan-${key}-needed`}
-                    legend={question}
-                    value={plan[key].needed}
-                    error={errors[`householdPlan.${key}.needed`]}
-                    onChange={(value) => updateNeed(key, "needed", value)}
-                  />
-                </div>
-                {plan[key].needed === "yes" ? (
-                  <div className="space-y-4">
-                    <YesNoQuestion
-                      id={`householdPlan-${key}-stopsMove`}
-                      legend={`Would missing ${label.toLowerCase()} stop the move?`}
-                      value={plan[key].stopsMove}
-                      error={errors[`householdPlan.${key}.stopsMove`]}
-                      onChange={(value) => updateNeed(key, "stopsMove", value)}
-                    />
-                    <SelectField
-                      id={`householdPlan-${key}-assessment`}
-                      label={comparisonQuestion}
-                      value={plan[key].assessment}
-                      options={householdFitOptions}
-                      error={errors[`householdPlan.${key}.assessment`]}
-                      onChange={(value) =>
-                        onPlanChange({
-                          ...plan,
-                          [key]: { ...plan[key], assessment: value },
-                        } as HouseholdPlanDraft)
-                      }
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+      <p className="mt-4 text-xs leading-5 text-slate-500">
+        {mode === "family" ? "Family" : "Individual"} childcare, schools,
+        services, support-network, bathroom, home-type, and ownership analysis
+        will enter later evidence modules only when MoveWise can supply the
+        comparison rather than ask you to guess.
+      </p>
     </div>
   );
 }

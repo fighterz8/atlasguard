@@ -299,7 +299,8 @@ describe("research results view model", () => {
 
   it("activates deterministic rule 0.2.0 only with its verified Wizard context", () => {
     const draft = reviewedDraft();
-    draft.householdPlan.supportNetwork = { needed: "yes", stopsMove: "yes" };
+    draft.householdPlan.housing.stopsMove = "yes";
+    draft.householdPlan.housing.maxMonthlyCost = "1700";
     const evaluation = evaluateWizardDraft(draft);
     expect(evaluation.success).toBe(true);
     if (!evaluation.success) return;
@@ -309,7 +310,7 @@ describe("research results view model", () => {
       householdAnswers: evaluation.householdAnswers,
     });
 
-    expect(model.condition.label).toBe("Promising if…");
+    expect(model.condition.label).toBe("No clear advantage yet");
     expect(model.score).toMatchObject({
       value: evaluation.deterministicAnalysis.result.value,
       scoreVersion: "0.2.0",
@@ -325,8 +326,8 @@ describe("research results view model", () => {
         ),
       },
       essentialSummary: {
-        label: "1 essential need not confirmed",
-        tone: "caution",
+        label: "1 essential need not met",
+        tone: "risk",
         active: true,
       },
     });
@@ -351,13 +352,13 @@ describe("research results view model", () => {
           id: "space_fit",
           label: "Suitable housing",
           contribution: 0,
-          statusLabel: "Important",
+          statusLabel: "Essential — not met",
           impactLabel: "Not sure yet",
         }),
         expect.objectContaining({
           id: "support_network",
-          statusLabel: "Essential — not confirmed",
-          impactLabel: "Not sure yet",
+          statusLabel: "Not part of my decision",
+          impactLabel: "Excluded",
         }),
         expect.objectContaining({
           id: "car_free_access",
@@ -371,14 +372,14 @@ describe("research results view model", () => {
       "Opportunity context",
     ]);
     expect(model.nextSteps[0]).toBe(
-      "Confirm whether nearby support will work before relying on this result.",
+      "Resolve the unmet essential need: suitable housing.",
     );
     expect(model.nextSteps).not.toContain(
       "Add any household factors that could materially change day-to-day life.",
     );
   });
 
-  it("shows household comparisons as visible score contributions", () => {
+  it("does not score rejected legacy household opinions", () => {
     const draft = reviewedDraft();
     draft.householdPlan.housing.assessment = "positive";
     draft.householdPlan.supportNetwork = {
@@ -396,21 +397,25 @@ describe("research results view model", () => {
     });
 
     expect(model.household).toMatchObject({
-      totalContribution: 20,
+      totalContribution: 0,
       factors: expect.arrayContaining([
         expect.objectContaining({
           id: "space_fit",
-          impactLabel: "Somewhat easier",
-          contribution: 10,
+          impactLabel: "Not sure yet",
+          contribution: 0,
         }),
         expect.objectContaining({
           id: "support_network",
-          impactLabel: "Somewhat easier",
-          contribution: 10,
+          impactLabel: "Excluded",
+          contribution: 0,
         }),
       ]),
     });
-    expect(model.score.missingComponents).toEqual(["Opportunity context"]);
+    expect(evaluation.householdAnswers.questionVersion).toBe("4.0.0");
+    expect(model.score.missingComponents).toEqual([
+      "Household fit",
+      "Opportunity context",
+    ]);
   });
 
   it("labels public estimates, baselines, overrides, and transition tenure separately", () => {

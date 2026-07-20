@@ -5,6 +5,7 @@ import {
   MOVEWISE_HOUSEHOLD_PLAN_QUESTION_VERSION,
   MOVEWISE_HOUSEHOLD_QUESTION_VERSION,
   MOVEWISE_HOUSEHOLD_SCORED_PLAN_QUESTION_VERSION,
+  MOVEWISE_HOUSEHOLD_EVIDENCE_PLAN_QUESTION_VERSION,
   MoveWiseHouseholdAnswerChecksumMismatchError,
   calculateMoveWiseHouseholdAnswersChecksum,
   createMoveWiseHouseholdAnswers,
@@ -127,6 +128,13 @@ describe("MoveWise household answers", () => {
       MOVEWISE_HOUSEHOLD_SCORED_PLAN_QUESTION_VERSION;
     expect(createMoveWiseHouseholdAnswers(scoredPlanPayload)).toMatchObject({
       questionVersion: "3.0.0",
+    });
+
+    const evidencePlanPayload = familyPayload();
+    evidencePlanPayload.questionVersion =
+      MOVEWISE_HOUSEHOLD_EVIDENCE_PLAN_QUESTION_VERSION;
+    expect(createMoveWiseHouseholdAnswers(evidencePlanPayload)).toMatchObject({
+      questionVersion: "4.0.0",
     });
   });
 

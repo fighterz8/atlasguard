@@ -526,10 +526,8 @@ export function validateWizardStep(
     const { householdPlan } = draft;
     const requiredHousingFields = [
       ["tenure", "Choose whether you plan to rent or buy."],
-      ["type", "Choose the kind of home that could work."],
       ["bedrooms", "Choose the minimum number of bedrooms."],
-      ["bathrooms", "Choose the minimum number of bathrooms."],
-      ["stopsMove", "Choose whether housing would stop the move."],
+      ["stopsMove", "Choose whether the rent ceiling is non-negotiable."],
     ] as const;
     for (const [field, message] of requiredHousingFields) {
       if (householdPlan.housing[field] === "") {
@@ -548,57 +546,6 @@ export function validateWizardStep(
         "Housing budget must be a whole-dollar amount.";
     }
 
-    const validateConditionalNeed = (
-      path: "supportNetwork" | "requiredServices" | "carFreeAccess",
-      label: string,
-    ) => {
-      const need = householdPlan[path];
-      if (need.needed === "") {
-        errors[`householdPlan.${path}.needed`] =
-          `Choose whether ${label} matters for this move.`;
-      } else if (need.needed === "yes" && need.stopsMove === "") {
-        errors[`householdPlan.${path}.stopsMove`] =
-          `Choose whether missing ${label} would stop the move.`;
-      }
-    };
-
-    if (draft.householdMode === "family") {
-      if (householdPlan.childcare.needed === "") {
-        errors["householdPlan.childcare.needed"] =
-          "Choose whether your household needs childcare.";
-      } else if (householdPlan.childcare.needed === "yes") {
-        if (householdPlan.childcare.arrangement === "") {
-          errors["householdPlan.childcare.arrangement"] =
-            "Choose the childcare arrangement you need.";
-        }
-        if (householdPlan.childcare.stopsMove === "") {
-          errors["householdPlan.childcare.stopsMove"] =
-            "Choose whether missing workable childcare would stop the move.";
-        }
-      }
-
-      if (householdPlan.school.needed === "") {
-        errors["householdPlan.school.needed"] =
-          "Choose whether your household needs a school path.";
-      } else if (householdPlan.school.needed === "yes") {
-        if (householdPlan.school.gradeBand === "") {
-          errors["householdPlan.school.gradeBand"] =
-            "Choose the grade band you need to plan for.";
-        }
-        if (householdPlan.school.preference === "") {
-          errors["householdPlan.school.preference"] =
-            "Choose the school path you are open to.";
-        }
-        if (householdPlan.school.stopsMove === "") {
-          errors["householdPlan.school.stopsMove"] =
-            "Choose whether missing a suitable school path would stop the move.";
-        }
-      }
-    }
-
-    validateConditionalNeed("supportNetwork", "nearby support");
-    validateConditionalNeed("requiredServices", "required services");
-    validateConditionalNeed("carFreeAccess", "car-free routines");
   }
 
   return errors;
