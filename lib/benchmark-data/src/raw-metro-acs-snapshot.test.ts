@@ -33,6 +33,9 @@ describe("independent ACS metro snapshots", () => {
       28.2097375862,
       10,
     );
+    expect(deriveCommuteMetric(austin.metro).marginOfError90Minutes).toBe(
+      0.7344681732764602,
+    );
     expect(deriveCommuteMetric(sanDiego.metro).meanMinutes).toBeCloseTo(
       26.0618486909,
       10,

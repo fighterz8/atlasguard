@@ -11,6 +11,9 @@ describe("mobile startup compatibility", () => {
 
     expect(viteConfig).toContain("renderModernChunks: false");
     expect(viteConfig).toContain('"iOS >= 11"');
+    expect(viteConfig).toContain(
+      'process.env.NODE_ENV !== "production" ? [runtimeErrorOverlay()] : []',
+    );
   });
 
   it("provides a bounded startup failure instead of an endless loading state", () => {

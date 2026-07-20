@@ -39,6 +39,30 @@ export type DerivedCommuteMetric = Readonly<{
 const roundOneDecimalHalfUp = (value: number): number =>
   Math.round((value + Number.EPSILON) * 10) / 10;
 
+/**
+ * Computes a scaled Euclidean norm using only specified IEEE-754 operations.
+ * Native Math.hypot implementations may differ by one final bit across JS
+ * engines, which is enough to invalidate checksum-bound derived profiles.
+ */
+const calculatePortableHypot = (...values: readonly number[]): number => {
+  let sum = 0;
+  let largest = 0;
+
+  for (const value of values) {
+    const magnitude = Math.abs(value);
+    if (largest < magnitude) {
+      const ratio = largest / magnitude;
+      sum = sum * ratio * ratio + 1;
+      largest = magnitude;
+    } else if (magnitude > 0) {
+      const ratio = magnitude / largest;
+      sum += ratio * ratio;
+    }
+  }
+
+  return largest === Infinity ? Infinity : largest * Math.sqrt(sum);
+};
+
 const applyCommuteTransform = (rawValue: number): number => {
   const result = applyRegisteredUtilityTransform({
     priorityId: COMMUTE_METRIC_REGISTRATION.priorityId,
@@ -67,14 +91,14 @@ export const deriveCommuteMetric = (
 ): DerivedCommuteMetric => {
   const nonHomeWorkers =
     record.workers16AndOver.estimate - record.workedFromHome.estimate;
-  const nonHomeWorkersMoe = Math.hypot(
+  const nonHomeWorkersMoe = calculatePortableHypot(
     record.workers16AndOver.marginOfError90,
     record.workedFromHome.marginOfError90,
   );
   const unroundedMean =
     record.aggregateTravelTimeMinutes.estimate / nonHomeWorkers;
   const unroundedMoe =
-    Math.hypot(
+    calculatePortableHypot(
       record.aggregateTravelTimeMinutes.marginOfError90,
       unroundedMean * nonHomeWorkersMoe,
     ) / nonHomeWorkers;

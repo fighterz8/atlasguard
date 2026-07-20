@@ -36,7 +36,7 @@ export default defineConfig({
       targets: ["iOS >= 11", "Android >= 5", "Chrome >= 49", "Safari >= 11"],
       renderModernChunks: false,
     }),
-    runtimeErrorOverlay(),
+    ...(process.env.NODE_ENV !== "production" ? [runtimeErrorOverlay()] : []),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
