@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  copyCurrentCosts,
   createInitialWizardDraft,
   getNextStep,
   getPreviousStep,
@@ -16,6 +15,7 @@ const validDraft = () => ({
   householdMode: "individual" as const,
   finances: {
     ...createInitialWizardDraft().finances,
+    currentHousingTenure: "rent" as const,
     currentTakeHome: "5000",
     targetTakeHome: "5,250",
     currentHousing: "2000",
@@ -49,34 +49,6 @@ const validDraft = () => ({
 });
 
 describe("Wizard prototype model", () => {
-  it("copies current costs without treating current take-home as a destination estimate", () => {
-    const finances = {
-      ...createInitialWizardDraft().finances,
-      currentTakeHome: "5000",
-      targetTakeHome: "5600",
-      currentHousing: "2100",
-      targetHousing: "1900",
-      currentExpenses: "1400",
-      targetExpenses: "1200",
-      targetTakeHomeBasis: "confirmed" as const,
-      targetHousingBasis: "confirmed" as const,
-      targetExpensesBasis: "confirmed" as const,
-      targetTakeHomeRangeMin: "5400",
-      targetTakeHomeRangeMax: "5800",
-    };
-
-    expect(copyCurrentCosts(finances)).toMatchObject({
-      targetTakeHome: "5600",
-      targetTakeHomeBasis: "confirmed",
-      targetTakeHomeRangeMin: "5400",
-      targetTakeHomeRangeMax: "5800",
-      targetHousing: "2100",
-      targetHousingBasis: "user_estimate",
-      targetExpenses: "1400",
-      targetExpensesBasis: "user_estimate",
-    });
-  });
-
   it("uses the accepted four-step decision flow", () => {
     expect(wizardSteps.map(({ id }) => id)).toEqual([
       "move",
@@ -134,7 +106,7 @@ describe("Wizard prototype model", () => {
     expect(validateWizardStep("money", draft)).toEqual({});
   });
 
-  it("requires only the current monthly baseline when MoveWise will research the destination", () => {
+  it("requires the current tenure with the current monthly baseline", () => {
     const draft = createInitialWizardDraft();
     draft.originSlug = "san-diego-ca";
     draft.destinationSlug = "austin-tx";
@@ -143,22 +115,25 @@ describe("Wizard prototype model", () => {
     draft.finances.currentHousing = "2600";
     draft.finances.currentExpenses = "2100";
 
+    expect(validateWizardStep("money", draft)).toMatchObject({
+      "finances.currentHousingTenure":
+        "Choose whether you currently rent or own.",
+    });
+
+    draft.finances.currentHousingTenure = "rent";
+
     expect(validateWizardStep("money", draft)).toEqual({});
   });
 
-  it("requires a complete destination override set when the user supplies any override", () => {
+  it("accepts a field-level destination override", () => {
     const draft = createInitialWizardDraft();
     draft.finances.currentTakeHome = "6200";
     draft.finances.currentHousing = "2600";
     draft.finances.currentExpenses = "2100";
+    draft.finances.currentHousingTenure = "own";
     draft.finances.targetHousing = "2200";
 
-    expect(validateWizardStep("money", draft)).toMatchObject({
-      "finances.targetTakeHome":
-        "Destination take-home is required to use your own destination numbers.",
-      "finances.targetExpenses":
-        "Destination recurring expenses are required to use your own destination numbers.",
-    });
+    expect(validateWizardStep("money", draft)).toEqual({});
   });
 
   it("accepts point estimates and validates a range only when supplied", () => {

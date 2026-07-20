@@ -6,7 +6,7 @@ import { createInitialWizardDraft } from "./model";
 import { MoneyStep } from "./money-step";
 
 describe("MoneyStep", () => {
-  it("grounds a California-to-Texas comparison without inventing take-home", () => {
+  it("shows editable destination defaults and explicit current tenure", () => {
     (globalThis as typeof globalThis & { React: typeof React }).React = React;
     const html = renderToStaticMarkup(
       <MoneyStep
@@ -17,6 +17,7 @@ describe("MoneyStep", () => {
         onValueChange={() => undefined}
         onBasisChange={() => undefined}
         onGrossKnownChange={() => undefined}
+        onCurrentHousingTenureChange={() => undefined}
       />,
     );
 
@@ -28,11 +29,12 @@ describe("MoneyStep", () => {
     expect(html).toContain("California Franchise Tax Board");
     expect(html).toContain("Texas Legislative Council");
     expect(html).toContain("Your current monthly baseline");
-    expect(html).toContain("MoveWise builds the destination side");
-    expect(html).toContain("I already know destination numbers");
-    expect(html).toContain("Optional override");
+    expect(html).toContain("Do you currently rent or own?");
+    expect(html).toContain("Your destination starting assumptions");
+    expect(html).toContain("MoveWise starting assumption");
+    expect(html).toContain("neutral planning baseline");
     expect(html).toContain("Available metro rent context");
-    expect(html).not.toContain("Copy current costs");
-    expect(html).not.toContain("Start with current");
+    expect(html).not.toContain("deterministic score should wait");
+    expect(html).not.toContain("Enter all three destination amounts");
   });
 });

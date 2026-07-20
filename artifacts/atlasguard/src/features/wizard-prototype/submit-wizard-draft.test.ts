@@ -8,6 +8,7 @@ const reviewedDraft = (): WizardPrototypeDraft => {
   draft.originSlug = "san-diego-ca";
   draft.destinationSlug = "austin-tx";
   draft.householdMode = "individual";
+  draft.finances.currentHousingTenure = "rent";
   draft.finances.currentTakeHome = "6,200";
   draft.finances.currentHousing = "2,600";
   draft.finances.currentExpenses = "2,100";
@@ -26,62 +27,29 @@ const reviewedDraft = (): WizardPrototypeDraft => {
 };
 
 describe("Wizard submission routing", () => {
-  it("routes a current-only draft to an unscored destination plan", () => {
+  it("scores a current-only draft from transparent planning defaults", () => {
     const result = submitWizardDraft(reviewedDraft());
 
     expect(result.success).toBe(true);
     if (!result.success) return;
 
-    expect(result.kind).toBe("preliminary");
-    if (result.kind !== "preliminary") return;
-    expect(result.plan).toMatchObject({
-      route: {
-        origin: "San Diego, CA",
-        destination: "Austin, TX",
+    expect(result.kind).toBe("deterministic");
+    expect(result.deterministicAnalysis.ruleVersion).toBe("0.2.0");
+    expect(result.evaluation.scenarioInput.finances.destination).toMatchObject({
+      takeHomeIncome: { monthlyCents: 620_000, basis: "user_estimate" },
+      housingCost: { monthlyCents: 260_000, basis: "user_estimate" },
+      recurringExpensesExcludingHousing: {
+        monthlyCents: 210_000,
+        basis: "user_estimate",
       },
-      score: {
-        available: false,
-        label: "Deterministic score not ready",
-      },
-      currentBaseline: [
-        {
-          id: "take_home",
-          value: "$6,200",
-          provenance: "You told us",
-        },
-        {
-          id: "housing",
-          value: "$2,600",
-          provenance: "You told us",
-        },
-        {
-          id: "recurring_expenses",
-          value: "$2,100",
-          provenance: "You told us",
-        },
-      ],
     });
-    expect(result.plan.availableEvidence).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: "metro_rent_context",
-          provenance: "MoveWise calculated",
-          boundary: "Area context—not your budget",
-        }),
-      ]),
-    );
-    expect(result.plan.missingEstimates.map(({ id }) => id)).toEqual([
-      "destination_take_home",
-      "destination_housing",
-      "destination_recurring_expenses",
-      "destination_gross_income",
-    ]);
-    expect(
-      result.plan.missingEstimates.every(
-        ({ provenance }) => provenance === "Needs confirmation",
-      ),
-    ).toBe(true);
-    expect("evaluation" in result).toBe(false);
+    expect(result.destinationAssumptions).toEqual({
+      takeHome: "movewise_baseline",
+      housing: "movewise_baseline",
+      expenses: "movewise_baseline",
+      currentHousingTenure: "rent",
+      destinationHousingTenure: "rent",
+    });
   });
 
   it("preserves the deterministic rule 0.2.0 path for complete overrides", () => {
@@ -104,18 +72,23 @@ describe("Wizard submission routing", () => {
     });
   });
 
-  it("fails closed for a partial destination override", () => {
+  it("preserves one destination override and prefills the remaining fields", () => {
     const draft = reviewedDraft();
     draft.finances.targetHousing = "2,200";
 
-    expect(submitWizardDraft(draft)).toEqual({
-      success: false,
-      errors: expect.objectContaining({
-        "finances.targetTakeHome":
-          "Destination take-home is required to use your own destination numbers.",
-        "finances.targetExpenses":
-          "Destination recurring expenses are required to use your own destination numbers.",
-      }),
+    const result = submitWizardDraft(draft);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.evaluation.scenarioInput.finances.destination).toMatchObject({
+      takeHomeIncome: { monthlyCents: 620_000 },
+      housingCost: { monthlyCents: 220_000 },
+      recurringExpensesExcludingHousing: { monthlyCents: 210_000 },
+    });
+    expect(result.destinationAssumptions).toMatchObject({
+      takeHome: "movewise_baseline",
+      housing: "user_override",
+      expenses: "movewise_baseline",
     });
   });
 });

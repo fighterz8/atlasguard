@@ -101,6 +101,7 @@ describe("MoveWise score presentation", () => {
       householdMode: "individual",
     });
     Object.assign(draft.finances, {
+      currentHousingTenure: "rent",
       currentTakeHome: "5000",
       targetTakeHome: "5250",
       currentHousing: "2000",

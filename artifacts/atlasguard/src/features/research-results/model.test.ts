@@ -32,6 +32,7 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
   },
   finances: {
     ...createInitialWizardDraft().finances,
+    currentHousingTenure: "rent",
     currentTakeHome: "5000",
     targetTakeHome: "5250",
     currentHousing: "2000",
@@ -374,6 +375,45 @@ describe("research results view model", () => {
     );
     expect(model.nextSteps).not.toContain(
       "Add any household factors that could materially change day-to-day life.",
+    );
+  });
+
+  it("labels MoveWise defaults separately from user overrides and shows tenure", () => {
+    const evaluation = evaluateWizardDraft(reviewedDraft());
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation, {
+      analysis: evaluation.deterministicAnalysis,
+      householdAnswers: evaluation.householdAnswers,
+      destinationAssumptions: {
+        takeHome: "movewise_baseline",
+        housing: "user_override",
+        expenses: "movewise_baseline",
+        currentHousingTenure: "own",
+        destinationHousingTenure: "rent",
+      },
+    });
+
+    expect(model.score.readiness.explanation).toContain(
+      "2 destination amounts are still using the visible MoveWise starting baseline",
+    );
+    expect(model.comparison.financialRows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "take_home_income",
+          sourceLabel: "MoveWise starting assumption",
+        }),
+        expect.objectContaining({
+          id: "housing_cost",
+          label: "Housing · owning → renting",
+          sourceLabel: "You told us",
+        }),
+        expect.objectContaining({
+          id: "recurring_expenses",
+          sourceLabel: "MoveWise starting assumption",
+        }),
+      ]),
     );
   });
 

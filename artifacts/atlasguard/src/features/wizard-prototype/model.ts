@@ -122,6 +122,7 @@ export type WizardPrototypeDraft = {
   destinationSlug: SupportedPlaceSlug | "";
   householdMode: MoveWiseHouseholdMode | "";
   finances: {
+    currentHousingTenure: "rent" | "own" | "";
     currentTakeHome: string;
     targetTakeHome: string;
     currentHousing: string;
@@ -160,6 +161,7 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
   destinationSlug: "",
   householdMode: "",
   finances: {
+    currentHousingTenure: "",
     currentTakeHome: "",
     targetTakeHome: "",
     currentHousing: "",
@@ -189,16 +191,6 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
   climateHeatPreference: "fewer_hot_days",
   climateHeatImportance: "important",
   householdPlan: createInitialHouseholdPlan(),
-});
-
-export const copyCurrentCosts = (
-  finances: WizardPrototypeDraft["finances"],
-): WizardPrototypeDraft["finances"] => ({
-  ...finances,
-  targetHousing: finances.currentHousing,
-  targetExpenses: finances.currentExpenses,
-  targetHousingBasis: "user_estimate",
-  targetExpensesBasis: "user_estimate",
 });
 
 const destinationOverrideKeys = [
@@ -397,6 +389,10 @@ export function validateWizardStep(
   }
 
   if (step === "money") {
+    if (draft.finances.currentHousingTenure === "") {
+      errors["finances.currentHousingTenure"] =
+        "Choose whether you currently rent or own.";
+    }
     validateMoney(
       errors,
       "currentTakeHome",
@@ -411,53 +407,31 @@ export function validateWizardStep(
       "Current housing cost",
       true,
     );
-    const destinationOverrideStatus = getDestinationFinanceOverrideStatus(
-      draft.finances,
-    );
-    if (destinationOverrideStatus === "partial") {
-      if (draft.finances.targetTakeHome.trim() === "") {
-        errors["finances.targetTakeHome"] =
-          "Destination take-home is required to use your own destination numbers.";
-      }
-      if (draft.finances.targetHousing.trim() === "") {
-        errors["finances.targetHousing"] =
-          "Destination housing is required to use your own destination numbers.";
-      }
-      if (draft.finances.targetExpenses.trim() === "") {
-        errors["finances.targetExpenses"] =
-          "Destination recurring expenses are required to use your own destination numbers.";
-      }
-    }
-    if (destinationOverrideStatus !== "none") {
-      if (draft.finances.targetTakeHome.trim() !== "")
-        validateMoney(
-          errors,
-          "targetTakeHome",
-          draft.finances.targetTakeHome,
-          "Destination take-home income",
-          false,
-        );
-      if (draft.finances.targetHousing.trim() !== "")
-        validateMoney(
-          errors,
-          "targetHousing",
-          draft.finances.targetHousing,
-          "Destination housing cost",
-          true,
-        );
-      if (draft.finances.targetExpenses.trim() !== "")
-        validateMoney(
-          errors,
-          "targetExpenses",
-          draft.finances.targetExpenses,
-          "Destination recurring expenses",
-          true,
-        );
-    }
-    if (
-      destinationOverrideStatus !== "none" &&
-      draft.finances.targetGrossIncomeKnown
-    ) {
+    if (draft.finances.targetTakeHome.trim() !== "")
+      validateMoney(
+        errors,
+        "targetTakeHome",
+        draft.finances.targetTakeHome,
+        "Destination take-home income",
+        false,
+      );
+    if (draft.finances.targetHousing.trim() !== "")
+      validateMoney(
+        errors,
+        "targetHousing",
+        draft.finances.targetHousing,
+        "Destination housing cost",
+        true,
+      );
+    if (draft.finances.targetExpenses.trim() !== "")
+      validateMoney(
+        errors,
+        "targetExpenses",
+        draft.finances.targetExpenses,
+        "Destination recurring expenses",
+        true,
+      );
+    if (draft.finances.targetGrossIncomeKnown) {
       if (draft.finances.targetGrossIncome.trim() === "") {
         errors["finances.targetGrossIncome"] =
           "Destination gross income is required when marked known.";
@@ -484,7 +458,7 @@ export function validateWizardStep(
       draft.finances.retainedPropertyNet,
       "Retained-property monthly net",
     );
-    if (destinationOverrideStatus !== "none")
+    if (draft.finances.targetTakeHome.trim() !== "")
       validatePlausibleRange(errors, draft.finances, {
         valueKey: "targetTakeHome",
         basisKey: "targetTakeHomeBasis",
@@ -492,7 +466,7 @@ export function validateWizardStep(
         maxKey: "targetTakeHomeRangeMax",
         label: "Target take-home income",
       });
-    if (destinationOverrideStatus !== "none")
+    if (draft.finances.targetHousing.trim() !== "")
       validatePlausibleRange(errors, draft.finances, {
         valueKey: "targetHousing",
         basisKey: "targetHousingBasis",
@@ -500,10 +474,7 @@ export function validateWizardStep(
         maxKey: "targetHousingRangeMax",
         label: "Target housing cost",
       });
-    if (
-      destinationOverrideStatus !== "none" &&
-      draft.finances.targetGrossIncomeKnown
-    ) {
+    if (draft.finances.targetGrossIncomeKnown) {
       validatePlausibleRange(errors, draft.finances, {
         valueKey: "targetGrossIncome",
         basisKey: "targetGrossIncomeBasis",
@@ -513,7 +484,7 @@ export function validateWizardStep(
         allowZero: false,
       });
     }
-    if (destinationOverrideStatus !== "none")
+    if (draft.finances.targetExpenses.trim() !== "")
       validatePlausibleRange(errors, draft.finances, {
         valueKey: "targetExpenses",
         basisKey: "targetExpensesBasis",

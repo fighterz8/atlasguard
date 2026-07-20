@@ -20,6 +20,7 @@ import {
 import type { MoveWiseDeterministicAnalysis } from "@workspace/decision-core";
 
 import { householdFactorLabels } from "../wizard-prototype/model";
+import type { DestinationPlanningAssumptions } from "../wizard-prototype/destination-planning-assumptions";
 
 const dollars = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -287,6 +288,7 @@ const householdImpactLabels = {
 type DeterministicResultsContext = Readonly<{
   analysis: MoveWiseDeterministicAnalysis;
   householdAnswers: VerifiedMoveWiseHouseholdAnswers;
+  destinationAssumptions?: DestinationPlanningAssumptions;
 }>;
 
 export const createResearchResultsViewModel = (
@@ -340,6 +342,26 @@ export const createResearchResultsViewModel = (
   const destinationFinances = profile.financialPosition.destination;
   const deterministic = deterministicContext?.analysis;
   const deterministicResult = deterministic?.result;
+  const planningSources = deterministicContext?.destinationAssumptions;
+  const startingAssumptionCount = planningSources
+    ? [
+        planningSources.takeHome,
+        planningSources.housing,
+        planningSources.expenses,
+      ].filter((source) => source === "movewise_baseline").length
+    : 0;
+  const sourcePresentation = (
+    source: "movewise_baseline" | "user_override" | undefined,
+  ) =>
+    source === "movewise_baseline"
+      ? {
+          sourceLabel: "MoveWise starting assumption",
+          sourceTone: "benchmark" as const,
+        }
+      : {
+          sourceLabel: "You told us",
+          sourceTone: "neutral" as const,
+        };
   const destinationAssumptions = result.scenarioInput.finances.destination;
   const cushionInputs = [
     destinationAssumptions.takeHomeIncome,
@@ -362,8 +384,7 @@ export const createResearchResultsViewModel = (
       ? {
           label: "Preliminary",
           tone: "caution" as const,
-          explanation:
-            "The housing-burden safety check could not run because destination gross income was not provided. The score is shown, but treat it as preliminary.",
+          explanation: `The housing-burden safety check could not run because destination gross income was not provided.${startingAssumptionCount > 0 ? ` ${startingAssumptionCount} destination ${startingAssumptionCount === 1 ? "amount is" : "amounts are"} still using the visible MoveWise starting baseline.` : ""} The score is shown, but treat it as preliminary.`,
         }
       : destinationEstimateCount > 0
         ? {
@@ -413,8 +434,7 @@ export const createResearchResultsViewModel = (
       emphasis: false,
       ...(deterministicResult
         ? {
-            sourceLabel: "You told us",
-            sourceTone: "neutral" as const,
+            ...sourcePresentation(planningSources?.takeHome),
             needsConfirmation: needsConfirmation(
               destinationAssumptions.takeHomeIncome.basis,
             ),
@@ -423,7 +443,9 @@ export const createResearchResultsViewModel = (
     },
     {
       id: "housing_cost",
-      label: "Housing",
+      label: planningSources
+        ? `Housing · ${planningSources.currentHousingTenure === "rent" ? "renting" : "owning"} → ${planningSources.destinationHousingTenure === "rent" ? "renting" : planningSources.destinationHousingTenure === "buy" ? "buying" : "renting or buying"}`
+        : "Housing",
       originValue: formatMoney(originFinances.monthlyHousingCostCents),
       destinationValue: formatMoney(
         destinationFinances.monthlyHousingCostCents,
@@ -440,8 +462,7 @@ export const createResearchResultsViewModel = (
       emphasis: false,
       ...(deterministicResult
         ? {
-            sourceLabel: "You told us",
-            sourceTone: "neutral" as const,
+            ...sourcePresentation(planningSources?.housing),
             needsConfirmation: needsConfirmation(
               destinationAssumptions.housingCost.basis,
             ),
@@ -467,8 +488,7 @@ export const createResearchResultsViewModel = (
       emphasis: false,
       ...(deterministicResult
         ? {
-            sourceLabel: "You told us",
-            sourceTone: "neutral" as const,
+            ...sourcePresentation(planningSources?.expenses),
             needsConfirmation: needsConfirmation(
               destinationAssumptions.recurringExpensesExcludingHousing.basis,
             ),

@@ -28,6 +28,7 @@ const validDraft = (): WizardPrototypeDraft => ({
   },
   finances: {
     ...createInitialWizardDraft().finances,
+    currentHousingTenure: "rent",
     currentTakeHome: "5,000",
     targetTakeHome: "5250",
     currentHousing: "2000",

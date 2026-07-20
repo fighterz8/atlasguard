@@ -24,6 +24,7 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
   },
   finances: {
     ...createInitialWizardDraft().finances,
+    currentHousingTenure: "rent",
     currentTakeHome: "5000",
     targetTakeHome: "5250",
     currentHousing: "2000",

@@ -12,6 +12,8 @@ type MoneyInputProps = {
   error?: string;
   basis: AssumptionBasis | "confirmed";
   basisKey?: BasisKey;
+  sourceLabel?: "MoveWise starting assumption" | "You told us";
+  onReset?: () => void;
   onValueChange: (value: string) => void;
   onBasisChange?: (key: BasisKey, value: AssumptionBasis) => void;
 };
@@ -25,6 +27,8 @@ export function MoneyInput({
   error,
   basis,
   basisKey,
+  sourceLabel,
+  onReset,
   onValueChange,
   onBasisChange,
 }: MoneyInputProps) {
@@ -38,20 +42,27 @@ export function MoneyInput({
           {label}
         </label>
         {basisKey && onBasisChange ? (
-          <select
-            value={basis}
-            aria-label={`${accessibleLabel ?? label} assumption status`}
-            onChange={(event) =>
-              onBasisChange(
-                basisKey,
-                event.currentTarget.value as AssumptionBasis,
-              )
-            }
-            className="min-h-11 max-w-full rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700/20"
-          >
-            <option value="user_estimate">Estimate</option>
-            <option value="confirmed">Confirmed</option>
-          </select>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {sourceLabel ? (
+              <StatusBadge tone={onReset ? "neutral" : "benchmark"}>
+                {sourceLabel}
+              </StatusBadge>
+            ) : null}
+            <select
+              value={basis}
+              aria-label={`${accessibleLabel ?? label} assumption status`}
+              onChange={(event) =>
+                onBasisChange(
+                  basisKey,
+                  event.currentTarget.value as AssumptionBasis,
+                )
+              }
+              className="min-h-11 max-w-full rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700/20"
+            >
+              <option value="user_estimate">Estimate</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+          </div>
         ) : (
           <StatusBadge tone="confirmed">Current</StatusBadge>
         )}
@@ -88,6 +99,15 @@ export function MoneyInput({
         >
           {error}
         </p>
+      ) : null}
+      {onReset ? (
+        <button
+          type="button"
+          onClick={onReset}
+          className="mt-2 min-h-11 text-xs font-semibold text-teal-800 underline decoration-teal-300 underline-offset-2 hover:text-teal-950"
+        >
+          Reset to MoveWise starting assumption
+        </button>
       ) : null}
     </div>
   );

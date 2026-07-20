@@ -22,7 +22,7 @@ type MoneyStepProps = {
   onValueChange: (key: ValueKey, value: string) => void;
   onBasisChange: (key: BasisKey, value: AssumptionBasis) => void;
   onGrossKnownChange: (value: boolean) => void;
-  onCopyCurrent?: () => void;
+  onCurrentHousingTenureChange: (value: "rent" | "own") => void;
 };
 
 const dollars = new Intl.NumberFormat("en-US", {
@@ -41,6 +41,7 @@ export function MoneyStep({
   onValueChange,
   onBasisChange,
   onGrossKnownChange,
+  onCurrentHousingTenureChange,
 }: MoneyStepProps) {
   const taxContext =
     originSlug === "" || destinationSlug === ""
@@ -73,8 +74,9 @@ export function MoneyStep({
         <Landmark aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Enter the money facts you know today. MoveWise builds the destination
-        side from research and marks anything that still needs confirmation.
+        Enter the money facts you know today. MoveWise starts the destination at
+        the same monthly amounts so your result is ready immediately. Every
+        starting assumption stays visible and editable.
       </p>
 
       {taxContext ? (
@@ -133,6 +135,36 @@ export function MoneyStep({
               recurring costs outside housing.
             </p>
           </div>
+          <fieldset
+            id="currentHousingTenure"
+            className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4"
+          >
+            <legend className="px-1 text-sm font-semibold text-slate-950">
+              Do you currently rent or own?
+            </legend>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:gap-6">
+              {(["rent", "own"] as const).map((tenure) => (
+                <label
+                  key={tenure}
+                  className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium capitalize text-slate-800"
+                >
+                  <input
+                    type="radio"
+                    name="currentHousingTenure"
+                    checked={finances.currentHousingTenure === tenure}
+                    onChange={() => onCurrentHousingTenureChange(tenure)}
+                    className="h-4 w-4 accent-teal-800"
+                  />
+                  {tenure}
+                </label>
+              ))}
+            </div>
+            {errors["finances.currentHousingTenure"] ? (
+              <p className="mt-2 text-sm font-medium text-risk" role="alert">
+                {errors["finances.currentHousingTenure"]}
+              </p>
+            ) : null}
+          </fieldset>
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
             {moneyComparisons.map((definition) => (
               <div
@@ -156,21 +188,61 @@ export function MoneyStep({
           </div>
         </section>
 
-        <aside className="rounded-xl border border-teal-200 bg-teal-50 p-4 sm:p-5">
+        <section className="rounded-xl border border-teal-200 bg-teal-50 p-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge tone="neutral">MoveWise calculated</StatusBadge>
+            <StatusBadge tone="benchmark">Editable defaults</StatusBadge>
             <span className="text-xs font-medium text-teal-900/75">
               Destination plan
             </span>
           </div>
           <h2 className="mt-3 text-base font-semibold text-teal-950">
-            MoveWise builds the destination side
+            Your destination starting assumptions
           </h2>
           <p className="mt-2 text-sm leading-6 text-teal-900/80">
-            The next result can use this baseline to show what destination
-            evidence is available, what still needs confirmation, and where a
-            deterministic score should wait for your own destination numbers.
+            These fields begin at your current monthly amounts. That is a
+            neutral planning baseline—not a prediction that destination pay or
+            costs will match. Change any field you expect to be different.
           </p>
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {moneyComparisons.map((definition) => {
+              const hasOverride = finances[definition.target.id].trim() !== "";
+              return (
+                <div
+                  key={definition.kind}
+                  className="rounded-lg border border-teal-200 bg-white p-4"
+                >
+                  <MoneyInput
+                    id={definition.target.id}
+                    label={definition.title}
+                    accessibleLabel={`Destination ${definition.title.toLowerCase()}`}
+                    description={definition.target.description}
+                    value={
+                      hasOverride
+                        ? finances[definition.target.id]
+                        : finances[definition.current.id]
+                    }
+                    basis={finances[definition.target.basisKey]}
+                    basisKey={definition.target.basisKey}
+                    sourceLabel={
+                      hasOverride
+                        ? "You told us"
+                        : "MoveWise starting assumption"
+                    }
+                    error={errors[`finances.${definition.target.id}`]}
+                    onValueChange={(value) =>
+                      onValueChange(definition.target.id, value)
+                    }
+                    onBasisChange={onBasisChange}
+                    onReset={
+                      hasOverride
+                        ? () => onValueChange(definition.target.id, "")
+                        : undefined
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
           {housingContext ? (
             <div className="mt-4 rounded-lg border border-teal-200 bg-white p-4">
               <p className="text-sm font-semibold text-slate-950">
@@ -188,46 +260,7 @@ export function MoneyStep({
               </p>
             </div>
           ) : null}
-        </aside>
-
-        <details className="rounded-xl border border-slate-200 bg-slate-50">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 marker:hidden">
-            <Landmark aria-hidden="true" className="h-4 w-4 text-slate-500" />I
-            already know destination numbers
-          </summary>
-          <div className="space-y-5 border-t border-slate-200 bg-white p-4">
-            <div>
-              <StatusBadge tone="neutral">Optional override</StatusBadge>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Enter all three destination amounts when you want MoveWise to
-                use your own destination estimate now.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {moneyComparisons.map((definition) => (
-                <div
-                  key={definition.kind}
-                  className="rounded-lg border border-teal-200 bg-teal-50/50 p-4"
-                >
-                  <MoneyInput
-                    id={definition.target.id}
-                    label={definition.title}
-                    accessibleLabel={`Destination ${definition.title.toLowerCase()}`}
-                    description={definition.target.description}
-                    value={finances[definition.target.id]}
-                    basis={finances[definition.target.basisKey]}
-                    basisKey={definition.target.basisKey}
-                    error={errors[`finances.${definition.target.id}`]}
-                    onValueChange={(value) =>
-                      onValueChange(definition.target.id, value)
-                    }
-                    onBasisChange={onBasisChange}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </details>
+        </section>
 
         <fieldset className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <legend className="px-1 text-sm font-semibold text-slate-950">

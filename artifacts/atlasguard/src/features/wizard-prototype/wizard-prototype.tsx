@@ -12,7 +12,6 @@ import { clonePlainData } from "../../lib/clone-plain-data";
 
 import { HouseholdStep } from "./household-step";
 import {
-  copyCurrentCosts,
   createInitialWizardDraft,
   getPlace,
   getNextStep,
@@ -38,14 +37,15 @@ const exampleDraft: WizardPrototypeDraft = {
   destinationSlug: LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.destination.slug,
   householdMode: "family",
   finances: {
+    currentHousingTenure: "rent",
     currentTakeHome: "5000",
-    targetTakeHome: "5000",
+    targetTakeHome: "",
     currentHousing: "2000",
-    targetHousing: "2000",
-    targetGrossIncomeKnown: true,
-    targetGrossIncome: "7000",
+    targetHousing: "",
+    targetGrossIncomeKnown: false,
+    targetGrossIncome: "",
     currentExpenses: "1500",
-    targetExpenses: "1500",
+    targetExpenses: "",
     retainedPropertyNet: "0",
     targetTakeHomeRangeMin: "",
     targetTakeHomeRangeMax: "",
@@ -287,17 +287,12 @@ export function WizardPrototype({
     if (!value) clearError("finances.targetGrossIncome");
   };
 
-  const copyCurrentFinances = () => {
+  const updateCurrentHousingTenure = (value: "rent" | "own") => {
     setDraft((current) => ({
       ...current,
-      finances: copyCurrentCosts(current.finances),
+      finances: { ...current.finances, currentHousingTenure: value },
     }));
-    setErrors((current) => {
-      const next = { ...current };
-      delete next["finances.targetHousing"];
-      delete next["finances.targetExpenses"];
-      return next;
-    });
+    clearError("finances.currentHousingTenure");
   };
 
   const updateBasis = (key: BasisKey, value: AssumptionBasis) => {
@@ -306,6 +301,18 @@ export function WizardPrototype({
       ...current,
       finances: {
         ...current.finances,
+        ...(current.finances[rangeKeys.value].trim() === "" &&
+        rangeKeys.value !== "targetGrossIncome" &&
+        rangeKeys.value !== "retainedPropertyNet"
+          ? {
+              [rangeKeys.value]:
+                rangeKeys.value === "targetTakeHome"
+                  ? current.finances.currentTakeHome
+                  : rangeKeys.value === "targetHousing"
+                    ? current.finances.currentHousing
+                    : current.finances.currentExpenses,
+            }
+          : {}),
         [key]: value,
         ...(value === "confirmed"
           ? { [rangeKeys.min]: "", [rangeKeys.max]: "" }
@@ -457,7 +464,7 @@ export function WizardPrototype({
                       onValueChange={updateFinanceValue}
                       onBasisChange={updateBasis}
                       onGrossKnownChange={updateGrossKnown}
-                      onCopyCurrent={copyCurrentFinances}
+                      onCurrentHousingTenureChange={updateCurrentHousingTenure}
                     />
                   ) : null}
                   {step === "priorities" ? (
