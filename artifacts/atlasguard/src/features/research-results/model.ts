@@ -276,14 +276,12 @@ const deterministicMetricLabels = {
   climate: "Climate fit",
 } as const;
 
-const householdImpactLabels = {
-  strong_negative: "Much harder",
-  negative: "Somewhat harder",
-  neutral: "About the same",
-  positive: "Somewhat easier",
-  strong_positive: "Much easier",
-  unavailable: "Not sure yet",
-  excluded: "Excluded",
+const bedroomLabels = {
+  studio: "studio rental",
+  "1": "1-bedroom rental",
+  "2": "2-bedroom rental",
+  "3": "3-bedroom rental",
+  "4_plus": "4+ bedroom rental",
 } as const;
 
 type DeterministicResultsContext = Readonly<{
@@ -344,13 +342,6 @@ export const createResearchResultsViewModel = (
   const deterministic = deterministicContext?.analysis;
   const deterministicResult = deterministic?.result;
   const planningSources = deterministicContext?.destinationAssumptions;
-  const startingAssumptionCount = planningSources
-    ? [
-        planningSources.takeHome,
-        planningSources.housing,
-        planningSources.expenses,
-      ].filter((source) => source === "movewise_baseline").length
-    : 0;
   const sourcePresentation = (source: DestinationPlanningSource | undefined) =>
     source === "movewise_public_estimate"
       ? {
@@ -359,7 +350,7 @@ export const createResearchResultsViewModel = (
         }
       : source === "movewise_baseline"
         ? {
-            sourceLabel: "MoveWise starting assumption",
+            sourceLabel: "Fallback estimate",
             sourceTone: "benchmark" as const,
           }
         : {
@@ -367,41 +358,43 @@ export const createResearchResultsViewModel = (
             sourceTone: "neutral" as const,
           };
   const destinationAssumptions = result.scenarioInput.finances.destination;
-  const cushionInputs = [
-    destinationAssumptions.takeHomeIncome,
-    destinationAssumptions.housingCost,
-    destinationAssumptions.recurringExpensesExcludingHousing,
-    destinationAssumptions.retainedPropertyNet,
-  ];
-  const needsConfirmation = (basis: string) => basis !== "confirmed";
-  const cushionNeedsConfirmation = cushionInputs.some(({ basis }) =>
-    needsConfirmation(basis),
-  );
-  const destinationEstimateCount = [
-    ...cushionInputs,
-    ...(destinationAssumptions.grossIncome === null
-      ? []
-      : [destinationAssumptions.grossIncome]),
-  ].filter(({ basis }) => needsConfirmation(basis)).length;
-  const financialReadiness =
-    destinationAssumptions.grossIncome === null
-      ? {
-          label: "Preliminary",
-          tone: "caution" as const,
-          explanation: `The housing-burden safety check could not run because destination gross income was not provided.${startingAssumptionCount > 0 ? ` ${startingAssumptionCount} destination ${startingAssumptionCount === 1 ? "amount is" : "amounts are"} still using the visible MoveWise starting baseline.` : ""} The score is shown, but treat it as preliminary.`,
-        }
-      : destinationEstimateCount > 0
-        ? {
-            label: "Needs confirmation",
-            tone: "caution" as const,
-            explanation: `${destinationEstimateCount} destination ${destinationEstimateCount === 1 ? "amount is" : "amounts are"} still estimates. MoveWise calculated the result from them, but did not independently verify them.`,
-          }
-        : {
-            label: "Inputs confirmed",
-            tone: "favorable" as const,
-            explanation:
-              "You marked every destination money input as confirmed. The result still inherits the limits of the available city evidence.",
-          };
+  const publicEstimateLabels = planningSources
+    ? [
+        planningSources.takeHome === "movewise_public_estimate"
+          ? "income"
+          : null,
+        planningSources.housing === "movewise_public_estimate" ? "rent" : null,
+        planningSources.expenses === "movewise_public_estimate"
+          ? "recurring expenses"
+          : null,
+      ].filter((label): label is string => label !== null)
+    : [];
+  const hasUserEditedDestinationAmounts = planningSources
+    ? [
+        planningSources.takeHome,
+        planningSources.housing,
+        planningSources.expenses,
+      ].some((source) => source === "user_override")
+    : false;
+  const financialReadiness = {
+    label: "Public estimates + your inputs",
+    tone: "benchmark" as const,
+    explanation: `${
+      publicEstimateLabels.length > 0
+        ? `MoveWise used public metro estimates for ${publicEstimateLabels.join(
+            ", ",
+          )}`
+        : "MoveWise used the destination amounts in this scenario"
+    }${
+      hasUserEditedDestinationAmounts
+        ? " and user-edited destination amounts where supplied"
+        : ""
+    }. ${
+      destinationAssumptions.grossIncome === null
+        ? "The housing-burden safety check could not run because destination gross income was not provided."
+        : "The housing-burden safety check used the destination gross income supplied."
+    } V1 evaluates the immediate rental stage; expanded household fit and ownership financing are outside this score.`,
+  };
   const financialRows = [
     {
       id: "monthly_cushion",
@@ -415,7 +408,6 @@ export const createResearchResultsViewModel = (
         ? {
             sourceLabel: "MoveWise calculated",
             sourceTone: "benchmark" as const,
-            needsConfirmation: cushionNeedsConfirmation,
           }
         : {}),
     },
@@ -439,9 +431,6 @@ export const createResearchResultsViewModel = (
       ...(deterministicResult
         ? {
             ...sourcePresentation(planningSources?.takeHome),
-            needsConfirmation: needsConfirmation(
-              destinationAssumptions.takeHomeIncome.basis,
-            ),
           }
         : {}),
     },
@@ -467,9 +456,6 @@ export const createResearchResultsViewModel = (
       ...(deterministicResult
         ? {
             ...sourcePresentation(planningSources?.housing),
-            needsConfirmation: needsConfirmation(
-              destinationAssumptions.housingCost.basis,
-            ),
           }
         : {}),
     },
@@ -493,9 +479,6 @@ export const createResearchResultsViewModel = (
       ...(deterministicResult
         ? {
             ...sourcePresentation(planningSources?.expenses),
-            needsConfirmation: needsConfirmation(
-              destinationAssumptions.recurringExpensesExcludingHousing.basis,
-            ),
           }
         : {}),
     },
@@ -525,9 +508,6 @@ export const createResearchResultsViewModel = (
               ? {
                   sourceLabel: "You told us",
                   sourceTone: "neutral" as const,
-                  needsConfirmation: needsConfirmation(
-                    destinationAssumptions.retainedPropertyNet.basis,
-                  ),
                 }
               : {}),
           },
@@ -688,57 +668,72 @@ export const createResearchResultsViewModel = (
               ? "Household or family move"
               : "Individual move",
           summary: essentialSummary,
-          totalContribution:
-            deterministicResult.metricContributions.household.contribution,
-          factors: deterministicAnswers.factors.map((answer) => {
-            const signal =
-              deterministicResult.metricContributions.household.signals.find(
-                ({ signalId }) => signalId === answer.factorId,
-              );
-            const statusLabel =
-              answer.importance === "not_applicable"
-                ? "Not part of my decision"
-                : answer.importance === "important"
-                  ? "Important"
-                  : answer.essentialStatus === "confirmed_met"
-                    ? "Essential — confirmed"
-                    : answer.essentialStatus === "unconfirmed"
-                      ? "Essential — not confirmed"
-                      : "Essential — not met";
-            const tone =
-              answer.importance === "not_applicable"
-                ? ("unavailable" as const)
-                : answer.essentialStatus === "confirmed_unmet"
-                  ? ("risk" as const)
-                  : answer.essentialStatus === "unconfirmed" ||
-                      answer.impact === "unavailable"
-                    ? ("caution" as const)
-                    : (signal?.contribution ?? 0) > 0
-                      ? ("favorable" as const)
-                      : (signal?.contribution ?? 0) < 0
-                        ? ("risk" as const)
-                        : ("neutral" as const);
-            return {
-              id: answer.factorId,
-              label: householdFactorLabels[answer.factorId],
-              statusLabel,
-              impactLabel: householdImpactLabels[answer.impact],
-              contribution: signal?.contribution ?? 0,
-              tone,
-            };
-          }),
+          rentalPlan:
+            planningSources?.rentGuidance === null ||
+            planningSources?.rentGuidance === undefined
+              ? null
+              : (() => {
+                  const rentGuidance = planningSources.rentGuidance;
+                  const evaluatedRentDollars = Math.round(
+                    destinationFinances.monthlyHousingCostCents / 100,
+                  );
+                  const ceilingDifferenceDollars =
+                    evaluatedRentDollars -
+                    planningSources.maximumMonthlyRentDollars;
+                  return {
+                    bedroomLabel:
+                      bedroomLabels[planningSources.requestedBedrooms],
+                    originRent: dollars.format(
+                      rentGuidance.origin.monthlyGrossRentDollars,
+                    ),
+                    destinationRent: dollars.format(
+                      rentGuidance.destination.monthlyGrossRentDollars,
+                    ),
+                    rentDifference:
+                      rentGuidance.monthlyDifferenceDollars === 0
+                        ? "$0 difference"
+                        : `${dollars.format(
+                            Math.abs(rentGuidance.monthlyDifferenceDollars),
+                          )} ${
+                            rentGuidance.monthlyDifferenceDollars < 0
+                              ? "less"
+                              : "more"
+                          }`,
+                    originStockShare: formatPercent(
+                      rentGuidance.origin.renterStockShareBps,
+                    ),
+                    destinationStockShare: formatPercent(
+                      rentGuidance.destination.renterStockShareBps,
+                    ),
+                    ceiling: dollars.format(
+                      planningSources.maximumMonthlyRentDollars,
+                    ),
+                    ceilingStatus:
+                      ceilingDifferenceDollars <= 0
+                        ? "Within rent ceiling"
+                        : planningSources.rentCeilingNonNegotiable
+                          ? "Non-negotiable rent ceiling exceeded"
+                          : "Above preferred rent ceiling",
+                    ceilingDifference:
+                      ceilingDifferenceDollars === 0
+                        ? "$0 difference"
+                        : `${dollars.format(
+                            Math.abs(ceilingDifferenceDollars),
+                          )} ${
+                            ceilingDifferenceDollars < 0 ? "under" : "over"
+                          }`,
+                    scorePath: `Your ${
+                      bedroomLabels[planningSources.requestedBedrooms]
+                    } requirement set the destination housing estimate used in the budget. That rent is already included in monthly cushion and the MoveWise Score; no separate household points were added.`,
+                    sourceLabel: `${rentGuidance.source.publisher} · ACS tables ${rentGuidance.source.rentTableId} and ${rentGuidance.source.stockTableId}`,
+                    observationPeriod: rentGuidance.source.observationPeriod,
+                    boundary: rentGuidance.boundary,
+                  };
+                })(),
         }
       : null;
   const deterministicMissingComponents = deterministicResult
-    ? [
-        ...(deterministicResult.metricContributions.household.status ===
-          "excluded" ||
-        deterministicResult.metricContributions.household.status ===
-          "unavailable"
-          ? ["Household fit"]
-          : []),
-        "Opportunity context",
-      ]
+    ? ["Expanded household and ownership fit", "Opportunity context"]
     : null;
   const deterministicBlockerCode = deterministicResult
     ?.activeBlockerCodes[0] as

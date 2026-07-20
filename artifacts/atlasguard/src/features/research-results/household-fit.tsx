@@ -1,4 +1,4 @@
-import { ShieldCheck, Users } from "lucide-react";
+import { Database, Home } from "lucide-react";
 import React from "react";
 
 import { StatusBadge } from "../ux-system/status-badge";
@@ -9,13 +9,9 @@ type HouseholdFitProps = {
   household: NonNullable<ResearchResultsViewModel["household"]>;
 };
 
-const contributionText = (value: number) => {
-  if (value === 0) return "No score change";
-  const amount = `${value > 0 ? "+" : ""}${value}`;
-  return `${amount} ${Math.abs(value) === 1 ? "point" : "points"}`;
-};
-
 export function HouseholdFit({ household }: HouseholdFitProps) {
+  const plan = household.rentalPlan;
+
   return (
     <section
       aria-labelledby="household-fit-heading"
@@ -23,74 +19,130 @@ export function HouseholdFit({ household }: HouseholdFitProps) {
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
         <div>
-          <p className="eyebrow">Household fit</p>
+          <p className="eyebrow">Your first rental</p>
           <h2
             id="household-fit-heading"
-            className="mt-3 max-w-2xl font-serif text-4xl tracking-[-0.035em] text-slate-950 sm:text-5xl"
+            className="mt-3 max-w-3xl font-serif text-4xl tracking-[-0.035em] text-slate-950 sm:text-5xl"
           >
-            What you said needs to work
+            How your rental requirement changed the result
           </h2>
         </div>
         <div className="border-l-4 border-teal-700 bg-teal-50 px-5 py-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-teal-950">
-            <Users aria-hidden="true" className="h-4 w-4" />
+            <Home aria-hidden="true" className="h-4 w-4" />
             {household.modeLabel}
           </div>
-          {household.summary ? (
+          {household.summary?.active ? (
             <div className="mt-3">
               <StatusBadge tone={household.summary.tone}>
                 {household.summary.label}
               </StatusBadge>
             </div>
           ) : null}
-          <p className="mt-3 text-sm font-semibold tabular-nums text-teal-950">
-            Household score effect:{" "}
-            {contributionText(household.totalContribution)}
-          </p>
         </div>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        {household.factors.map((factor) => (
-          <article
-            key={factor.id}
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="font-semibold text-slate-950">{factor.label}</h3>
-              <StatusBadge tone={factor.tone}>{factor.statusLabel}</StatusBadge>
-            </div>
-            <dl className="mt-4 grid grid-cols-2 gap-4 border-t border-slate-200 pt-4 text-sm">
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                  Expected change
-                </dt>
-                <dd className="mt-1 font-medium text-slate-800">
-                  {factor.impactLabel}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                  Score effect
-                </dt>
-                <dd className="mt-1 font-semibold tabular-nums text-slate-800">
-                  {contributionText(factor.contribution)}
-                </dd>
-              </div>
-            </dl>
-          </article>
-        ))}
-      </div>
+      {plan ? (
+        <>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                {plan.bedroomLabel}
+              </p>
+              <dl className="mt-4 space-y-3 text-sm">
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-slate-600">Current metro</dt>
+                  <dd className="font-semibold tabular-nums text-slate-950">
+                    {plan.originRent}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-slate-600">Destination metro</dt>
+                  <dd className="font-semibold tabular-nums text-slate-950">
+                    {plan.destinationRent}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-4 border-t border-slate-200 pt-4 text-sm font-semibold text-teal-900">
+                {plan.rentDifference} per month
+              </p>
+            </article>
 
-      <div className="mt-6 flex gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950">
-        <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-        <p>
-          Household fit comes from your easier-or-harder comparisons, not a city
-          rating. Each answer contributes 0, ±10, or ±15 points, capped at ±30
-          total. Essential statuses can also change the final condition;
-          excluded and “not sure” factors contribute zero.
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                Share of rental stock
+              </p>
+              <dl className="mt-4 space-y-3 text-sm">
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-slate-600">Current metro</dt>
+                  <dd className="font-semibold tabular-nums text-slate-950">
+                    {plan.originStockShare}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-slate-600">Destination metro</dt>
+                  <dd className="font-semibold tabular-nums text-slate-950">
+                    {plan.destinationStockShare}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-4 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
+                A market-level availability signal, not a live listing count.
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                Your rent ceiling
+              </p>
+              <p className="mt-4 text-2xl font-semibold tabular-nums text-slate-950">
+                {plan.ceiling}
+              </p>
+              <div className="mt-3">
+                <StatusBadge
+                  tone={
+                    plan.ceilingStatus === "Within rent ceiling"
+                      ? "favorable"
+                      : "risk"
+                  }
+                >
+                  {plan.ceilingStatus}
+                </StatusBadge>
+              </div>
+              <p className="mt-3 text-sm font-semibold text-slate-800">
+                {plan.ceilingDifference}
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-6 border-l-4 border-teal-700 bg-teal-50 px-5 py-4">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-teal-900">
+              How this affects your score
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {plan.scorePath}
+            </p>
+          </div>
+
+          <details className="mt-6 border-y border-slate-200 py-1">
+            <summary className="flex min-h-12 cursor-pointer items-center gap-2 py-3 text-sm font-semibold text-slate-800">
+              <Database aria-hidden="true" className="h-4 w-4 text-slate-500" />
+              Rental evidence and limits
+            </summary>
+            <div className="border-t border-slate-200 py-4 text-xs leading-5 text-slate-600">
+              <p className="font-semibold text-slate-800">
+                {plan.sourceLabel} · {plan.observationPeriod}
+              </p>
+              <p className="mt-2">{plan.boundary}</p>
+            </div>
+          </details>
+        </>
+      ) : (
+        <p className="mt-8 border-y border-slate-300 py-5 text-sm leading-6 text-slate-600">
+          Bedroom-specific rental evidence is available after the Wizard rental
+          plan is submitted.
         </p>
-      </div>
+      )}
     </section>
   );
 }

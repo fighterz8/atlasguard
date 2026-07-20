@@ -126,7 +126,7 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
       <div className="mt-6 flex flex-col gap-3 border-l-4 border-caution bg-caution-surface px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-caution">
-            Decision readiness
+            How estimates were calculated
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-700">
             {score.readiness.explanation}
@@ -140,15 +140,16 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
       {score.mode === "deterministic" && score.essentialSummary?.active ? (
         <div className="mt-6 border-l-4 border-caution bg-caution-surface px-5 py-4">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-caution">
-            Essential-needs override
+            Non-negotiable rental requirement
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <StatusBadge tone={score.essentialSummary.tone}>
               {score.essentialSummary.label}
             </StatusBadge>
             <p className="text-sm leading-6 text-slate-700">
-              An unconfirmed or unmet essential need can override the numeric
-              score. Results identifies the exact need below.
+              A non-negotiable rent ceiling can override the numeric score when
+              the destination rent estimate exceeds it. The rental section below
+              shows the exact comparison.
             </p>
           </div>
         </div>

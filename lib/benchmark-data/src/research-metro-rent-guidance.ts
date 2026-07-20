@@ -260,8 +260,7 @@ export const getResearchMetroRentGuidance = (
     source: Object.freeze({
       publisher: RESEARCH_METRO_RENT_SOURCE.publisher,
       rentTableId: RESEARCH_METRO_RENT_SOURCE.tables.rentByBedrooms.tableId,
-      stockTableId:
-        RESEARCH_METRO_RENT_SOURCE.tables.tenureByBedrooms.tableId,
+      stockTableId: RESEARCH_METRO_RENT_SOURCE.tables.tenureByBedrooms.tableId,
       observationPeriod: RESEARCH_METRO_RENT_SOURCE.observationPeriod,
     }),
   });

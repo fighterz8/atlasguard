@@ -1,5 +1,5 @@
 import {
-  getResearchMetroHousingContext,
+  getResearchMetroExpenseGuidance,
   getResearchMetroIncomeGuidance,
 } from "@workspace/benchmark-data";
 import { Home, Landmark } from "lucide-react";
@@ -34,7 +34,6 @@ const dollars = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-const formatCents = (value: number) => dollars.format(value / 100);
 const parseMonthlyDollars = (value: string) =>
   Number(value.trim().replace(/,/g, ""));
 
@@ -52,10 +51,14 @@ export function MoneyStep({
     originSlug === "" || destinationSlug === ""
       ? null
       : getStateIncomeTaxContext(originSlug, destinationSlug);
-  const housingContext =
+  const expenseGuidance =
     originSlug === "" || destinationSlug === ""
       ? null
-      : getResearchMetroHousingContext(originSlug, destinationSlug);
+      : getResearchMetroExpenseGuidance(
+          originSlug,
+          destinationSlug,
+          parseMonthlyDollars(finances.currentExpenses),
+        );
   const incomeGuidance =
     originSlug === "" || destinationSlug === ""
       ? null
@@ -87,10 +90,10 @@ export function MoneyStep({
         <Landmark aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Enter the money facts you know today. MoveWise uses public metro income
-        data for the destination take-home estimate and visible baselines for
-        costs where a personal budget cannot be inferred. Every assumption stays
-        editable.
+        Enter the money facts you know today. MoveWise estimates destination
+        income and non-housing costs from public metro data. Your rent estimate
+        is calculated after you describe the rental you need in Step 4. Every
+        estimate stays editable.
       </p>
 
       {taxContext ? (
@@ -213,16 +216,21 @@ export function MoneyStep({
             Your destination starting assumptions
           </h2>
           <p className="mt-2 text-sm leading-6 text-teal-900/80">
-            Destination take-home uses the latest supported Census metro
-            household-income comparison. Housing and other costs begin at your
-            current amounts because regional medians are context, not your
-            personal budget. Change any field you expect to be different.
+            Destination take-home uses Census metro income data. Other recurring
+            costs use BEA regional price levels. Housing is calculated after
+            your rental plan, so MoveWise does not copy your current housing
+            payment into the destination. Change any estimate when you know a
+            better number.
           </p>
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
             {moneyComparisons.map((definition) => {
               const hasOverride = finances[definition.target.id].trim() !== "";
               const hasPublicIncomeEstimate =
                 definition.kind === "take_home" && incomeGuidance !== null;
+              const hasPublicExpenseEstimate =
+                definition.kind === "expenses" && expenseGuidance !== null;
+              const isDeferredHousing =
+                definition.kind === "housing" && !hasOverride;
               return (
                 <div
                   key={definition.kind}
@@ -240,22 +248,32 @@ export function MoneyStep({
                           ? String(
                               incomeGuidance.suggestedMonthlyTakeHomeDollars,
                             )
-                          : finances[definition.current.id]
+                          : hasPublicExpenseEstimate
+                            ? String(
+                                expenseGuidance.suggestedMonthlyExpensesDollars,
+                              )
+                            : ""
                     }
                     basis={finances[definition.target.basisKey]}
-                    basisKey={definition.target.basisKey}
+                    basisKey={
+                      isDeferredHousing
+                        ? undefined
+                        : definition.target.basisKey
+                    }
                     sourceLabel={
                       hasOverride
                         ? "You told us"
-                        : hasPublicIncomeEstimate
+                        : hasPublicIncomeEstimate || hasPublicExpenseEstimate
                           ? "MoveWise public-data estimate"
-                          : "MoveWise starting assumption"
+                          : "Calculated after your rental plan"
                     }
                     error={errors[`finances.${definition.target.id}`]}
                     onValueChange={(value) =>
                       onValueChange(definition.target.id, value)
                     }
-                    onBasisChange={onBasisChange}
+                    onBasisChange={
+                      isDeferredHousing ? undefined : onBasisChange
+                    }
                     onReset={
                       hasOverride
                         ? () => onValueChange(definition.target.id, "")
@@ -301,21 +319,31 @@ export function MoneyStep({
               </a>
             </div>
           ) : null}
-          {housingContext ? (
+          {expenseGuidance ? (
             <div className="mt-4 rounded-lg border border-teal-200 bg-white p-4">
               <p className="text-sm font-semibold text-slate-950">
-                Available metro rent context
+                How the recurring-expense estimate was formed
               </p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                {housingContext.origin.label}:{" "}
-                {formatCents(housingContext.metric.originValue)} ·{" "}
-                {housingContext.destination.label}:{" "}
-                {formatCents(housingContext.metric.destinationValue)}
+                MoveWise applied the destination-to-origin BEA regional price
+                level ratio to your current non-housing recurring expenses. The
+                editable estimate is{" "}
+                {dollars.format(expenseGuidance.suggestedMonthlyExpensesDollars)}{" "}
+                per month.
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Context-only ACS median gross rent. It is not your housing
-                budget and is not substituted into the score.
+                U.S. Bureau of Economic Analysis ·{" "}
+                {expenseGuidance.source.observationPeriod} · table{" "}
+                {expenseGuidance.source.tableId}. {expenseGuidance.boundary}
               </p>
+              <a
+                href={expenseGuidance.source.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold text-teal-800 underline decoration-teal-300 underline-offset-2 hover:text-teal-950"
+              >
+                View official BEA source
+              </a>
             </div>
           ) : null}
         </section>

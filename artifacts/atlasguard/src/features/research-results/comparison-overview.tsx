@@ -48,7 +48,7 @@ export function ComparisonOverview({
         </div>
         <p className="text-sm leading-6 text-slate-600">
           {reviewedAssumptions
-            ? "Monthly amounts reflect the assumptions you entered."
+            ? "Monthly amounts use MoveWise public estimates plus any edits you made."
             : "Monthly amounts are illustrative for this research preview."}
         </p>
       </div>
@@ -95,11 +95,6 @@ export function ComparisonOverview({
                       <StatusBadge tone={row.sourceTone ?? "neutral"}>
                         {row.sourceLabel}
                       </StatusBadge>
-                      {row.needsConfirmation ? (
-                        <StatusBadge tone="caution">
-                          Needs confirmation
-                        </StatusBadge>
-                      ) : null}
                     </span>
                   ) : null}
                 </th>
@@ -138,9 +133,6 @@ export function ComparisonOverview({
                 <StatusBadge tone={row.sourceTone ?? "neutral"}>
                   {row.sourceLabel}
                 </StatusBadge>
-                {row.needsConfirmation ? (
-                  <StatusBadge tone="caution">Needs confirmation</StatusBadge>
-                ) : null}
               </div>
             ) : null}
             <dl className="grid grid-cols-3 gap-2">

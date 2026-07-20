@@ -9,7 +9,11 @@ import type {
   ResearchMetroRentGuidance,
 } from "@workspace/benchmark-data";
 
-import type { HousingTenure, WizardPrototypeDraft } from "./model";
+import type {
+  BedroomNeed,
+  HousingTenure,
+  WizardPrototypeDraft,
+} from "./model";
 
 export type DestinationPlanningSource =
   | "movewise_public_estimate"
@@ -25,6 +29,9 @@ export type DestinationPlanningAssumptions = Readonly<{
   incomeGuidance: ResearchMetroIncomeGuidance | null;
   rentGuidance: ResearchMetroRentGuidance | null;
   expenseGuidance: ResearchMetroExpenseGuidance | null;
+  requestedBedrooms: BedroomNeed;
+  maximumMonthlyRentDollars: number;
+  rentCeilingNonNegotiable: boolean;
 }>;
 
 const useDestinationValue = (
@@ -62,6 +69,10 @@ export function createDestinationPlanningDraft(
     draft.destinationSlug,
     currentExpenses,
   );
+  const requestedBedrooms = draft.householdPlan.housing.bedrooms;
+  const maximumMonthlyRentDollars = Number(
+    draft.householdPlan.housing.maxMonthlyCost.trim().replace(/,/g, ""),
+  );
   const takeHome =
     draft.finances.targetTakeHome.trim() === "" && incomeGuidance !== null
       ? {
@@ -95,7 +106,10 @@ export function createDestinationPlanningDraft(
 
   if (
     draft.finances.currentHousingTenure === "" ||
-    draft.householdPlan.housing.tenure === ""
+    draft.householdPlan.housing.tenure === "" ||
+    requestedBedrooms === "" ||
+    !Number.isFinite(maximumMonthlyRentDollars) ||
+    maximumMonthlyRentDollars <= 0
   ) {
     throw new Error("Housing tenure must be complete before evaluation.");
   }
@@ -155,6 +169,10 @@ export function createDestinationPlanningDraft(
       incomeGuidance,
       rentGuidance,
       expenseGuidance,
+      requestedBedrooms,
+      maximumMonthlyRentDollars,
+      rentCeilingNonNegotiable:
+        draft.householdPlan.housing.stopsMove === "yes",
     },
   };
 }

@@ -56,11 +56,7 @@ describe("research metro rent guidance", () => {
       getResearchMetroRentGuidance("unknown", "seattle-wa", "2"),
     ).toBeNull();
     expect(
-      getResearchMetroRentGuidance(
-        "los-angeles-ca",
-        "seattle-wa",
-        "unknown",
-      ),
+      getResearchMetroRentGuidance("los-angeles-ca", "seattle-wa", "unknown"),
     ).toBeNull();
   });
 });

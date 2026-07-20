@@ -72,8 +72,6 @@ export function ResearchResultsExperience({
 
         <ScoreExplanation score={model.score} />
 
-        {model.household ? <HouseholdFit household={model.household} /> : null}
-
         <ComparisonOverview
           route={model.route}
           comparison={model.comparison}
@@ -82,6 +80,8 @@ export function ResearchResultsExperience({
           housingContext={model.housingContext}
           reviewedAssumptions={reviewedAssumptions}
         />
+
+        {model.household ? <HouseholdFit household={model.household} /> : null}
 
         <DecisionNotes {...model} />
 

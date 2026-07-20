@@ -6,6 +6,7 @@ import {
   createVerifiedWhatIfViewModel,
 } from "./model";
 import { evaluateWizardDraft } from "../wizard-prototype/evaluate-wizard-draft";
+import { submitWizardDraft } from "../wizard-prototype/submit-wizard-draft";
 import {
   createInitialWizardDraft,
   type WizardPrototypeDraft,
@@ -319,8 +320,8 @@ describe("research results view model", () => {
         changesConditionTo: "High financial risk under these assumptions",
       },
       readiness: {
-        label: "Preliminary",
-        tone: "caution",
+        label: "Public estimates + your inputs",
+        tone: "benchmark",
         explanation: expect.stringContaining(
           "housing-burden safety check could not run",
         ),
@@ -336,39 +337,20 @@ describe("research results view model", () => {
         expect.objectContaining({
           id: "monthly_cushion",
           sourceLabel: "MoveWise calculated",
-          needsConfirmation: true,
         }),
         expect.objectContaining({
           id: "take_home_income",
           sourceLabel: "You told us",
-          needsConfirmation: true,
         }),
       ]),
     );
     expect(model.household).toMatchObject({
       modeLabel: "Individual move",
-      factors: expect.arrayContaining([
-        expect.objectContaining({
-          id: "space_fit",
-          label: "Suitable housing",
-          contribution: 0,
-          statusLabel: "Essential — not met",
-          impactLabel: "Not sure yet",
-        }),
-        expect.objectContaining({
-          id: "support_network",
-          statusLabel: "Not part of my decision",
-          impactLabel: "Excluded",
-        }),
-        expect.objectContaining({
-          id: "car_free_access",
-          statusLabel: "Not part of my decision",
-          impactLabel: "Excluded",
-        }),
-      ]),
+      rentalPlan: null,
     });
+    expect(model.household).not.toHaveProperty("factors");
     expect(model.score.missingComponents).toEqual([
-      "Household fit",
+      "Expanded household and ownership fit",
       "Opportunity context",
     ]);
     expect(model.nextSteps[0]).toBe(
@@ -379,43 +361,58 @@ describe("research results view model", () => {
     );
   });
 
-  it("does not score rejected legacy household opinions", () => {
+  it("explains how the source-backed rental requirement affects the score", () => {
     const draft = reviewedDraft();
+    draft.finances.targetHousing = "";
+    draft.finances.targetTakeHome = "";
+    draft.finances.targetExpenses = "";
     draft.householdPlan.housing.assessment = "positive";
     draft.householdPlan.supportNetwork = {
       needed: "yes",
       stopsMove: "no",
       assessment: "positive",
     };
-    const evaluation = evaluateWizardDraft(draft);
-    expect(evaluation.success).toBe(true);
-    if (!evaluation.success) return;
+    const submission = submitWizardDraft(draft);
+    expect(submission.success).toBe(true);
+    if (!submission.success) return;
 
-    const model = createResearchResultsViewModel(evaluation.evaluation, {
-      analysis: evaluation.deterministicAnalysis,
-      householdAnswers: evaluation.householdAnswers,
+    const model = createResearchResultsViewModel(submission.evaluation, {
+      analysis: submission.deterministicAnalysis,
+      householdAnswers: submission.householdAnswers,
+      destinationAssumptions: submission.destinationAssumptions,
     });
 
     expect(model.household).toMatchObject({
-      totalContribution: 0,
-      factors: expect.arrayContaining([
-        expect.objectContaining({
-          id: "space_fit",
-          impactLabel: "Not sure yet",
-          contribution: 0,
-        }),
-        expect.objectContaining({
-          id: "support_network",
-          impactLabel: "Excluded",
-          contribution: 0,
-        }),
-      ]),
+      modeLabel: "Individual move",
+      rentalPlan: {
+        bedroomLabel: "2-bedroom rental",
+        originRent: "$2,263",
+        destinationRent: "$2,162",
+        rentDifference: "$101 less",
+        originStockShare: "38.1%",
+        destinationStockShare: "34.1%",
+        ceiling: "$2,000",
+        ceilingStatus: "Above preferred rent ceiling",
+        ceilingDifference: "$162 over",
+        scorePath: expect.stringContaining(
+          "already included in monthly cushion and the MoveWise Score",
+        ),
+      },
     });
-    expect(evaluation.householdAnswers.questionVersion).toBe("4.0.0");
+    expect(model.household).not.toHaveProperty("factors");
+    expect(submission.householdAnswers.questionVersion).toBe("4.0.0");
     expect(model.score.missingComponents).toEqual([
-      "Household fit",
+      "Expanded household and ownership fit",
       "Opportunity context",
     ]);
+    expect(model.score.readiness).toMatchObject({
+      label: "Public estimates + your inputs",
+      tone: "benchmark",
+    });
+    expect(model.score.readiness.explanation).not.toContain("Preliminary");
+    expect(model.score.readiness.explanation).not.toContain(
+      "Needs confirmation",
+    );
   });
 
   it("labels public estimates, baselines, overrides, and transition tenure separately", () => {
@@ -433,11 +430,16 @@ describe("research results view model", () => {
         currentHousingTenure: "own",
         destinationHousingTenure: "rent_then_buy",
         incomeGuidance: null,
+        rentGuidance: null,
+        expenseGuidance: null,
+        requestedBedrooms: "2",
+        maximumMonthlyRentDollars: 2000,
+        rentCeilingNonNegotiable: false,
       },
     });
 
     expect(model.score.readiness.explanation).toContain(
-      "1 destination amount is still using the visible MoveWise starting baseline",
+      "user-edited destination amounts",
     );
     expect(model.comparison.financialRows).toEqual(
       expect.arrayContaining([
@@ -452,10 +454,13 @@ describe("research results view model", () => {
         }),
         expect.objectContaining({
           id: "recurring_expenses",
-          sourceLabel: "MoveWise starting assumption",
+          sourceLabel: "Fallback estimate",
         }),
       ]),
     );
+    expect(
+      model.comparison.financialRows.some((row) => row.needsConfirmation),
+    ).toBe(false);
   });
 
   it("builds pair-specific Austin to San Diego results", () => {

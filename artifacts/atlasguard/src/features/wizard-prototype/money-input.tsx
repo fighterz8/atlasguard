@@ -14,7 +14,7 @@ type MoneyInputProps = {
   basisKey?: BasisKey;
   sourceLabel?:
     | "MoveWise public-data estimate"
-    | "MoveWise starting assumption"
+    | "Calculated after your rental plan"
     | "You told us";
   onReset?: () => void;
   onValueChange: (value: string) => void;
@@ -66,6 +66,8 @@ export function MoneyInput({
               <option value="confirmed">Confirmed</option>
             </select>
           </div>
+        ) : sourceLabel ? (
+          <StatusBadge tone="benchmark">{sourceLabel}</StatusBadge>
         ) : (
           <StatusBadge tone="confirmed">Current</StatusBadge>
         )}
@@ -109,7 +111,7 @@ export function MoneyInput({
           onClick={onReset}
           className="mt-2 min-h-11 text-xs font-semibold text-teal-800 underline decoration-teal-300 underline-offset-2 hover:text-teal-950"
         >
-          Reset to MoveWise starting assumption
+          Reset to MoveWise estimate
         </button>
       ) : null}
     </div>

@@ -93,7 +93,7 @@ describe("MoveWise score presentation", () => {
     expect(html).not.toContain("Essential-needs override");
   });
 
-  it("explains deterministic essentials and user-supplied household factors", () => {
+  it("uses one estimate-method disclosure without confirmation noise", () => {
     const draft = createInitialWizardDraft();
     Object.assign(draft, {
       originSlug: "los-angeles-ca",
@@ -155,17 +155,17 @@ describe("MoveWise score presentation", () => {
     expect(summaryHtml).toContain("Deterministic 0.2.0");
     expect(summaryHtml).toContain("1 essential need not met");
     expect(scoreHtml).toContain("Closest decision change");
-    expect(scoreHtml).toContain("Essential-needs override");
+    expect(scoreHtml).toContain("Non-negotiable rental requirement");
     expect(scoreHtml).toContain("High financial risk under these assumptions");
     expect(scoreHtml).toContain("MoveWise calculated");
-    expect(scoreHtml).toContain("Preliminary");
+    expect(scoreHtml).toContain("How estimates were calculated");
+    expect(scoreHtml).toContain("Public estimates + your inputs");
+    expect(scoreHtml).not.toContain("Preliminary");
+    expect(scoreHtml).not.toContain("Needs confirmation");
     expect(scoreHtml).toContain("housing-burden safety check could not run");
     expect(scoreHtml).toContain("Score rule 0.2.0");
-    expect(householdHtml).toContain("Suitable housing");
-    expect(householdHtml).not.toContain("Somewhat easier");
-    expect(householdHtml).not.toContain("+10 points");
-    expect(householdHtml).toContain("Not sure yet");
-    expect(householdHtml).toContain("Not part of my decision");
-    expect(householdHtml).toContain("No score change");
+    expect(householdHtml).not.toContain("Expected change");
+    expect(householdHtml).not.toContain("Household score effect");
+    expect(householdHtml).not.toContain("Not sure yet");
   });
 });

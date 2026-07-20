@@ -11,8 +11,10 @@ const currentOnlyDraft = () => {
   draft.finances.currentTakeHome = "6,200";
   draft.finances.currentHousing = "2,600";
   draft.finances.currentExpenses = "2,100";
-  draft.householdPlan.housing.tenure = "buy";
+  draft.householdPlan.housing.tenure = "rent_then_buy";
   draft.householdPlan.housing.bedrooms = "3";
+  draft.householdPlan.housing.maxMonthlyCost = "2400";
+  draft.householdPlan.housing.stopsMove = "no";
   return draft;
 };
 
@@ -38,7 +40,10 @@ describe("destination planning assumptions", () => {
       housing: "movewise_public_estimate",
       expenses: "movewise_public_estimate",
       currentHousingTenure: "rent",
-      destinationHousingTenure: "buy",
+      destinationHousingTenure: "rent_then_buy",
+      requestedBedrooms: "3",
+      maximumMonthlyRentDollars: 2_400,
+      rentCeilingNonNegotiable: false,
       incomeGuidance: {
         suggestedMonthlyTakeHomeDollars: 5_675,
         destinationToOriginRatioBps: 9_154,
