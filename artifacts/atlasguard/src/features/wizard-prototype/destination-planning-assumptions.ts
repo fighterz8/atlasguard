@@ -1,5 +1,13 @@
-import { getResearchMetroIncomeGuidance } from "@workspace/benchmark-data";
-import type { ResearchMetroIncomeGuidance } from "@workspace/benchmark-data";
+import {
+  getResearchMetroExpenseGuidance,
+  getResearchMetroIncomeGuidance,
+  getResearchMetroRentGuidance,
+} from "@workspace/benchmark-data";
+import type {
+  ResearchMetroExpenseGuidance,
+  ResearchMetroIncomeGuidance,
+  ResearchMetroRentGuidance,
+} from "@workspace/benchmark-data";
 
 import type { HousingTenure, WizardPrototypeDraft } from "./model";
 
@@ -15,6 +23,8 @@ export type DestinationPlanningAssumptions = Readonly<{
   currentHousingTenure: "rent" | "own";
   destinationHousingTenure: HousingTenure;
   incomeGuidance: ResearchMetroIncomeGuidance | null;
+  rentGuidance: ResearchMetroRentGuidance | null;
+  expenseGuidance: ResearchMetroExpenseGuidance | null;
 }>;
 
 const useDestinationValue = (
@@ -34,10 +44,23 @@ export function createDestinationPlanningDraft(
   const currentTakeHome = Number(
     draft.finances.currentTakeHome.trim().replace(/,/g, ""),
   );
+  const currentExpenses = Number(
+    draft.finances.currentExpenses.trim().replace(/,/g, ""),
+  );
   const incomeGuidance = getResearchMetroIncomeGuidance(
     draft.originSlug,
     draft.destinationSlug,
     currentTakeHome,
+  );
+  const rentGuidance = getResearchMetroRentGuidance(
+    draft.originSlug,
+    draft.destinationSlug,
+    draft.householdPlan.housing.bedrooms,
+  );
+  const expenseGuidance = getResearchMetroExpenseGuidance(
+    draft.originSlug,
+    draft.destinationSlug,
+    currentExpenses,
   );
   const takeHome =
     draft.finances.targetTakeHome.trim() === "" && incomeGuidance !== null
@@ -49,14 +72,26 @@ export function createDestinationPlanningDraft(
           draft.finances.targetTakeHome,
           draft.finances.currentTakeHome,
         );
-  const housing = useDestinationValue(
-    draft.finances.targetHousing,
-    draft.finances.currentHousing,
-  );
-  const expenses = useDestinationValue(
-    draft.finances.targetExpenses,
-    draft.finances.currentExpenses,
-  );
+  const housing =
+    draft.finances.targetHousing.trim() === "" && rentGuidance !== null
+      ? {
+          value: String(rentGuidance.destination.monthlyGrossRentDollars),
+          source: "movewise_public_estimate" as const,
+        }
+      : useDestinationValue(
+          draft.finances.targetHousing,
+          draft.finances.currentHousing,
+        );
+  const expenses =
+    draft.finances.targetExpenses.trim() === "" && expenseGuidance !== null
+      ? {
+          value: String(expenseGuidance.suggestedMonthlyExpensesDollars),
+          source: "movewise_public_estimate" as const,
+        }
+      : useDestinationValue(
+          draft.finances.targetExpenses,
+          draft.finances.currentExpenses,
+        );
 
   if (
     draft.finances.currentHousingTenure === "" ||
@@ -85,12 +120,28 @@ export function createDestinationPlanningDraft(
           takeHome.source === "movewise_public_estimate"
             ? String(incomeGuidance!.plausibleMonthlyTakeHomeRangeDollars.high)
             : draft.finances.targetTakeHomeRangeMax,
+        targetHousingRangeMin:
+          housing.source === "movewise_public_estimate" &&
+          rentGuidance!.destination.marginOfError90Dollars !== null
+            ? String(
+                rentGuidance!.destination.monthlyGrossRentDollars -
+                  rentGuidance!.destination.marginOfError90Dollars,
+              )
+            : draft.finances.targetHousingRangeMin,
+        targetHousingRangeMax:
+          housing.source === "movewise_public_estimate" &&
+          rentGuidance!.destination.marginOfError90Dollars !== null
+            ? String(
+                rentGuidance!.destination.monthlyGrossRentDollars +
+                  rentGuidance!.destination.marginOfError90Dollars,
+              )
+            : draft.finances.targetHousingRangeMax,
         targetHousingBasis:
-          housing.source === "movewise_baseline"
+          housing.source !== "user_override"
             ? "user_estimate"
             : draft.finances.targetHousingBasis,
         targetExpensesBasis:
-          expenses.source === "movewise_baseline"
+          expenses.source !== "user_override"
             ? "user_estimate"
             : draft.finances.targetExpensesBasis,
       },
@@ -102,6 +153,8 @@ export function createDestinationPlanningDraft(
       currentHousingTenure: draft.finances.currentHousingTenure,
       destinationHousingTenure: draft.householdPlan.housing.tenure,
       incomeGuidance,
+      rentGuidance,
+      expenseGuidance,
     },
   };
 }

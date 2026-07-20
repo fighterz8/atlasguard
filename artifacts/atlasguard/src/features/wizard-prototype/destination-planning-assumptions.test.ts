@@ -12,33 +12,47 @@ const currentOnlyDraft = () => {
   draft.finances.currentHousing = "2,600";
   draft.finances.currentExpenses = "2,100";
   draft.householdPlan.housing.tenure = "buy";
+  draft.householdPlan.housing.bedrooms = "3";
   return draft;
 };
 
 describe("destination planning assumptions", () => {
-  it("prefills destination income from public metro data and other blanks from the current baseline", () => {
+  it("prefills blank destination money from public metro evidence instead of copied current values", () => {
     const draft = currentOnlyDraft();
     const result = createDestinationPlanningDraft(draft);
 
     expect(result.evaluatedDraft.finances).toMatchObject({
       targetTakeHome: "5675",
-      targetHousing: "2,600",
-      targetExpenses: "2,100",
+      targetHousing: "2177",
+      targetExpenses: "1896",
       targetTakeHomeBasis: "user_estimate",
       targetTakeHomeRangeMin: "5469",
       targetTakeHomeRangeMax: "5888",
+      targetHousingRangeMin: "2129",
+      targetHousingRangeMax: "2225",
       targetHousingBasis: "user_estimate",
       targetExpensesBasis: "user_estimate",
     });
     expect(result.assumptions).toMatchObject({
       takeHome: "movewise_public_estimate",
-      housing: "movewise_baseline",
-      expenses: "movewise_baseline",
+      housing: "movewise_public_estimate",
+      expenses: "movewise_public_estimate",
       currentHousingTenure: "rent",
       destinationHousingTenure: "buy",
       incomeGuidance: {
         suggestedMonthlyTakeHomeDollars: 5_675,
         destinationToOriginRatioBps: 9_154,
+      },
+      rentGuidance: {
+        bedroomNeed: "3",
+        destination: {
+          monthlyGrossRentDollars: 2_177,
+        },
+        monthlyDifferenceDollars: -672,
+      },
+      expenseGuidance: {
+        suggestedMonthlyExpensesDollars: 1_896,
+        destinationToOriginRatioBps: 9_029,
       },
     });
     expect(draft.finances.targetTakeHome).toBe("");
@@ -56,7 +70,7 @@ describe("destination planning assumptions", () => {
     expect(result.assumptions).toMatchObject({
       takeHome: "movewise_public_estimate",
       housing: "user_override",
-      expenses: "movewise_baseline",
+      expenses: "movewise_public_estimate",
     });
   });
 });
