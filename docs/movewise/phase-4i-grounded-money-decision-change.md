@@ -81,6 +81,19 @@ Third replacement preview:
 - Deployment: `dpl_2wFhxc4mUBHByh6oPsN22gPQAic2`
 - Wizard: `https://movewise-acdm7xtb4-fighterz8s-projects.vercel.app/research/wizard`
 
+### Physical-device MW-BOOT-03 follow-up
+
+Nick's iPhone 16 Chrome still returned `MW-BOOT-03`, proving that matching one tested WebKit build was insufficient. Commit `6592d59` removes the remaining engine-specific checksum boundary: derived commute mean and approximate MOE values are normalized to 12 decimal places before any profile checksum or utility calculation. This precision is far beyond the ACS source and one-decimal user display, while collapsing adjacent libm results to the same canonical evidence value.
+
+Because the canonical serialized evidence changed, metro profiles, directed benchmarks, housing-context lineage, and internal comparisons are explicitly promoted to `1.0.1` with newly locked checksums. All existing product behavior tests remain unchanged and pass; the MoveWise score rule remains `0.2.0`.
+
+Full verification passes 52 files / 377 tests. The preview-enabled production bundle renders locally and on the exact hosted deployment in WebKit. Vercel's separately injected feedback iframe still emits its own `navigator.storage.persisted` rejection in WebKit after MoveWise mounts; it is not part of the MoveWise bundle and does not replace the rendered Wizard.
+
+Fourth replacement preview:
+
+- Deployment: `dpl_9jBiWkUGhV1QwFFzQAza1cENeAu5`
+- Wizard: `https://movewise-c5m0zjacp-fighterz8s-projects.vercel.app/research/wizard`
+
 ## Preserved boundaries
 
 This slice does not change accepted rule-`0.2.0` scoring, weights, caps, conditions, or fixture outcomes. It adds no minimum-evidence gate, rule `0.3.0`, numeric tax calculator, storage, public API activation, external data provider, push, merge, or production deployment.
