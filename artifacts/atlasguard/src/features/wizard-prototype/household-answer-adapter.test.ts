@@ -16,10 +16,23 @@ describe("Wizard household-answer adapter", () => {
         bathrooms: "1",
         maxMonthlyCost: "2200",
         stopsMove: "no",
+        assessment: "positive",
       },
-      supportNetwork: { needed: "no", stopsMove: "" },
-      requiredServices: { needed: "yes", stopsMove: "no" },
-      carFreeAccess: { needed: "yes", stopsMove: "yes" },
+      supportNetwork: {
+        needed: "no",
+        stopsMove: "",
+        assessment: "unavailable",
+      },
+      requiredServices: {
+        needed: "yes",
+        stopsMove: "no",
+        assessment: "negative",
+      },
+      carFreeAccess: {
+        needed: "yes",
+        stopsMove: "yes",
+        assessment: "strong_positive",
+      },
     };
 
     const result = adaptWizardDraftToHouseholdAnswers(draft);
@@ -28,14 +41,14 @@ describe("Wizard household-answer adapter", () => {
     if (!result.success) return;
     expect(result.answers).toMatchObject({
       schemaVersion: "1.0.0",
-      questionVersion: "2.0.0",
+      questionVersion: "3.0.0",
       mode: "individual",
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       factors: [
         {
           factorId: "space_fit",
           importance: "important",
-          impact: "unavailable",
+          impact: "positive",
           essentialStatus: null,
         },
         {
@@ -47,14 +60,14 @@ describe("Wizard household-answer adapter", () => {
         {
           factorId: "required_services_continuity",
           importance: "important",
-          impact: "unavailable",
+          impact: "negative",
           essentialStatus: null,
         },
         {
           factorId: "car_free_access",
           importance: "essential",
-          impact: "unavailable",
-          essentialStatus: "unconfirmed",
+          impact: "strong_positive",
+          essentialStatus: "confirmed_met",
         },
       ],
     });

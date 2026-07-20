@@ -133,6 +133,14 @@ const bathroomOptions = [
   { value: "2", label: "2 bathrooms" },
   { value: "3_plus", label: "3 or more bathrooms" },
 ] as const;
+const householdFitOptions = [
+  { value: "strong_positive", label: "Much easier to make work (+15)" },
+  { value: "positive", label: "Somewhat easier (+10)" },
+  { value: "neutral", label: "About the same (0)" },
+  { value: "negative", label: "Somewhat harder (-10)" },
+  { value: "strong_negative", label: "Much harder to make work (-15)" },
+  { value: "unavailable", label: "Not sure yet (0)" },
+] as const;
 
 export function HouseholdStep({
   mode,
@@ -159,7 +167,9 @@ export function HouseholdStep({
       [key]: {
         ...plan[key],
         [field]: value,
-        ...(field === "needed" && value === "no" ? { stopsMove: "" } : {}),
+        ...(field === "needed" && value === "no"
+          ? { stopsMove: "", assessment: "unavailable" as const }
+          : {}),
       },
     });
 
@@ -179,8 +189,9 @@ export function HouseholdStep({
         <Users aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Describe what the move needs to support. MoveWise will research the
-        destination; you do not need to predict whether it is better or worse.
+        Describe what the move needs to support, then compare the destination
+        plan with your current situation. Each comparison changes the score by
+        -15 to +15 points; household fit is capped at -30 to +30 overall.
       </p>
 
       <div className="mt-7 space-y-5">
@@ -275,6 +286,16 @@ export function HouseholdStep({
               error={errors["householdPlan.housing.stopsMove"]}
               onChange={(value) => updateHousing("stopsMove", value)}
             />
+            <div className="sm:col-span-2">
+              <SelectField
+                id="householdPlan-housing-assessment"
+                label="Compared with your current housing, how workable does this destination plan look?"
+                value={plan.housing.assessment}
+                options={householdFitOptions}
+                error={errors["householdPlan.housing.assessment"]}
+                onChange={(value) => updateHousing("assessment", value)}
+              />
+            </div>
           </div>
         </section>
 
@@ -309,7 +330,11 @@ export function HouseholdStep({
                         ...plan.childcare,
                         needed: value,
                         ...(value === "no"
-                          ? { arrangement: "" as const, stopsMove: "" as const }
+                          ? {
+                              arrangement: "" as const,
+                              stopsMove: "" as const,
+                              assessment: "unavailable" as const,
+                            }
                           : {}),
                       },
                     })
@@ -361,6 +386,22 @@ export function HouseholdStep({
                         })
                       }
                     />
+                    <SelectField
+                      id="householdPlan-childcare-assessment"
+                      label="Compared with your current childcare, how workable does this destination plan look?"
+                      value={plan.childcare.assessment}
+                      options={householdFitOptions}
+                      error={errors["householdPlan.childcare.assessment"]}
+                      onChange={(value) =>
+                        onPlanChange({
+                          ...plan,
+                          childcare: {
+                            ...plan.childcare,
+                            assessment: value,
+                          },
+                        } as HouseholdPlanDraft)
+                      }
+                    />
                   </div>
                 ) : null}
               </div>
@@ -398,6 +439,7 @@ export function HouseholdStep({
                               preference: "" as const,
                               requirements: "",
                               stopsMove: "" as const,
+                              assessment: "unavailable" as const,
                             }
                           : {}),
                       },
@@ -479,6 +521,19 @@ export function HouseholdStep({
                         })
                       }
                     />
+                    <SelectField
+                      id="householdPlan-school-assessment"
+                      label="Compared with the current school path, how workable does this destination plan look?"
+                      value={plan.school.assessment}
+                      options={householdFitOptions}
+                      error={errors["householdPlan.school.assessment"]}
+                      onChange={(value) =>
+                        onPlanChange({
+                          ...plan,
+                          school: { ...plan.school, assessment: value },
+                        } as HouseholdPlanDraft)
+                      }
+                    />
                   </div>
                 ) : null}
               </div>
@@ -501,19 +556,22 @@ export function HouseholdStep({
                   "supportNetwork",
                   "Nearby support",
                   "Do you need to be near people you rely on?",
+                  "Compared with your current support access, how workable does the destination look?",
                 ],
                 [
                   "requiredServices",
                   "Required services",
                   "Do healthcare, therapy, disability, or other services need to continue?",
+                  "Compared with current service access, how workable does the destination look?",
                 ],
                 [
                   "carFreeAccess",
                   "Car-free routines",
                   "Do essential routines need to work without driving?",
+                  "Compared with your current routines, how workable does the destination look?",
                 ],
               ] as const
-            ).map(([key, label, question]) => (
+            ).map(([key, label, question, comparisonQuestion]) => (
               <div
                 key={key}
                 className="grid gap-4 border-t border-slate-100 pt-5 first:border-0 first:pt-0 sm:grid-cols-2"
@@ -531,13 +589,28 @@ export function HouseholdStep({
                   />
                 </div>
                 {plan[key].needed === "yes" ? (
-                  <YesNoQuestion
-                    id={`householdPlan-${key}-stopsMove`}
-                    legend={`Would missing ${label.toLowerCase()} stop the move?`}
-                    value={plan[key].stopsMove}
-                    error={errors[`householdPlan.${key}.stopsMove`]}
-                    onChange={(value) => updateNeed(key, "stopsMove", value)}
-                  />
+                  <div className="space-y-4">
+                    <YesNoQuestion
+                      id={`householdPlan-${key}-stopsMove`}
+                      legend={`Would missing ${label.toLowerCase()} stop the move?`}
+                      value={plan[key].stopsMove}
+                      error={errors[`householdPlan.${key}.stopsMove`]}
+                      onChange={(value) => updateNeed(key, "stopsMove", value)}
+                    />
+                    <SelectField
+                      id={`householdPlan-${key}-assessment`}
+                      label={comparisonQuestion}
+                      value={plan[key].assessment}
+                      options={householdFitOptions}
+                      error={errors[`householdPlan.${key}.assessment`]}
+                      onChange={(value) =>
+                        onPlanChange({
+                          ...plan,
+                          [key]: { ...plan[key], assessment: value },
+                        } as HouseholdPlanDraft)
+                      }
+                    />
+                  </div>
                 ) : null}
               </div>
             ))}

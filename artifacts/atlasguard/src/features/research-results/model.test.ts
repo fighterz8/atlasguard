@@ -378,6 +378,41 @@ describe("research results view model", () => {
     );
   });
 
+  it("shows household comparisons as visible score contributions", () => {
+    const draft = reviewedDraft();
+    draft.householdPlan.housing.assessment = "positive";
+    draft.householdPlan.supportNetwork = {
+      needed: "yes",
+      stopsMove: "no",
+      assessment: "positive",
+    };
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation, {
+      analysis: evaluation.deterministicAnalysis,
+      householdAnswers: evaluation.householdAnswers,
+    });
+
+    expect(model.household).toMatchObject({
+      totalContribution: 20,
+      factors: expect.arrayContaining([
+        expect.objectContaining({
+          id: "space_fit",
+          impactLabel: "Somewhat easier",
+          contribution: 10,
+        }),
+        expect.objectContaining({
+          id: "support_network",
+          impactLabel: "Somewhat easier",
+          contribution: 10,
+        }),
+      ]),
+    });
+    expect(model.score.missingComponents).toEqual(["Opportunity context"]);
+  });
+
   it("labels public estimates, baselines, overrides, and transition tenure separately", () => {
     const evaluation = evaluateWizardDraft(reviewedDraft());
     expect(evaluation.success).toBe(true);

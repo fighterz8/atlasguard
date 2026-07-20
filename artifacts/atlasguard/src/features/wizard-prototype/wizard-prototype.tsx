@@ -75,18 +75,37 @@ const exampleDraft: WizardPrototypeDraft = {
       bathrooms: "1",
       maxMonthlyCost: "2000",
       stopsMove: "no",
+      assessment: "positive",
     },
-    childcare: { needed: "no", arrangement: "", stopsMove: "" },
+    childcare: {
+      needed: "no",
+      arrangement: "",
+      stopsMove: "",
+      assessment: "unavailable",
+    },
     school: {
       needed: "no",
       gradeBand: "",
       preference: "",
       requirements: "",
       stopsMove: "",
+      assessment: "unavailable",
     },
-    supportNetwork: { needed: "yes", stopsMove: "no" },
-    requiredServices: { needed: "no", stopsMove: "" },
-    carFreeAccess: { needed: "no", stopsMove: "" },
+    supportNetwork: {
+      needed: "yes",
+      stopsMove: "no",
+      assessment: "positive",
+    },
+    requiredServices: {
+      needed: "no",
+      stopsMove: "",
+      assessment: "unavailable",
+    },
+    carFreeAccess: {
+      needed: "no",
+      stopsMove: "",
+      assessment: "unavailable",
+    },
   },
 };
 

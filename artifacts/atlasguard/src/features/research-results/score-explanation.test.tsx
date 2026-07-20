@@ -116,10 +116,23 @@ describe("MoveWise score presentation", () => {
       bathrooms: "1",
       maxMonthlyCost: "2000",
       stopsMove: "no",
+      assessment: "positive",
     };
-    draft.householdPlan.supportNetwork = { needed: "yes", stopsMove: "yes" };
-    draft.householdPlan.requiredServices = { needed: "no", stopsMove: "" };
-    draft.householdPlan.carFreeAccess = { needed: "no", stopsMove: "" };
+    draft.householdPlan.supportNetwork = {
+      needed: "yes",
+      stopsMove: "yes",
+      assessment: "unavailable",
+    };
+    draft.householdPlan.requiredServices = {
+      needed: "no",
+      stopsMove: "",
+      assessment: "unavailable",
+    };
+    draft.householdPlan.carFreeAccess = {
+      needed: "no",
+      stopsMove: "",
+      assessment: "unavailable",
+    };
     const evaluation = evaluateWizardDraft(draft);
     expect(evaluation.success).toBe(true);
     if (!evaluation.success) return;
@@ -149,6 +162,8 @@ describe("MoveWise score presentation", () => {
     expect(scoreHtml).toContain("housing-burden safety check could not run");
     expect(scoreHtml).toContain("Score rule 0.2.0");
     expect(householdHtml).toContain("Suitable housing");
+    expect(householdHtml).toContain("Somewhat easier");
+    expect(householdHtml).toContain("+10 points");
     expect(householdHtml).toContain("Not sure yet");
     expect(householdHtml).toContain("Not part of my decision");
     expect(householdHtml).toContain("No score change");

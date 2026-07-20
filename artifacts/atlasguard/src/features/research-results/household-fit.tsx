@@ -43,6 +43,10 @@ export function HouseholdFit({ household }: HouseholdFitProps) {
               </StatusBadge>
             </div>
           ) : null}
+          <p className="mt-3 text-sm font-semibold tabular-nums text-teal-950">
+            Household score effect:{" "}
+            {contributionText(household.totalContribution)}
+          </p>
         </div>
       </div>
 
@@ -81,9 +85,10 @@ export function HouseholdFit({ household }: HouseholdFitProps) {
       <div className="mt-6 flex gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950">
         <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
         <p>
-          Household fit comes from your answers, not a city rating. Essential
-          statuses can change the final condition; excluded factors stay visible
-          and contribute zero.
+          Household fit comes from your easier-or-harder comparisons, not a city
+          rating. Each answer contributes 0, ±10, or ±15 points, capped at ±30
+          total. Essential statuses can also change the final condition;
+          excluded and “not sure” factors contribute zero.
         </p>
       </div>
     </section>

@@ -280,8 +280,8 @@ const householdImpactLabels = {
   strong_negative: "Much harder",
   negative: "Somewhat harder",
   neutral: "About the same",
-  positive: "Somewhat better",
-  strong_positive: "Much better",
+  positive: "Somewhat easier",
+  strong_positive: "Much easier",
   unavailable: "Not sure yet",
   excluded: "Excluded",
 } as const;
@@ -688,6 +688,8 @@ export const createResearchResultsViewModel = (
               ? "Household or family move"
               : "Individual move",
           summary: essentialSummary,
+          totalContribution:
+            deterministicResult.metricContributions.household.contribution,
           factors: deterministicAnswers.factors.map((answer) => {
             const signal =
               deterministicResult.metricContributions.household.signals.find(

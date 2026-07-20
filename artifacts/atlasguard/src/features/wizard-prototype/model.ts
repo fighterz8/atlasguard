@@ -39,6 +39,13 @@ export const householdFactorLabels = {
 } as const satisfies Record<MoveWiseHouseholdFactorId, string>;
 
 export type YesNoAnswer = "yes" | "no";
+export type HouseholdFitAssessment =
+  | "strong_negative"
+  | "negative"
+  | "neutral"
+  | "positive"
+  | "strong_positive"
+  | "unavailable";
 export type HousingTenure = "rent" | "buy" | "rent_then_buy" | "either";
 export type HousingType =
   | "apartment_or_condo"
@@ -65,6 +72,7 @@ export type SchoolPreference = "public" | "private" | "either";
 export type ConditionalHouseholdNeed = {
   needed: YesNoAnswer | "";
   stopsMove: YesNoAnswer | "";
+  assessment: HouseholdFitAssessment;
 };
 
 export type HouseholdPlanDraft = {
@@ -76,6 +84,7 @@ export type HouseholdPlanDraft = {
     bathrooms: BathroomNeed | "";
     maxMonthlyCost: string;
     stopsMove: YesNoAnswer | "";
+    assessment: HouseholdFitAssessment;
   };
   childcare: ConditionalHouseholdNeed & {
     arrangement: ChildcareArrangement | "";
@@ -99,18 +108,25 @@ export const createInitialHouseholdPlan = (): HouseholdPlanDraft => ({
     bathrooms: "",
     maxMonthlyCost: "",
     stopsMove: "",
+    assessment: "unavailable",
   },
-  childcare: { needed: "", arrangement: "", stopsMove: "" },
+  childcare: {
+    needed: "",
+    arrangement: "",
+    stopsMove: "",
+    assessment: "unavailable",
+  },
   school: {
     needed: "",
     gradeBand: "",
     preference: "",
     requirements: "",
     stopsMove: "",
+    assessment: "unavailable",
   },
-  supportNetwork: { needed: "", stopsMove: "" },
-  requiredServices: { needed: "", stopsMove: "" },
-  carFreeAccess: { needed: "", stopsMove: "" },
+  supportNetwork: { needed: "", stopsMove: "", assessment: "unavailable" },
+  requiredServices: { needed: "", stopsMove: "", assessment: "unavailable" },
+  carFreeAccess: { needed: "", stopsMove: "", assessment: "unavailable" },
 });
 
 export const supportedPlaces = supportedResearchPlaces;
