@@ -43,8 +43,17 @@ An essential-needs override remains a separate rule-owned explanation. Browser r
 
 Final review preview:
 
-- Deployment: `dpl_34oRfvzF5tWzWcD4tVURXMHY2MyQ`
-- Wizard: `https://movewise-gy72xrb1e-fighterz8s-projects.vercel.app/research/wizard`
+- Superseded deployment: `dpl_34oRfvzF5tWzWcD4tVURXMHY2MyQ`
+- Replacement deployment: `dpl_F81QH45ewr6kjc4ALD95ELAy8V9W`
+- Wizard: `https://movewise-lss5tcyhk-fighterz8s-projects.vercel.app/research/wizard`
+
+## Mobile preview correction
+
+Nick reported that the initial final preview returned a blank white page on mobile. Current Chrome could not reproduce the white screen, but inspection found a concrete compatibility defect: the shipped research bundle directly required `structuredClone`, `Array.prototype.at`, and `String.prototype.replaceAll`, while the raw HTML root was empty whenever JavaScript failed to start.
+
+Commit `fa88906` removes those runtime requirements from application code, uses a tested plain-data clone for Wizard and scenario values, targets ES2019 and Safari 13 during production builds, and leaves a readable loading/recovery message in the server-delivered HTML until React mounts. A research-enabled production build contains none of the three unsupported API calls.
+
+The replacement immutable preview was opened from a new hosted-browser tab and verified at 390×844 and 1440×1000. The Wizard rendered, the startup fallback was replaced, the filled research example advanced to Money, all static assets returned HTTP 200, and there were no console errors, page errors, unexpected API requests, or horizontal overflow. This bounds the code/deployment defect; confirmation on the originally affected physical device remains the final acceptance check.
 
 ## Preserved boundaries
 
