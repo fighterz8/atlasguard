@@ -21,13 +21,13 @@ import {
 import { verifyRawMetroAcsSnapshot } from "./raw-metro-acs-snapshot";
 import { verifyRawMetroClimateSnapshot } from "./raw-metro-climate-snapshot";
 
-const PROFILE_VERSION = "1.0.0" as const;
+const PROFILE_VERSION = "1.0.1" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
 
 export const AUSTIN_RESEARCH_METRO_PROFILE_SHA256 =
-  "ed630549170789e57f5215d06609db9e32a57b88df026933c66a91f5c64c9dc1";
+  "1f3196ab46a4c78f0270f7de7156c993eec4abb08e1cdb16ec5e2ec66c0bb0a0";
 export const SAN_DIEGO_RESEARCH_METRO_PROFILE_SHA256 =
-  "8c5c7426d680ec3e0b13c4633719a2c2d26b369b622c70d7b9f4a16c7b8f16f1";
+  "ecbf44f9cc19ce32c6fd7df7d18b00bf2419d8453e470dc513bec3d211524456";
 
 const sourceArtifact = (
   artifact: { id: string; sourceUrl: string; sha256: string },

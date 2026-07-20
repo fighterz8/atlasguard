@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { deriveCommuteMetric } from "./commute-derivation";
+import {
+  deriveCommuteMetric,
+  normalizeDerivedDecimal,
+} from "./commute-derivation";
 import {
   acs2024AustinRawSnapshot,
   acs2024SanDiegoRawSnapshot,
@@ -16,6 +19,11 @@ const clone = <Value>(value: Value): Value =>
   JSON.parse(JSON.stringify(value)) as Value;
 
 describe("independent ACS metro snapshots", () => {
+  it("normalizes adjacent engine-level results before profile checksumming", () => {
+    expect(normalizeDerivedDecimal(0.7344681732764602)).toBe(0.734468173276);
+    expect(normalizeDerivedDecimal(0.7344681732764603)).toBe(0.734468173276);
+  });
+
   it("locks Austin and San Diego to independent checksums", () => {
     expect(calculateRawMetroAcsSnapshotChecksum(acs2024AustinRawSnapshot)).toBe(
       "bfd7be4f42f6e41efebc26974544e7f1fec12ab2ae9131010e7eb1a766ff6a98",
@@ -34,7 +42,7 @@ describe("independent ACS metro snapshots", () => {
       10,
     );
     expect(deriveCommuteMetric(austin.metro).marginOfError90Minutes).toBe(
-      0.7344681732764602,
+      0.734468173276,
     );
     expect(deriveCommuteMetric(sanDiego.metro).meanMinutes).toBeCloseTo(
       26.0618486909,

@@ -25,7 +25,7 @@ import {
 
 export type ClimateHeatDirection = "lower" | "higher";
 
-const SNAPSHOT_VERSION = "1.0.0" as const;
+const SNAPSHOT_VERSION = "1.0.1" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
 const CLIMATE_RAW_SNAPSHOT_ID = "noaa.normals.1991-2020.hot-days.la-seattle";
 const CLIMATE_SOURCE_ARTIFACT_ORDER = [
@@ -40,8 +40,8 @@ const CLIMATE_SOURCE_ARTIFACT_ORDER = [
 export const LOS_ANGELES_SEATTLE_RESEARCH_RAW_SHA256 =
   "e55acaa5e0a5a0db3cb3db221a5f48bbdd04601d5c37b5c44feee85735368008";
 export const LOS_ANGELES_SEATTLE_RESEARCH_COMPARISON_SHA256 = {
-  lower: "f78e5eb633e69d4e9471116d3b8db04f43fe5704189e54be4f9b741d6d508ddf",
-  higher: "e31415468b2de1c9acc9c5ca2a8fdbd4fc1f329d56df09eb17563ae945a305d2",
+  lower: "09b56fe68a48b24ef2dcfc656e6382b5c2a4046d81f5c6933ee3f7baacc9de1a",
+  higher: "9f2c554f405ca0616c4ed78aac2f87ec622fe04e34b6d7335cf529f5409b43eb",
 } as const;
 
 const calculateCompositeRawChecksum = (
@@ -132,7 +132,7 @@ const buildDraft = (direction: ClimateHeatDirection): BenchmarkComparison => {
       ],
       derivation: {
         id: "movewise.research.compose.acs-noaa",
-        version: "1.0.0",
+        version: SNAPSHOT_VERSION,
       },
       delineationVersion:
         "OMB Bulletin 23-01 / Census July 2023; NOAA station policy 2026-07-18",

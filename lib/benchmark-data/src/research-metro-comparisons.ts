@@ -10,7 +10,7 @@ import {
 } from "./metro-profile-comparison";
 import { supportedResearchMetroProfiles } from "./research-metro-profiles";
 
-export const INTERNAL_RESEARCH_METRO_COMPARISON_VERSION = "1.0.0" as const;
+export const INTERNAL_RESEARCH_METRO_COMPARISON_VERSION = "1.0.1" as const;
 
 const deepFreeze = <Value>(value: Value): Readonly<Value> => {
   if (value !== null && typeof value === "object") {
@@ -139,7 +139,7 @@ const composeInternalResearchMetroComparison = (
   );
 
   return deepFreeze({
-    id: `research-metro-comparison.${originProfile.metro.slug}.to.${destinationProfile.metro.slug}.1-0-0`,
+    id: `research-metro-comparison.${originProfile.metro.slug}.to.${destinationProfile.metro.slug}.1-0-1`,
     version: INTERNAL_RESEARCH_METRO_COMPARISON_VERSION,
     admissionStatus: "research_only" as const,
     userFacingEligible: true as const,

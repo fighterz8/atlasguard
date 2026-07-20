@@ -17,7 +17,8 @@ import {
 } from "./metro-profile-comparison";
 import { getSupportedResearchMetroProfile } from "./research-metro-profiles";
 
-const VERSION = "1.0.0" as const;
+const SCHEMA_VERSION = "1.0.0" as const;
+const SNAPSHOT_VERSION = "1.0.1" as const;
 const ZERO_SHA = "0".repeat(64);
 const METRIC_ID = "housing.median_gross_rent";
 
@@ -25,27 +26,27 @@ export const RESEARCH_METRO_HOUSING_CONTEXT_SHA256 = Object.freeze({
   "los-angeles-ca:seattle-wa":
     "8becaa3c5daf2f8e40c37e220279ed09ee3b7f6ba4abb9088b6e11412dfe52eb",
   "los-angeles-ca:austin-tx":
-    "25f7257e299123f0f837a3584acf5ee3c3bfc96b66a7ecc7db4ca42b63fe0a8b",
+    "9eda9d046b62a126864951bb5618082e9da8c6ff0bae5ca99857c881bce86691",
   "los-angeles-ca:san-diego-ca":
-    "e4d96f7408fa5f6c88867efd90817558230fe09db3d6eaedcb1a289a6c161c6b",
+    "f2959a66456a9a17beb9684542c7373d084a84dfb0ceb8e7c9946248fbf3c7ec",
   "seattle-wa:los-angeles-ca":
-    "f13e2b861891a8c232a8cf62bcc4cf220a95c81c88058769227a3b13afdd2e97",
+    "054e3671a29d6e748e86ee78d42565f37cf3f9ebd5b8fc9dc180ab49fcad801a",
   "seattle-wa:austin-tx":
-    "de17bf9d62e554082b67a25b8bac2b78e7f453fd81e9754ac55cf7ad369fff67",
+    "1aa537a21589b7ac63a7f24c9761eab3643cab9915a688008617ba5a35df506c",
   "seattle-wa:san-diego-ca":
-    "17d45147f2198278442631ef10c946a5ed58399e8d1ec2a2188c1b623d1a2377",
+    "e99609a7c4a22d81777bc91e364ae5787457f1d056d01fc726868ad66219fce6",
   "austin-tx:los-angeles-ca":
-    "1fae84a703220e4fc2e34d343d8904c4e87ced5758801162b218f8fa22547726",
+    "9f978f77a1d494dc2685eb284bd6c285b06a3cc19819fef9c9b0fdae6ecfd370",
   "austin-tx:seattle-wa":
-    "ea5fd4587fb3e95636074e2c0cb34373778ac32d46ddc7535ca7bad8e7a7a584",
+    "f380e8ce853459791984b45197cf116921a236159e0c8961ec2a41251113ccd4",
   "austin-tx:san-diego-ca":
-    "7793e598d7bec3adb44b0083185778f6196cd1967f79f184abb53fbac1d54191",
+    "1c43fd307bad0ba2b8773c11902792c9698ceb9731233b3475a5d00e51ac0aae",
   "san-diego-ca:los-angeles-ca":
-    "e10ae25ecfa869ff9d80b7d46bfc14659509919b0d3bd3bf0dccaf581ed3cc41",
+    "83ef0987acd46536001761aaeff55acbe4ac79dbeeca24316ab62c8669ee4e48",
   "san-diego-ca:seattle-wa":
-    "f922ee9f64b3f615cd377fe386f9f19eb17ab81c404e5c854ea3372b772a83c0",
+    "6c3c9d1c2ff39470d733ed38ae7df7fcc1092a9f577ef6358d343c38dbb4c46b",
   "san-diego-ca:austin-tx":
-    "1c69abdc2991769387f8ee0717d707a22e90760c00da4d9a43621de9bea368fc",
+    "ea323866b850ab2ff79276e90cdf5f7a350290ba2ec00d995b4fada38af94835",
 } as const);
 
 const composeResearchMetroHousingContext = (
@@ -95,12 +96,12 @@ const composeResearchMetroHousingContext = (
     destination.verifiedOn,
   ].sort()[1];
   const draft = {
-    schemaVersion: VERSION,
+    schemaVersion: SCHEMA_VERSION,
     decisionUse: "context_only",
     interpretationBoundary: "descriptive_not_user_budget",
     snapshot: {
-      id: `housing-context.${pairId}.1-0-0`,
-      version: VERSION,
+      id: `housing-context.${pairId}.1-0-1`,
+      version: SNAPSHOT_VERSION,
       sha256: ZERO_SHA,
       admissionStatus: "research_only",
       rawSnapshot: composeProfilePairRawSnapshot(
@@ -111,7 +112,7 @@ const composeResearchMetroHousingContext = (
       sourceArtifacts: artifacts,
       derivation: {
         id: "movewise.context.compose.metro-profiles",
-        version: VERSION,
+        version: SNAPSHOT_VERSION,
       },
       delineationVersion: originProfile.snapshot.delineationVersion,
       verifiedOn: comparisonVerifiedOn,
@@ -149,7 +150,7 @@ const composeResearchMetroHousingContext = (
         origin: cloneJson(origin.geography),
         destination: cloneJson(destination.geography),
       },
-      snapshotVersion: VERSION,
+      snapshotVersion: SNAPSHOT_VERSION,
       snapshotSha256: ZERO_SHA,
     },
     caveats: [

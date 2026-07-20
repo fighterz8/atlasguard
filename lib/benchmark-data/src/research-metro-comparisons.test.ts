@@ -30,22 +30,22 @@ describe("internal four-metro comparisons", () => {
     );
 
     expect(comparison).toMatchObject({
-      id: "research-metro-comparison.los-angeles-ca.to.austin-tx.1-0-0",
+      id: "research-metro-comparison.los-angeles-ca.to.austin-tx.1-0-1",
       origin: {
         slug: "los-angeles-ca",
         profileSha256:
-          "a7cbf056c5f3eb929b9a9bf67faa43159281afee2d32b5877ad2c237955aac90",
+          "f7490594b6f53de0b62f5c9af115e700a4300118fc69abd0f870a328dd350d96",
       },
       destination: {
         slug: "austin-tx",
         profileSha256:
-          "ed630549170789e57f5215d06609db9e32a57b88df026933c66a91f5c64c9dc1",
+          "1f3196ab46a4c78f0270f7de7156c993eec4abb08e1cdb16ec5e2ec66c0bb0a0",
       },
       metrics: {
         commute: {
           metricId: "commute.mean_minutes",
           unit: "minutes",
-          destinationValue: 28.20973758623548,
+          destinationValue: 28.209737586235,
         },
         housing: {
           metricId: "housing.median_gross_rent",

@@ -21,7 +21,7 @@ import {
 } from "./research-metro-profiles";
 import type { VerifiedRawCommuteSnapshot } from "./raw-snapshot";
 
-const COMPARISON_SNAPSHOT_VERSION = "1.0.0" as const;
+const COMPARISON_SNAPSHOT_VERSION = "1.0.1" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
 const RAW_SNAPSHOT_ID = "acs1.2024.commute.la-seattle";
 const SOURCE_ARTIFACT_ORDER = [
@@ -32,7 +32,7 @@ const SOURCE_ARTIFACT_ORDER = [
 ] as const;
 
 export const LOS_ANGELES_SEATTLE_COMMUTE_COMPARISON_SHA256 =
-  "36f70b3adf17c480a766f4f47dc0de166aa075587360bcdd197666c5498ce9bb";
+  "1b2a3bea4d80a7018e74d65d738791f7b017c2969f67668c824acf0f0003019f";
 
 const orderedSourceArtifacts = (
   originProfile: VerifiedMetroProfile,
@@ -89,7 +89,7 @@ export const promoteLosAngelesToSeattleCommuteBenchmarkFromProfiles = (
       ),
       derivation: {
         id: "acs.commute_mean.b08013_b08006",
-        version: "1.0.0",
+        version: COMPARISON_SNAPSHOT_VERSION,
       },
       delineationVersion: "OMB Bulletin 23-01 / Census July 2023",
       verifiedOn: "2026-07-17",

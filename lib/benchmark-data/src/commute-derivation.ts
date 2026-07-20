@@ -63,6 +63,17 @@ const calculatePortableHypot = (...values: readonly number[]): number => {
   return largest === Infinity ? Infinity : largest * Math.sqrt(sum);
 };
 
+const DERIVED_DECIMAL_PLACES = 12;
+const DERIVED_DECIMAL_SCALE = 10 ** DERIVED_DECIMAL_PLACES;
+
+/**
+ * Normalizes derived floating-point evidence before it enters a checksum-bound
+ * profile. Twelve decimal places are far more precise than the ACS source and
+ * displayed MOE while removing engine-specific libm differences.
+ */
+export const normalizeDerivedDecimal = (value: number): number =>
+  Math.round(value * DERIVED_DECIMAL_SCALE) / DERIVED_DECIMAL_SCALE;
+
 const applyCommuteTransform = (rawValue: number): number => {
   const result = applyRegisteredUtilityTransform({
     priorityId: COMMUTE_METRIC_REGISTRATION.priorityId,
@@ -102,8 +113,8 @@ export const deriveCommuteMetric = (
       record.aggregateTravelTimeMinutes.marginOfError90,
       unroundedMean * nonHomeWorkersMoe,
     ) / nonHomeWorkers;
-  const meanMinutes = unroundedMean;
-  const marginOfError90Minutes = unroundedMoe;
+  const meanMinutes = normalizeDerivedDecimal(unroundedMean);
+  const marginOfError90Minutes = normalizeDerivedDecimal(unroundedMoe);
   const utilityBps = applyCommuteTransform(meanMinutes);
   const lowerBoundUtility = applyCommuteTransform(
     Math.max(0, meanMinutes - marginOfError90Minutes),

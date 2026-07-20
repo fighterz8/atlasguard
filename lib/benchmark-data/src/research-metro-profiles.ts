@@ -28,7 +28,7 @@ export {
   SAN_DIEGO_RESEARCH_METRO_PROFILE_SHA256,
 } from "./expanded-research-metro-profiles";
 
-const PROFILE_VERSION = "1.0.0" as const;
+const PROFILE_VERSION = "1.0.1" as const;
 const CHECKSUM_PLACEHOLDER = "0".repeat(64);
 const LA_SEATTLE_PROFILE_SLUGS = {
   origin: "los-angeles-ca",
@@ -36,9 +36,9 @@ const LA_SEATTLE_PROFILE_SLUGS = {
 } as const;
 
 export const LOS_ANGELES_RESEARCH_METRO_PROFILE_SHA256 =
-  "a7cbf056c5f3eb929b9a9bf67faa43159281afee2d32b5877ad2c237955aac90";
+  "f7490594b6f53de0b62f5c9af115e700a4300118fc69abd0f870a328dd350d96";
 export const SEATTLE_RESEARCH_METRO_PROFILE_SHA256 =
-  "e79ddcc0222e06be479d8bfa858f0de590151e214bc134b5ed8e103956a2ad80";
+  "547e126bbadc867db644e9eb09307e6a7bcb89c78618f5346200d2655950ddfd";
 
 const commuteSnapshot = verifyRawCommuteSnapshot(
   acs2024CommuteLaSeattleRawSnapshot,

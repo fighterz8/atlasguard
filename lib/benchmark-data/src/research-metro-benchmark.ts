@@ -29,58 +29,58 @@ export type ResearchClimateDirection = Extract<
   "lower" | "higher"
 >;
 
-const VERSION = "1.0.0" as const;
+const VERSION = "1.0.1" as const;
 const ZERO_SHA = "0".repeat(64);
 
 export const RESEARCH_METRO_BENCHMARK_SHA256 = Object.freeze({
   "los-angeles-ca:seattle-wa:lower":
-    "f78e5eb633e69d4e9471116d3b8db04f43fe5704189e54be4f9b741d6d508ddf",
+    "09b56fe68a48b24ef2dcfc656e6382b5c2a4046d81f5c6933ee3f7baacc9de1a",
   "los-angeles-ca:seattle-wa:higher":
-    "e31415468b2de1c9acc9c5ca2a8fdbd4fc1f329d56df09eb17563ae945a305d2",
+    "9f2c554f405ca0616c4ed78aac2f87ec622fe04e34b6d7335cf529f5409b43eb",
   "los-angeles-ca:austin-tx:lower":
-    "a73a6785c1caf88611402c80281da6515c9a07c7b0561bdaab3c9d3cfb92bea2",
+    "e3a01ea698dcc24132775bdfa901c285055f1bf10fb28de62b96480d21610332",
   "los-angeles-ca:austin-tx:higher":
-    "f897907b9c88ca8d3766a575996faf55da1dad8172bf3661701ba4f65f5ec863",
+    "8bede946b344971bd175f9a737e8cc6211425b2fd6a42ebcdf04ccbc48482143",
   "los-angeles-ca:san-diego-ca:lower":
-    "c010ffe7666a9439156e91daeb0051cede83e7861c12546ee5e9c5382f4a3a22",
+    "8a345733a65588bb45db3c71edc44bf3093a37f53c07d5bc38790c9f4184f38c",
   "los-angeles-ca:san-diego-ca:higher":
-    "317131fa68a33d4c65a3d7aa7ebcba5378cc22e1653b44d459e3f12ba7933fe0",
+    "6048db4e383c5a0929a3deaa56482cb29e9b795bf7e850ac6787847f5e58ae86",
   "seattle-wa:los-angeles-ca:lower":
-    "a7d1b807bcd019312485d038abed08d38310c0e4b6c15c434b28b3687637497d",
+    "3b3ed8e28b3a1911eb7c111168d4b016001518d8fbad7162870e2c8ef8a2cf04",
   "seattle-wa:los-angeles-ca:higher":
-    "21726b5c5832a71ca9d756c0a8d2656ee1d123134405ebcd53093b1eaae23fbf",
+    "fd47ad7e6544feb6be659845fc8b8e1962b16314106defc8703479e490fd57eb",
   "seattle-wa:austin-tx:lower":
-    "bc2e40a23bed8857b480c1e74a2e798bac0c507ac96f159704ddfaf577e01296",
+    "abac4f6e86a4294af43528c2900788aea997e8c452fe15e968464d891777e6b3",
   "seattle-wa:austin-tx:higher":
-    "e816fe4e897b9e41231a94731de8131534b283b5307be8c4f4ed0912fef05804",
+    "64cd29ebc7d63534537db4a01daeb15c896efb2adf0fe51c8f61e99e4a5a533a",
   "seattle-wa:san-diego-ca:lower":
-    "5d1d9bbc4f861f18075e11f6b226aea766406ce9e6151b845ccd5b35b9f01f13",
+    "583724be602d13b70cfd0a523189cad25aeedbf6ca1a7a28b82bd8b0c9e9d4ca",
   "seattle-wa:san-diego-ca:higher":
-    "7876a3ca8945abef90c403653c58db1b151bb3ed826c50214a9f7693b285b6c8",
+    "e15fd06976111ee7f40b94ce116408754f8bb144ded8fb3808306d222ea7002e",
   "austin-tx:los-angeles-ca:lower":
-    "7ccffd525b4e4818c10bdff7e7229f12f5b8586511e52982288452f4dad87e20",
+    "63b0c666e3fa02412b5f5d74988ff824c00636f4e808132e3dcc4b2a47301871",
   "austin-tx:los-angeles-ca:higher":
-    "332f9f5c1dd84d7d5e624b0baa0de1616c1bfda41dc47baa0c4e5def9b26195e",
+    "760df7dafacd97564ecf08768db5fe85b9f76bd3e2d3f9e38ad6502e4b7944e6",
   "austin-tx:seattle-wa:lower":
-    "bce0e88e473ffb32393ab4f65ed11d4f80295f5c7ad3aa5a8e44fd129d2fa57d",
+    "f25e4d5d2070729aadc4420d39997a88bb2c7cec24bdc1a0078c5f2f24d70f0d",
   "austin-tx:seattle-wa:higher":
-    "a8e31f39f45bbc7f6567648b5783396c334b1373f1e1fb9ec77552d918e243b1",
+    "e2254854618439cc1d4fce6567fc15c89612068f60a4717f499af75b5228f964",
   "austin-tx:san-diego-ca:lower":
-    "a1a25744152dd88c6779fa1f7ee2c6785f549a606d250fc1be4ff2ada069b92f",
+    "3d4cbc081dd74acb051af03544e084ee3f02c274e42dc7ca4d326182286ea403",
   "austin-tx:san-diego-ca:higher":
-    "0fb563e28e56d2f03d5fc7f1a9a6a9b7027afad916eba6367c96f2889a601beb",
+    "ae282dce957cb1d330739f25cca29f08d93e3ef1db8899347222ad0e05f34eea",
   "san-diego-ca:los-angeles-ca:lower":
-    "4d6ca75e76729b2093c94d6cf15d47dfb74b74c8f5c43aba3f07a7216a6732f8",
+    "3bb3c8fc7f7dc4700e78b839849ba22b2479566b0ac14885abfa297f3d5397b4",
   "san-diego-ca:los-angeles-ca:higher":
-    "110578283ab404a592bfacb50dbb5e1ca5fb52cd01303014d07f8116416d2245",
+    "31b5996b2b6a390e4335023991642fba5d46e454d2eb4772a48bcef701929394",
   "san-diego-ca:seattle-wa:lower":
-    "ec2990ea0f1f70854ae152be9468b3a79b4bc0d71f076434daf6930eb0aefaa4",
+    "2a39285f5cf1a2319b001fc7952c2ddaef5ad8afd752e23646168ec3d6758b9c",
   "san-diego-ca:seattle-wa:higher":
-    "bcd4f00be2d7c4688baeeb6d820b15dd7ec096668252cd939ef09b068e7e9f8f",
+    "7c47d021fca217352208b78641134b41268c047736fef9299b2e5b352f320a98",
   "san-diego-ca:austin-tx:lower":
-    "8b170abfec65319ed4de924b4b8c852a8abefd9a76ba723f806ab2b3aaa221c0",
+    "ad075d16ba911e83c6b7eeed6ca4f1289ba07d814958eb0a20ceb2561922654d",
   "san-diego-ca:austin-tx:higher":
-    "905624276834fe1e3244af82d818522abb2b66085e16ce99f7d36478f9d4d8e3",
+    "bba84f3160995e3e2a21fa123b4fa8699210e519bd3fc6e2f5fd270e48e30348",
 } as const);
 
 const priorityFromEvidence = (
@@ -115,7 +115,7 @@ const composeResearchMetroBenchmark = (
 ): VerifiedBenchmarkComparison => {
   assertSharedSnapshotMetadata(originProfile, destinationProfile);
   const pairId = `${originProfile.metro.slug}.to.${destinationProfile.metro.slug}`;
-  const snapshotId = `movewise.research.${pairId}.${climateDirection}.1-0-0`;
+  const snapshotId = `movewise.research.${pairId}.${climateDirection}.1-0-1`;
   const comparisonVerifiedOn = [
     originProfile.snapshot.verifiedOn,
     destinationProfile.snapshot.verifiedOn,
