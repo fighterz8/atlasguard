@@ -45,6 +45,42 @@
     <noscript>
       MoveWise needs JavaScript enabled to run this research preview.
     </noscript>
+    <script>
+      (function () {
+        var startupTimer = window.setTimeout(function () {
+          var status = document.getElementById("movewise-startup-status");
+          if (!status) return;
+
+          status.innerHTML =
+            '<strong style="display:block;margin-bottom:0.5rem">MoveWise could not start.</strong>' +
+            "The page loaded, but the application did not. Error code: MW-BOOT-01.";
+        }, 10000);
+
+        window.addEventListener(
+          "error",
+          function () {
+            window.clearTimeout(startupTimer);
+            var status = document.getElementById("movewise-startup-status");
+            if (!status) return;
+
+            status.innerHTML =
+              '<strong style="display:block;margin-bottom:0.5rem">MoveWise could not start.</strong>' +
+              "A browser startup error occurred. Error code: MW-BOOT-02.";
+          },
+          true,
+        );
+
+        window.addEventListener("unhandledrejection", function () {
+          window.clearTimeout(startupTimer);
+          var status = document.getElementById("movewise-startup-status");
+          if (!status) return;
+
+          status.innerHTML =
+            '<strong style="display:block;margin-bottom:0.5rem">MoveWise could not start.</strong>' +
+            "A browser startup error occurred. Error code: MW-BOOT-03.";
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
