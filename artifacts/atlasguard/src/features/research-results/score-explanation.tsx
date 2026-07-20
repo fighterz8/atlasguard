@@ -89,9 +89,21 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
         </div>
         <div className="bg-caution-surface/70 px-4 py-5 sm:px-5">
           <dt className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
-            Closest decision change
+            {score.mode === "deterministic"
+              ? "Essential-needs check"
+              : "Closest decision change"}
           </dt>
-          {score.decisionChangingAssumption ? (
+          {score.mode === "deterministic" && score.essentialSummary ? (
+            <dd className="mt-2">
+              <StatusBadge tone={score.essentialSummary.tone}>
+                {score.essentialSummary.label}
+              </StatusBadge>
+              <span className="mt-3 block text-xs leading-5 text-slate-700">
+                An unconfirmed or unmet essential need can override the numeric
+                score. Results identifies the exact need below.
+              </span>
+            </dd>
+          ) : score.decisionChangingAssumption ? (
             <dd className="mt-2">
               <span className="block text-lg font-semibold text-slate-950">
                 {score.decisionChangingAssumption.label}
@@ -142,7 +154,9 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
           id="score-factors-heading"
           className="text-lg font-semibold text-slate-950"
         >
-          What the score does not cover yet
+          {score.mode === "deterministic"
+            ? "Not included in this score"
+            : "What the score does not cover yet"}
         </h3>
         <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-slate-300 py-4">
           <StatusBadge tone="unavailable">Not scored yet</StatusBadge>
@@ -154,7 +168,7 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
 
       <details className="mt-8 border-y border-slate-200 py-1">
         <summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-slate-800">
-          Calculation references · Score rule {score.scoreVersion}
+          Verification references · Score rule {score.scoreVersion}
         </summary>
         <div className="border-t border-slate-200 py-4">
           {score.calculationEvidenceRefs.length > 0 ? (

@@ -4,11 +4,17 @@ import {
   supportedResearchPlaces,
   type SupportedResearchPlaceSlug,
 } from "@workspace/benchmark-data";
+import { MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE } from "@workspace/contracts";
+import type {
+  MoveWiseHouseholdFactorId,
+  MoveWiseHouseholdMode,
+} from "@workspace/contracts";
 
 export const wizardSteps = [
   { id: "move", label: "Your move", shortLabel: "Move" },
   { id: "money", label: "Your money", shortLabel: "Money" },
-  { id: "priorities", label: "What matters", shortLabel: "Priorities" },
+  { id: "priorities", label: "Daily life", shortLabel: "Daily life" },
+  { id: "household", label: "Household needs", shortLabel: "Household" },
 ] as const;
 
 export type WizardStepId = (typeof wizardSteps)[number]["id"];
@@ -22,6 +28,45 @@ export type ClimateHeatPreference =
   | "fewer_hot_days"
   | "more_hot_days"
   | "does_not_matter";
+export type HouseholdRole =
+  | "important"
+  | "essential_met"
+  | "essential_unconfirmed"
+  | "essential_unmet"
+  | "not_applicable";
+export type HouseholdImpact =
+  | "strong_negative"
+  | "negative"
+  | "neutral"
+  | "positive"
+  | "strong_positive"
+  | "unavailable";
+export type HouseholdFactorDraft = {
+  role: HouseholdRole | "";
+  impact: HouseholdImpact | "";
+};
+
+export const householdFactorLabels = {
+  space_fit: "Enough suitable space",
+  support_network: "Being near people you rely on",
+  childcare_continuity: "Keeping workable childcare arrangements",
+  school_continuity: "Keeping a workable school path",
+  required_services_continuity:
+    "Keeping required therapy, disability, or support services",
+  car_free_access: "Completing essential routines without driving",
+} as const satisfies Record<MoveWiseHouseholdFactorId, string>;
+
+const createInitialHouseholdFactors = (): Record<
+  MoveWiseHouseholdFactorId,
+  HouseholdFactorDraft
+> => ({
+  space_fit: { role: "", impact: "" },
+  support_network: { role: "", impact: "" },
+  childcare_continuity: { role: "", impact: "" },
+  school_continuity: { role: "", impact: "" },
+  required_services_continuity: { role: "", impact: "" },
+  car_free_access: { role: "", impact: "" },
+});
 
 export const supportedPlaces = supportedResearchPlaces;
 
@@ -30,11 +75,14 @@ export type SupportedPlaceSlug = SupportedResearchPlaceSlug;
 export type WizardPrototypeDraft = {
   originSlug: SupportedPlaceSlug | "";
   destinationSlug: SupportedPlaceSlug | "";
+  householdMode: MoveWiseHouseholdMode | "";
   finances: {
     currentTakeHome: string;
     targetTakeHome: string;
     currentHousing: string;
     targetHousing: string;
+    targetGrossIncomeKnown: boolean;
+    targetGrossIncome: string;
     currentExpenses: string;
     targetExpenses: string;
     retainedPropertyNet: string;
@@ -42,18 +90,22 @@ export type WizardPrototypeDraft = {
     targetTakeHomeRangeMax: string;
     targetHousingRangeMin: string;
     targetHousingRangeMax: string;
+    targetGrossIncomeRangeMin: string;
+    targetGrossIncomeRangeMax: string;
     targetExpensesRangeMin: string;
     targetExpensesRangeMax: string;
     retainedPropertyNetRangeMin: string;
     retainedPropertyNetRangeMax: string;
     targetTakeHomeBasis: AssumptionBasis;
     targetHousingBasis: AssumptionBasis;
+    targetGrossIncomeBasis: AssumptionBasis;
     targetExpensesBasis: AssumptionBasis;
     retainedPropertyNetBasis: AssumptionBasis;
   };
   commuteImportance: PriorityImportance;
   climateHeatPreference: ClimateHeatPreference;
   climateHeatImportance: Exclude<PriorityImportance, "does_not_matter">;
+  householdFactors: Record<MoveWiseHouseholdFactorId, HouseholdFactorDraft>;
 };
 
 export type WizardErrors = Record<string, string>;
@@ -61,11 +113,14 @@ export type WizardErrors = Record<string, string>;
 export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
   originSlug: "",
   destinationSlug: "",
+  householdMode: "",
   finances: {
     currentTakeHome: "",
     targetTakeHome: "",
     currentHousing: "",
     targetHousing: "",
+    targetGrossIncomeKnown: false,
+    targetGrossIncome: "",
     currentExpenses: "",
     targetExpenses: "",
     retainedPropertyNet: "0",
@@ -73,18 +128,22 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     targetTakeHomeRangeMax: "",
     targetHousingRangeMin: "",
     targetHousingRangeMax: "",
+    targetGrossIncomeRangeMin: "",
+    targetGrossIncomeRangeMax: "",
     targetExpensesRangeMin: "",
     targetExpensesRangeMax: "",
     retainedPropertyNetRangeMin: "",
     retainedPropertyNetRangeMax: "",
     targetTakeHomeBasis: "user_estimate",
     targetHousingBasis: "user_estimate",
+    targetGrossIncomeBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
     retainedPropertyNetBasis: "confirmed",
   },
   commuteImportance: "important",
   climateHeatPreference: "fewer_hot_days",
   climateHeatImportance: "important",
+  householdFactors: createInitialHouseholdFactors(),
 });
 
 export const getPlace = (slug: SupportedPlaceSlug | "") =>
@@ -146,25 +205,30 @@ const validatePlausibleRange = (
     valueKey:
       | "targetTakeHome"
       | "targetHousing"
+      | "targetGrossIncome"
       | "targetExpenses"
       | "retainedPropertyNet";
     basisKey:
       | "targetTakeHomeBasis"
       | "targetHousingBasis"
+      | "targetGrossIncomeBasis"
       | "targetExpensesBasis"
       | "retainedPropertyNetBasis";
     minKey:
       | "targetTakeHomeRangeMin"
       | "targetHousingRangeMin"
+      | "targetGrossIncomeRangeMin"
       | "targetExpensesRangeMin"
       | "retainedPropertyNetRangeMin";
     maxKey:
       | "targetTakeHomeRangeMax"
       | "targetHousingRangeMax"
+      | "targetGrossIncomeRangeMax"
       | "targetExpensesRangeMax"
       | "retainedPropertyNetRangeMax";
     label: string;
     signed?: boolean;
+    allowZero?: boolean;
   },
 ) => {
   if (finances[options.basisKey] === "confirmed") return;
@@ -192,14 +256,14 @@ const validatePlausibleRange = (
       options.minKey,
       finances[options.minKey],
       `${options.label} plausible low`,
-      true,
+      options.allowZero ?? true,
     );
     validateMoney(
       errors,
       options.maxKey,
       finances[options.maxKey],
       `${options.label} plausible high`,
-      true,
+      options.allowZero ?? true,
     );
   }
 
@@ -240,6 +304,9 @@ export function validateWizardStep(
     if (draft.destinationSlug === "") {
       errors.destinationSlug = "Choose the location you are considering.";
     }
+    if (draft.householdMode === "") {
+      errors.householdMode = "Choose who would be making this move.";
+    }
     if (draft.originSlug !== "" && draft.originSlug === draft.destinationSlug) {
       errors.destinationSlug =
         "Origin and destination must be different locations.";
@@ -278,6 +345,20 @@ export function validateWizardStep(
       "Current housing cost",
       true,
     );
+    if (draft.finances.targetGrossIncomeKnown) {
+      if (draft.finances.targetGrossIncome.trim() === "") {
+        errors["finances.targetGrossIncome"] =
+          "Destination gross income is required when marked known.";
+      } else {
+        validateMoney(
+          errors,
+          "targetGrossIncome",
+          draft.finances.targetGrossIncome,
+          "Destination gross income",
+          false,
+        );
+      }
+    }
     validateMoney(
       errors,
       "targetHousing",
@@ -319,6 +400,16 @@ export function validateWizardStep(
       maxKey: "targetHousingRangeMax",
       label: "Target housing cost",
     });
+    if (draft.finances.targetGrossIncomeKnown) {
+      validatePlausibleRange(errors, draft.finances, {
+        valueKey: "targetGrossIncome",
+        basisKey: "targetGrossIncomeBasis",
+        minKey: "targetGrossIncomeRangeMin",
+        maxKey: "targetGrossIncomeRangeMax",
+        label: "Destination gross income",
+        allowZero: false,
+      });
+    }
     validatePlausibleRange(errors, draft.finances, {
       valueKey: "targetExpenses",
       basisKey: "targetExpensesBasis",
@@ -336,6 +427,25 @@ export function validateWizardStep(
     });
   }
 
+  if (step === "household") {
+    if (draft.householdMode === "") {
+      errors.householdMode = "Choose who would be making this move.";
+      return errors;
+    }
+    for (const factorId of MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE[
+      draft.householdMode
+    ]) {
+      const factor = draft.householdFactors[factorId];
+      if (factor.role === "") {
+        errors[`household.${factorId}.role`] =
+          `Choose the role of ${householdFactorLabels[factorId]}.`;
+      } else if (factor.role !== "not_applicable" && factor.impact === "") {
+        errors[`household.${factorId}.impact`] =
+          `Choose how ${householdFactorLabels[factorId]} would change.`;
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -343,6 +453,7 @@ export function validateWizardDraft(draft: WizardPrototypeDraft): WizardErrors {
   return {
     ...validateWizardStep("move", draft),
     ...validateWizardStep("money", draft),
+    ...validateWizardStep("household", draft),
   };
 }
 

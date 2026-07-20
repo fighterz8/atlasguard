@@ -1,4 +1,5 @@
 import { MapPin } from "lucide-react";
+import type { MoveWiseHouseholdMode } from "@workspace/contracts";
 
 import { StatusBadge } from "../ux-system/status-badge";
 
@@ -17,6 +18,7 @@ type MoveStepProps = {
     key: "originSlug" | "destinationSlug",
     value: SupportedPlaceSlug | "",
   ) => void;
+  onModeChange: (value: MoveWiseHouseholdMode) => void;
 };
 
 type LocationFieldProps = {
@@ -91,12 +93,17 @@ function LocationField({
   );
 }
 
-export function MoveStep({ draft, errors, onChange }: MoveStepProps) {
+export function MoveStep({
+  draft,
+  errors,
+  onChange,
+  onModeChange,
+}: MoveStepProps) {
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 1 of 3</p>
+          <p className="eyebrow">Step 1 of 4</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
@@ -130,6 +137,68 @@ export function MoveStep({ draft, errors, onChange }: MoveStepProps) {
           onChange={(value) => onChange("destinationSlug", value)}
         />
       </div>
+
+      <fieldset className="mt-8 border-t border-slate-200 pt-7">
+        <legend className="text-base font-semibold text-slate-950">
+          Who would be making this move?
+        </legend>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          This changes which household questions appear. It does not give a
+          family or individual an automatic score advantage.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {[
+            {
+              value: "individual" as const,
+              label: "Just me",
+              description:
+                "We’ll ask only about needs that can apply to an individual move.",
+            },
+            {
+              value: "family" as const,
+              label: "Me and one or more other people in my household",
+              description:
+                "We’ll include household continuity without adding an automatic family bonus.",
+            },
+          ].map((option) => (
+            <label
+              key={option.value}
+              className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors has-[:checked]:border-teal-700 has-[:checked]:bg-teal-50"
+            >
+              <input
+                id={`householdMode-${option.value}`}
+                type="radio"
+                name="householdMode"
+                value={option.value}
+                checked={draft.householdMode === option.value}
+                aria-invalid={errors.householdMode ? "true" : undefined}
+                aria-describedby={
+                  errors.householdMode ? "householdMode-error" : undefined
+                }
+                onChange={() => onModeChange(option.value)}
+                className="mt-1 h-4 w-4 shrink-0 accent-teal-800"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-slate-950">
+                  {option.label}
+                </span>
+                <span className="mt-1 block text-sm leading-5 text-slate-600">
+                  {option.description}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+        {errors.householdMode ? (
+          <p
+            id="householdMode-error"
+            role="alert"
+            className="mt-2 text-sm font-medium text-risk"
+          >
+            {errors.householdMode}
+          </p>
+        ) : null}
+      </fieldset>
 
       <div className="mt-8 rounded-xl border border-caution/25 bg-caution-surface p-4 text-sm leading-6 text-caution">
         This research cohort supports Los Angeles, Seattle, Austin, and San

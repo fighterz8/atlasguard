@@ -15,6 +15,17 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
   ...createInitialWizardDraft(),
   originSlug: "los-angeles-ca",
   destinationSlug: "seattle-wa",
+  householdMode: "individual",
+  householdFactors: {
+    ...createInitialWizardDraft().householdFactors,
+    space_fit: { role: "not_applicable", impact: "" },
+    support_network: { role: "not_applicable", impact: "" },
+    required_services_continuity: {
+      role: "not_applicable",
+      impact: "",
+    },
+    car_free_access: { role: "not_applicable", impact: "" },
+  },
   finances: {
     ...createInitialWizardDraft().finances,
     currentTakeHome: "5000",
@@ -277,6 +288,66 @@ describe("research results view model", () => {
       "retained_property_net",
     );
     expect(model.nextSteps[0]).toBe(
+      "Add any household factors that could materially change day-to-day life.",
+    );
+  });
+
+  it("activates deterministic rule 0.2.0 only with its verified Wizard context", () => {
+    const draft = reviewedDraft();
+    draft.householdFactors.space_fit = {
+      role: "important",
+      impact: "positive",
+    };
+    draft.householdFactors.support_network = {
+      role: "essential_unconfirmed",
+      impact: "unavailable",
+    };
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+
+    const model = createResearchResultsViewModel(evaluation.evaluation, {
+      analysis: evaluation.deterministicAnalysis,
+      householdAnswers: evaluation.householdAnswers,
+    });
+
+    expect(model.condition.label).toBe("Promising if…");
+    expect(model.score).toMatchObject({
+      value: evaluation.deterministicAnalysis.result.value,
+      scoreVersion: "0.2.0",
+      mode: "deterministic",
+      essentialSummary: {
+        label: "1 essential need not confirmed",
+        tone: "caution",
+      },
+    });
+    expect(model.household).toMatchObject({
+      modeLabel: "Individual move",
+      factors: expect.arrayContaining([
+        expect.objectContaining({
+          id: "space_fit",
+          label: "Enough suitable space",
+          contribution: 10,
+          statusLabel: "Important",
+          impactLabel: "Somewhat better",
+        }),
+        expect.objectContaining({
+          id: "support_network",
+          statusLabel: "Essential — not confirmed",
+          impactLabel: "Not sure yet",
+        }),
+        expect.objectContaining({
+          id: "car_free_access",
+          statusLabel: "Not part of my decision",
+          impactLabel: "Excluded",
+        }),
+      ]),
+    });
+    expect(model.score.missingComponents).toEqual(["Opportunity context"]);
+    expect(model.nextSteps[0]).toBe(
+      "Confirm whether being near people you rely on will work before relying on this result.",
+    );
+    expect(model.nextSteps).not.toContain(
       "Add any household factors that could materially change day-to-day life.",
     );
   });

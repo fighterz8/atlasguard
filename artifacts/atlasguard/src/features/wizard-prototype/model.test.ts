@@ -5,12 +5,14 @@ import {
   getNextStep,
   getPreviousStep,
   validateWizardStep,
+  wizardSteps,
 } from "./model";
 
 const validDraft = () => ({
   ...createInitialWizardDraft(),
   originSlug: "los-angeles-ca" as const,
   destinationSlug: "seattle-wa" as const,
+  householdMode: "individual" as const,
   finances: {
     ...createInitialWizardDraft().finances,
     currentTakeHome: "5000",
@@ -32,8 +34,18 @@ const validDraft = () => ({
 });
 
 describe("Wizard prototype model", () => {
+  it("uses the accepted four-step decision flow", () => {
+    expect(wizardSteps.map(({ id }) => id)).toEqual([
+      "move",
+      "money",
+      "priorities",
+      "household",
+    ]);
+  });
+
   it("requires two different supported locations", () => {
     const empty = createInitialWizardDraft();
+    empty.householdMode = "individual";
     expect(validateWizardStep("move", empty)).toEqual({
       originSlug: "Choose your current location.",
       destinationSlug: "Choose the location you are considering.",
@@ -61,6 +73,15 @@ describe("Wizard prototype model", () => {
       destinationSlug: "san-diego-ca" as const,
     };
     expect(validateWizardStep("move", expanded)).toEqual({});
+  });
+
+  it("requires the moving-party mode on the move step", () => {
+    const draft = validDraft();
+    draft.householdMode = "";
+
+    expect(validateWizardStep("move", draft)).toMatchObject({
+      householdMode: "Choose who would be making this move.",
+    });
   });
 
   it("accepts a signed retained-property monthly net", () => {
@@ -126,19 +147,56 @@ describe("Wizard prototype model", () => {
     });
   });
 
+  it("keeps destination gross income optional and validates it when known", () => {
+    const unknown = validDraft();
+    unknown.finances.targetGrossIncomeKnown = false;
+    expect(validateWizardStep("money", unknown)).toEqual({});
+
+    const known = validDraft();
+    known.finances.targetGrossIncomeKnown = true;
+    known.finances.targetGrossIncome = "";
+    expect(validateWizardStep("money", known)).toMatchObject({
+      "finances.targetGrossIncome":
+        "Destination gross income is required when marked known.",
+    });
+  });
+
+  it("requires every mode-applicable household answer explicitly", () => {
+    const draft = validDraft();
+    expect(validateWizardStep("household", draft)).toMatchObject({
+      "household.space_fit.role": "Choose the role of Enough suitable space.",
+      "household.support_network.role":
+        "Choose the role of Being near people you rely on.",
+    });
+
+    for (const factorId of [
+      "space_fit",
+      "support_network",
+      "required_services_continuity",
+      "car_free_access",
+    ] as const) {
+      draft.householdFactors[factorId] = {
+        role: "not_applicable",
+        impact: "",
+      };
+    }
+    expect(validateWizardStep("household", draft)).toEqual({});
+  });
+
   it("does not advance when the current step is invalid", () => {
     expect(getNextStep("move", createInitialWizardDraft()).step).toBe("move");
     expect(getNextStep("move", validDraft())).toEqual({
       step: "money",
       errors: {},
     });
+    expect(getNextStep("priorities", validDraft()).step).toBe("household");
   });
 
   it("moves backward without mutating the draft", () => {
     const draft = validDraft();
     const before = structuredClone(draft);
 
-    expect(getPreviousStep("priorities")).toBe("money");
+    expect(getPreviousStep("household")).toBe("priorities");
     expect(draft).toEqual(before);
   });
 });

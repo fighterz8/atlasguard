@@ -22,8 +22,8 @@ type PrioritiesStepProps = {
 const importanceOptions: readonly PriorityChoiceOption<PriorityImportance>[] = [
   {
     value: "must_have",
-    label: "Must-have",
-    description: "A material loss here could block the move.",
+    label: "Very important",
+    description: "Give this supported comparison the strongest influence.",
     tone: "caution",
   },
   {
@@ -81,19 +81,20 @@ export function PrioritiesStep({
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 3 of 3</p>
+          <p className="eyebrow">Step 3 of 4</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
             className="section-heading"
           >
-            What matters in this decision?
+            What matters in daily life?
           </h1>
         </div>
         <Route aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Set the direction and importance of each evidence-backed factor. “Does
+        Set the direction and importance of each supported comparison. These
+        priorities influence the score, but they are not deal-breakers. “Does
         not matter” removes that factor from the decision.
       </p>
 

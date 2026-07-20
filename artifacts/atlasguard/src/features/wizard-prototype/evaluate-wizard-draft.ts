@@ -1,12 +1,25 @@
 import { getResearchMetroBenchmark } from "@workspace/benchmark-data";
-import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
-import { evaluateResearchMoveDecision } from "@workspace/decision-core";
+import type {
+  VerifiedMoveWiseHouseholdAnswers,
+  VerifiedResearchEvaluationResult,
+} from "@workspace/contracts";
+import {
+  evaluateMoveWiseDeterministicModel,
+  evaluateResearchMoveDecision,
+} from "@workspace/decision-core";
+import type { MoveWiseDeterministicAnalysis } from "@workspace/decision-core";
 
+import { adaptWizardDraftToHouseholdAnswers } from "./household-answer-adapter";
 import type { WizardErrors, WizardPrototypeDraft } from "./model";
 import { adaptWizardDraftToScenarioInput } from "./scenario-adapter";
 
 export type WizardEvaluationResult =
-  | { success: true; evaluation: VerifiedResearchEvaluationResult }
+  | {
+      success: true;
+      evaluation: VerifiedResearchEvaluationResult;
+      householdAnswers: VerifiedMoveWiseHouseholdAnswers;
+      deterministicAnalysis: MoveWiseDeterministicAnalysis;
+    }
   | { success: false; errors: WizardErrors };
 
 export function evaluateWizardDraft(
@@ -14,6 +27,8 @@ export function evaluateWizardDraft(
 ): WizardEvaluationResult {
   const adapted = adaptWizardDraftToScenarioInput(draft);
   if (!adapted.success) return adapted;
+  const household = adaptWizardDraftToHouseholdAnswers(draft);
+  if (!household.success) return household;
   const climatePriority = adapted.scenario.priorities.find(
     ({ priorityId }) => priorityId === "climate_heat",
   );
@@ -41,8 +56,14 @@ export function evaluateWizardDraft(
     };
   }
 
+  const evaluation = evaluateResearchMoveDecision(adapted.scenario, benchmark);
   return {
     success: true,
-    evaluation: evaluateResearchMoveDecision(adapted.scenario, benchmark),
+    evaluation,
+    householdAnswers: household.answers,
+    deterministicAnalysis: evaluateMoveWiseDeterministicModel(
+      evaluation,
+      household.answers,
+    ),
   };
 }

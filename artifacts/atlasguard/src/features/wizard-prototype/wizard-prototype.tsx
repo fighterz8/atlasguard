@@ -7,7 +7,12 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON } from "@workspace/benchmark-data";
+import type {
+  MoveWiseHouseholdFactorId,
+  MoveWiseHouseholdMode,
+} from "@workspace/contracts";
 
+import { HouseholdStep } from "./household-step";
 import {
   createInitialWizardDraft,
   getPlace,
@@ -16,6 +21,8 @@ import {
   wizardSteps,
   type AssumptionBasis,
   type ClimateHeatPreference,
+  type HouseholdImpact,
+  type HouseholdRole,
   type PriorityImportance,
   type SupportedPlaceSlug,
   type WizardErrors,
@@ -31,11 +38,14 @@ import { StepProgress } from "./step-progress";
 const exampleDraft: WizardPrototypeDraft = {
   originSlug: LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.origin.slug,
   destinationSlug: LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.destination.slug,
+  householdMode: "family",
   finances: {
     currentTakeHome: "5000",
     targetTakeHome: "5000",
     currentHousing: "2000",
     targetHousing: "2000",
+    targetGrossIncomeKnown: true,
+    targetGrossIncome: "7000",
     currentExpenses: "1500",
     targetExpenses: "1500",
     retainedPropertyNet: "0",
@@ -43,28 +53,48 @@ const exampleDraft: WizardPrototypeDraft = {
     targetTakeHomeRangeMax: "",
     targetHousingRangeMin: "",
     targetHousingRangeMax: "",
+    targetGrossIncomeRangeMin: "",
+    targetGrossIncomeRangeMax: "",
     targetExpensesRangeMin: "",
     targetExpensesRangeMax: "",
     retainedPropertyNetRangeMin: "",
     retainedPropertyNetRangeMax: "",
     targetTakeHomeBasis: "user_estimate",
     targetHousingBasis: "user_estimate",
+    targetGrossIncomeBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
     retainedPropertyNetBasis: "confirmed",
   },
   commuteImportance: "important",
   climateHeatPreference: "fewer_hot_days",
   climateHeatImportance: "important",
+  householdFactors: {
+    space_fit: { role: "important", impact: "positive" },
+    support_network: { role: "important", impact: "positive" },
+    childcare_continuity: { role: "not_applicable", impact: "" },
+    school_continuity: { role: "not_applicable", impact: "" },
+    required_services_continuity: {
+      role: "not_applicable",
+      impact: "",
+    },
+    car_free_access: { role: "not_applicable", impact: "" },
+  },
 };
 
 const errorFieldId = (path: string) =>
-  path.startsWith("finances.") ? path.replace("finances.", "") : path;
+  path.startsWith("finances.")
+    ? path.replace("finances.", "")
+    : path.startsWith("household.")
+      ? path.replace(/^household\.([^.]+)\.(role|impact)$/, "household-$1-$2")
+      : path;
 
 type RangeKey =
   | "targetTakeHomeRangeMin"
   | "targetTakeHomeRangeMax"
   | "targetHousingRangeMin"
   | "targetHousingRangeMax"
+  | "targetGrossIncomeRangeMin"
+  | "targetGrossIncomeRangeMax"
   | "targetExpensesRangeMin"
   | "targetExpensesRangeMax"
   | "retainedPropertyNetRangeMin"
@@ -83,6 +113,11 @@ const rangeKeysByBasis: Record<
     value: "targetHousing",
     min: "targetHousingRangeMin",
     max: "targetHousingRangeMax",
+  },
+  targetGrossIncomeBasis: {
+    value: "targetGrossIncome",
+    min: "targetGrossIncomeRangeMin",
+    max: "targetGrossIncomeRangeMax",
   },
   targetExpensesBasis: {
     value: "targetExpenses",
@@ -160,7 +195,7 @@ export function WizardPrototype({
       return;
     }
 
-    if (step === "priorities") {
+    if (step === "household") {
       if (onEvaluate) {
         setIsEvaluating(true);
         evaluationTimerRef.current = window.setTimeout(() => {
@@ -212,12 +247,35 @@ export function WizardPrototype({
     clearError(key);
   };
 
+  const updateHouseholdMode = (value: MoveWiseHouseholdMode) => {
+    setDraft((current) => ({ ...current, householdMode: value }));
+    clearError("householdMode");
+  };
+
   const updateFinanceValue = (key: ValueKey, value: string) => {
     setDraft((current) => ({
       ...current,
       finances: { ...current.finances, [key]: value },
     }));
     clearError(`finances.${key}`);
+  };
+
+  const updateGrossKnown = (value: boolean) => {
+    setDraft((current) => ({
+      ...current,
+      finances: {
+        ...current.finances,
+        targetGrossIncomeKnown: value,
+        ...(value
+          ? {}
+          : {
+              targetGrossIncome: "",
+              targetGrossIncomeRangeMin: "",
+              targetGrossIncomeRangeMax: "",
+            }),
+      },
+    }));
+    if (!value) clearError("finances.targetGrossIncome");
   };
 
   const copyCurrentFinances = () => {
@@ -279,6 +337,41 @@ export function WizardPrototype({
     setDraft((current) => ({ ...current, climateHeatImportance: value }));
   };
 
+  const updateHouseholdRole = (
+    factorId: MoveWiseHouseholdFactorId,
+    value: HouseholdRole,
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      householdFactors: {
+        ...current.householdFactors,
+        [factorId]: {
+          ...current.householdFactors[factorId],
+          role: value,
+          ...(value === "not_applicable" ? { impact: "" as const } : {}),
+        },
+      },
+    }));
+    clearError(`household.${factorId}.role`);
+    if (value === "not_applicable") {
+      clearError(`household.${factorId}.impact`);
+    }
+  };
+
+  const updateHouseholdImpact = (
+    factorId: MoveWiseHouseholdFactorId,
+    value: HouseholdImpact,
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      householdFactors: {
+        ...current.householdFactors,
+        [factorId]: { ...current.householdFactors[factorId], impact: value },
+      },
+    }));
+    clearError(`household.${factorId}.impact`);
+  };
+
   const errorEntries = Object.entries(errors);
   const origin = getPlace(draft.originSlug);
   const destination = getPlace(draft.destinationSlug);
@@ -295,8 +388,8 @@ export function WizardPrototype({
               Pre-commitment move validator
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Answer three focused questions, then see the financial tradeoff
-              and what could change it.
+              Answer four focused questions, then see the financial tradeoff and
+              what could change it.
             </p>
           </div>
           <button
@@ -376,6 +469,7 @@ export function WizardPrototype({
                       draft={draft}
                       errors={errors}
                       onChange={updateMove}
+                      onModeChange={updateHouseholdMode}
                     />
                   ) : null}
                   {step === "money" ? (
@@ -384,6 +478,7 @@ export function WizardPrototype({
                       errors={errors}
                       onValueChange={updateFinanceValue}
                       onBasisChange={updateBasis}
+                      onGrossKnownChange={updateGrossKnown}
                       onCopyCurrent={copyCurrentFinances}
                     />
                   ) : null}
@@ -395,6 +490,15 @@ export function WizardPrototype({
                       onCommuteChange={updatePriority}
                       onClimatePreferenceChange={updateClimatePreference}
                       onClimateImportanceChange={updateClimateImportance}
+                    />
+                  ) : null}
+                  {step === "household" ? (
+                    <HouseholdStep
+                      mode={draft.householdMode}
+                      factors={draft.householdFactors}
+                      errors={errors}
+                      onRoleChange={updateHouseholdRole}
+                      onImpactChange={updateHouseholdImpact}
                     />
                   ) : null}
                 </div>
@@ -445,7 +549,7 @@ export function WizardPrototype({
                     onClick={continueForward}
                     className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-900"
                   >
-                    {step === "priorities" ? "See my result" : "Continue"}
+                    {step === "household" ? "See my result" : "Continue"}
                     <ArrowRight aria-hidden="true" className="h-4 w-4" />
                   </button>
                 </div>
@@ -479,7 +583,7 @@ export function WizardPrototype({
             <div className="rounded-xl bg-slate-950 p-5 text-white shadow-sm">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-300">
                 Step {wizardSteps.findIndex((item) => item.id === step) + 1} of
-                3
+                {wizardSteps.length}
               </p>
               <p className="mt-2 text-sm font-semibold">
                 {wizardSteps.find((item) => item.id === step)?.label}

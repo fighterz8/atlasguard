@@ -38,18 +38,22 @@ export function SummaryPanel({
       status: financialTone.label,
       tone: financialTone.tone,
     },
-    {
-      label: "Evidence",
-      value: decisionMeta.confidenceLabel,
-      status: null,
-      tone: evidenceTone[confidence.level],
-    },
-    {
-      label: "Sensitivity",
-      value: decisionMeta.stabilityLabel,
-      status: null,
-      tone: sensitivityTone[stability.level],
-    },
+    ...(
+      decisionMeta.summarySignals ?? [
+        {
+          label: "Evidence",
+          value: decisionMeta.confidenceLabel,
+          status: null,
+          tone: evidenceTone[confidence.level],
+        },
+        {
+          label: "Sensitivity",
+          value: decisionMeta.stabilityLabel,
+          status: null,
+          tone: sensitivityTone[stability.level],
+        },
+      ]
+    ).map((signal) => ({ ...signal, status: null })),
   ];
   const scoreTone =
     score.tone === "risk"
@@ -133,7 +137,7 @@ export function SummaryPanel({
               {label}
             </dt>
             <dd className="flex flex-wrap items-center justify-end gap-2 text-right text-sm font-semibold text-slate-900 tabular-nums sm:mt-2 sm:justify-start sm:text-left">
-              {label === "Monthly difference" ? (
+              {status ? (
                 <>
                   <span>{value}</span>
                   <StatusBadge tone={tone}>{status}</StatusBadge>

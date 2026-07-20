@@ -7,6 +7,17 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
   ...createInitialWizardDraft(),
   originSlug: "los-angeles-ca",
   destinationSlug: "seattle-wa",
+  householdMode: "individual",
+  householdFactors: {
+    ...createInitialWizardDraft().householdFactors,
+    space_fit: { role: "not_applicable", impact: "" },
+    support_network: { role: "not_applicable", impact: "" },
+    required_services_continuity: {
+      role: "not_applicable",
+      impact: "",
+    },
+    car_free_access: { role: "not_applicable", impact: "" },
+  },
   finances: {
     ...createInitialWizardDraft().finances,
     currentTakeHome: "5000",
@@ -36,6 +47,19 @@ describe("Wizard deterministic evaluation", () => {
     if (!result.success) return;
 
     expect(result.evaluation.releaseStatus).toBe("research_only");
+    expect(result.householdAnswers).toMatchObject({
+      mode: "individual",
+      sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+    expect(result.deterministicAnalysis).toMatchObject({
+      ruleVersion: "0.2.0",
+      result: {
+        ruleVersion: "0.2.0",
+        metricContributions: {
+          household: { status: "excluded", contribution: 0 },
+        },
+      },
+    });
     expect(result.evaluation.resultMode).toBe("deterministic");
     expect(result.evaluation.scenarioInput.finances.destination).toMatchObject({
       takeHomeIncome: { monthlyCents: 525_000 },

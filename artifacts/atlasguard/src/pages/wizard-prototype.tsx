@@ -26,7 +26,12 @@ export default function WizardPrototypePage() {
 
       setEvaluatedDraft(structuredClone(draft));
       setEvaluation(result.evaluation);
-      setResultModel(createResearchResultsViewModel(result.evaluation));
+      setResultModel(
+        createResearchResultsViewModel(result.evaluation, {
+          analysis: result.deterministicAnalysis,
+          householdAnswers: result.householdAnswers,
+        }),
+      );
       window.requestAnimationFrame(() => window.scrollTo({ top: 0 }));
       return {};
     } catch {
@@ -42,7 +47,6 @@ export default function WizardPrototypePage() {
       <ResearchResultsExperience
         model={resultModel}
         reviewedAssumptions
-        whatIfEvaluation={evaluation}
         onEditAssumptions={() => {
           setResultModel(null);
           window.requestAnimationFrame(() => window.scrollTo({ top: 0 }));

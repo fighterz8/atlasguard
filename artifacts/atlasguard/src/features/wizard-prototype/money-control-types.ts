@@ -6,11 +6,13 @@ export type ValueKey =
   | "targetTakeHome"
   | "currentHousing"
   | "targetHousing"
+  | "targetGrossIncome"
   | "currentExpenses"
   | "targetExpenses"
   | "retainedPropertyNet";
 export type BasisKey =
   | "targetTakeHomeBasis"
   | "targetHousingBasis"
+  | "targetGrossIncomeBasis"
   | "targetExpensesBasis"
   | "retainedPropertyNetBasis";

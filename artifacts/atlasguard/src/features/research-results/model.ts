@@ -9,12 +9,16 @@ import type {
   Finding,
   MetricEvidence,
   ScenarioInput,
+  VerifiedMoveWiseHouseholdAnswers,
   VerifiedResearchEvaluationResult,
 } from "@workspace/contracts";
 import {
   evaluateMoveWiseRule,
   evaluateResearchMoveDecision,
 } from "@workspace/decision-core";
+import type { MoveWiseDeterministicAnalysis } from "@workspace/decision-core";
+
+import { householdFactorLabels } from "../wizard-prototype/model";
 
 const dollars = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -54,6 +58,34 @@ const conditionCopy = {
     label: "High financial risk under these assumptions",
     summary:
       "At least one financial condition needs to be resolved before proceeding.",
+  },
+} as const;
+
+const deterministicConditionCopy = {
+  likely_better_move: {
+    label: "Likely better under these assumptions",
+    summary:
+      "The evaluated finances, daily-life evidence, and household fit show strong upside with no active safety or essential-needs gate.",
+  },
+  worth_closer_look: {
+    label: "Worth a closer look",
+    summary:
+      "The evaluated factors show net upside, with no active safety or essential-needs gate.",
+  },
+  promising_if: {
+    label: "Promising if…",
+    summary:
+      "The move may be a better fit if the household need you marked essential is confirmed.",
+  },
+  no_clear_advantage: {
+    label: "No clear advantage yet",
+    summary:
+      "The current assumptions do not show a clear enough advantage, or a caution or unmet household need is holding the result back.",
+  },
+  high_financial_risk: {
+    label: "High financial risk under these assumptions",
+    summary:
+      "A destination budget condition needs to be resolved before this move can receive a favorable result.",
   },
 } as const;
 
@@ -222,8 +254,43 @@ const scoreBlockerCopy = {
   },
 } as const;
 
+const deterministicBlockerCopy = {
+  negative_destination_cushion: {
+    label: "Negative destination cushion",
+    explanation:
+      "The destination budget falls below zero, so the deterministic rule prevents a favorable score.",
+  },
+  destination_housing_burden_at_or_above_50_percent: {
+    label: "Housing burden at or above 50%",
+    explanation:
+      "Destination housing reaches at least half of gross income, so the deterministic rule prevents a favorable score.",
+  },
+} as const;
+
+const deterministicMetricLabels = {
+  financial: "Monthly financial cushion",
+  commute: "Typical commute time",
+  climate: "Climate fit",
+} as const;
+
+const householdImpactLabels = {
+  strong_negative: "Much harder",
+  negative: "Somewhat harder",
+  neutral: "About the same",
+  positive: "Somewhat better",
+  strong_positive: "Much better",
+  unavailable: "Not sure yet",
+  excluded: "Excluded",
+} as const;
+
+type DeterministicResultsContext = Readonly<{
+  analysis: MoveWiseDeterministicAnalysis;
+  householdAnswers: VerifiedMoveWiseHouseholdAnswers;
+}>;
+
 export const createResearchResultsViewModel = (
   result: VerifiedResearchEvaluationResult = evaluateResearchScenario(),
+  deterministicContext?: DeterministicResultsContext,
 ) => {
   const profile = result.decisionProfile;
   const { analysis } = evaluateMoveWiseRule({ evaluation: result });
@@ -449,6 +516,136 @@ export const createResearchResultsViewModel = (
     );
   }
 
+  const deterministic = deterministicContext?.analysis;
+  const deterministicResult = deterministic?.result;
+  const deterministicAnswers = deterministicContext?.householdAnswers;
+  const deterministicContributions = deterministicResult
+    ? [
+        ...(["financial", "commute", "climate"] as const).map((id) => ({
+          label: deterministicMetricLabels[id],
+          contribution:
+            deterministicResult.metricContributions[id].contribution,
+        })),
+        ...deterministicResult.metricContributions.household.signals.map(
+          (signal) => ({
+            label:
+              householdFactorLabels[
+                signal.signalId as keyof typeof householdFactorLabels
+              ],
+            contribution: signal.contribution,
+          }),
+        ),
+      ].filter(({ contribution }) => contribution !== 0)
+    : [];
+  const deterministicStrongestEffect = deterministicContributions.sort(
+    (left, right) =>
+      Math.abs(right.contribution) - Math.abs(left.contribution) ||
+      right.contribution - left.contribution,
+  )[0];
+  const conditionalCount =
+    deterministicResult?.conditionalRequirementIds.length ?? 0;
+  const unmetCount = deterministicResult?.unmetRequirementIds.length ?? 0;
+  const confirmedEssentialCount =
+    deterministicAnswers?.factors.filter(
+      ({ importance, essentialStatus }) =>
+        importance === "essential" && essentialStatus === "confirmed_met",
+    ).length ?? 0;
+  const essentialSummary = deterministicResult
+    ? unmetCount > 0
+      ? {
+          label: `${unmetCount} essential ${unmetCount === 1 ? "need" : "needs"} not met`,
+          tone: "risk" as const,
+        }
+      : conditionalCount > 0
+        ? {
+            label: `${conditionalCount} essential ${conditionalCount === 1 ? "need" : "needs"} not confirmed`,
+            tone: "caution" as const,
+          }
+        : confirmedEssentialCount > 0
+          ? {
+              label: `${confirmedEssentialCount} essential ${confirmedEssentialCount === 1 ? "need" : "needs"} confirmed`,
+              tone: "favorable" as const,
+            }
+          : { label: "No essentials marked", tone: "neutral" as const }
+    : null;
+  const deterministicHousehold =
+    deterministicResult && deterministicAnswers
+      ? {
+          modeLabel:
+            deterministicAnswers.mode === "family"
+              ? "Household or family move"
+              : "Individual move",
+          summary: essentialSummary,
+          factors: deterministicAnswers.factors.map((answer) => {
+            const signal =
+              deterministicResult.metricContributions.household.signals.find(
+                ({ signalId }) => signalId === answer.factorId,
+              );
+            const statusLabel =
+              answer.importance === "not_applicable"
+                ? "Not part of my decision"
+                : answer.importance === "important"
+                  ? "Important"
+                  : answer.essentialStatus === "confirmed_met"
+                    ? "Essential — confirmed"
+                    : answer.essentialStatus === "unconfirmed"
+                      ? "Essential — not confirmed"
+                      : "Essential — not met";
+            const tone =
+              answer.importance === "not_applicable"
+                ? ("unavailable" as const)
+                : answer.essentialStatus === "confirmed_unmet"
+                  ? ("risk" as const)
+                  : answer.essentialStatus === "unconfirmed" ||
+                      answer.impact === "unavailable"
+                    ? ("caution" as const)
+                    : (signal?.contribution ?? 0) > 0
+                      ? ("favorable" as const)
+                      : (signal?.contribution ?? 0) < 0
+                        ? ("risk" as const)
+                        : ("neutral" as const);
+            return {
+              id: answer.factorId,
+              label: householdFactorLabels[answer.factorId],
+              statusLabel,
+              impactLabel: householdImpactLabels[answer.impact],
+              contribution: signal?.contribution ?? 0,
+              tone,
+            };
+          }),
+        }
+      : null;
+  const deterministicMissingComponents = deterministicResult
+    ? [
+        ...(deterministicResult.metricContributions.household.status ===
+          "excluded" ||
+        deterministicResult.metricContributions.household.status ===
+          "unavailable"
+          ? ["Household fit"]
+          : []),
+        "Opportunity context",
+      ]
+    : null;
+  const deterministicBlockerCode = deterministicResult
+    ?.activeBlockerCodes[0] as
+    | keyof typeof deterministicBlockerCopy
+    | undefined;
+  const profileVerificationSteps = profile.nextSteps
+    .filter(({ code }) => code !== "review_decision_evidence")
+    .map((step) => nextStepCopy[step.code] ?? step.code.replaceAll("_", " "));
+  const deterministicHouseholdSteps = deterministicResult
+    ? [
+        ...deterministicResult.conditionalRequirementIds.map(
+          (factorId) =>
+            `Confirm whether ${householdFactorLabels[factorId as keyof typeof householdFactorLabels].toLowerCase()} will work before relying on this result.`,
+        ),
+        ...deterministicResult.unmetRequirementIds.map(
+          (factorId) =>
+            `Resolve the unmet essential need: ${householdFactorLabels[factorId as keyof typeof householdFactorLabels].toLowerCase()}.`,
+        ),
+      ]
+    : [];
+
   return {
     releaseStatus: result.releaseStatus,
     route: {
@@ -457,27 +654,46 @@ export const createResearchResultsViewModel = (
       originMetro: profile.scenario.origin.label,
       destinationMetro: profile.scenario.destination.label,
     },
-    condition: conditionCopy[profile.condition.value],
+    condition: deterministicResult
+      ? deterministicConditionCopy[deterministicResult.condition]
+      : conditionCopy[profile.condition.value],
     decisionMeta: {
       routeLabel: `${profile.scenario.origin.selectedPlace.city} to ${profile.scenario.destination.selectedPlace.city}`,
       monthlyDifference: formatMoney(financialChange.monthlyCushionDeltaCents),
       financialDirection: financialChange.classification,
       confidenceLabel: confidenceLabels[profile.confidence.level],
       stabilityLabel: stabilityLabels[profile.stability.level],
+      ...(deterministicResult && essentialSummary
+        ? {
+            summarySignals: [
+              {
+                label: "Household essentials",
+                value: essentialSummary.label,
+                tone: essentialSummary.tone,
+              },
+              {
+                label: "Decision rule",
+                value: "Deterministic 0.2.0",
+                tone: "benchmark" as const,
+              },
+            ],
+          }
+        : {}),
     },
     score: {
-      value: analysis.score.value,
+      value: deterministicResult?.value ?? analysis.score.value,
       outOf: 100,
-      bandLabel: scoreBandLabels[analysis.score.band],
-      tone: scoreBandTones[analysis.score.band],
+      bandLabel:
+        scoreBandLabels[deterministicResult?.band ?? analysis.score.band],
+      tone: scoreBandTones[deterministicResult?.band ?? analysis.score.band],
       baselineMeaning: `50 means roughly even with ${profile.scenario.origin.selectedPlace.city} for your current inputs.`,
       boundary:
         "Not a probability, universal city grade, city ranking, or instruction to move.",
       range:
-        analysis.score.range === null
+        (deterministicResult?.range ?? analysis.score.range) === null
           ? null
           : {
-              label: `${analysis.score.range.min}–${analysis.score.range.max}`,
+              label: `${(deterministicResult?.range ?? analysis.score.range)!.min}–${(deterministicResult?.range ?? analysis.score.range)!.max}`,
               explanation:
                 "This estimate sensitivity range reruns the accepted low and high financial estimates. It is not a confidence interval.",
             },
@@ -490,8 +706,16 @@ export const createResearchResultsViewModel = (
         label: confidenceLabels[profile.confidence.level],
         explanation: confidenceExplanation,
       },
-      activeBlocker:
-        analysis.insights.activeBlocker === null
+      activeBlocker: deterministicResult
+        ? deterministicBlockerCode === undefined
+          ? null
+          : {
+              ...deterministicBlockerCopy[deterministicBlockerCode],
+              scoreCap: deterministicResult.appliedCap ?? 59,
+              evidenceRefs: [] as string[],
+              inputPaths: [] as string[],
+            }
+        : analysis.insights.activeBlocker === null
           ? null
           : {
               ...scoreBlockerCopy[analysis.insights.activeBlocker.code],
@@ -524,15 +748,27 @@ export const createResearchResultsViewModel = (
               ],
             },
       strongestEffect:
-        strongestEffect === undefined
+        (deterministicResult
+          ? deterministicStrongestEffect
+          : strongestEffect) === undefined
           ? null
           : {
-              label: scoreMetricLabels[strongestEffect.metricId],
-              contribution: strongestEffect.contribution,
-              kind: strongestEffect.kind,
+              label: deterministicResult
+                ? deterministicStrongestEffect!.label
+                : scoreMetricLabels[strongestEffect!.metricId],
+              contribution: deterministicResult
+                ? deterministicStrongestEffect!.contribution
+                : strongestEffect!.contribution,
+              kind: (
+                deterministicResult
+                  ? deterministicStrongestEffect!.contribution > 0
+                  : strongestEffect!.kind === "lift"
+              )
+                ? ("lift" as const)
+                : ("tradeoff" as const),
             },
       decisionChangingAssumption:
-        decisionChangingAssumption === null
+        deterministicResult || decisionChangingAssumption === null
           ? null
           : {
               label:
@@ -554,12 +790,28 @@ export const createResearchResultsViewModel = (
                 decisionChangingAssumption.withinPlausibleRange,
               evidenceRefs: [...decisionChangingAssumption.evidenceRefs],
             },
-      missingComponents: analysis.insights.missingComponents.map(
-        (componentId) => scoreComponentLabels[componentId],
-      ),
-      calculationEvidenceRefs: scoreCalculationEvidenceRefs,
-      scoreVersion: analysis.score.scoreVersion,
+      missingComponents:
+        deterministicMissingComponents ??
+        analysis.insights.missingComponents.map(
+          (componentId) => scoreComponentLabels[componentId],
+        ),
+      calculationEvidenceRefs: deterministic
+        ? [
+            `input:${deterministic.reproducibility.inputFingerprintSha256}`,
+            `household:${deterministic.reproducibility.householdAnswerSha256}`,
+            `benchmark:${deterministic.reproducibility.benchmarkSnapshotSha256}`,
+          ]
+        : scoreCalculationEvidenceRefs,
+      scoreVersion: deterministic?.ruleVersion ?? analysis.score.scoreVersion,
+      mode: deterministicResult
+        ? ("deterministic" as const)
+        : ("legacy" as const),
+      essentialSummary,
+      cautionCodes: deterministicResult
+        ? [...deterministicResult.cautionCodes]
+        : [],
     },
+    household: deterministicHousehold,
     confidence: {
       level: profile.confidence.level,
       explanation: confidenceExplanation,
@@ -694,14 +946,9 @@ export const createResearchResultsViewModel = (
       blockers: profile.findings.blockers.map(findingText),
       assumptions: profile.findings.assumptions.map(findingText),
     },
-    nextSteps: [
-      nextStepCopy.review_decision_evidence,
-      ...profile.nextSteps
-        .filter(({ code }) => code !== "review_decision_evidence")
-        .map(
-          (step) => nextStepCopy[step.code] ?? step.code.replaceAll("_", " "),
-        ),
-    ],
+    nextSteps: deterministicResult
+      ? [...deterministicHouseholdSteps, ...profileVerificationSteps]
+      : [nextStepCopy.review_decision_evidence, ...profileVerificationSteps],
     evidence: {
       definition: commuteMetric.definition,
       dataset: commuteMetric.source.dataset,

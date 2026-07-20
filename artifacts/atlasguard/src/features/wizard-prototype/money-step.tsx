@@ -14,6 +14,7 @@ type MoneyStepProps = {
   errors: WizardErrors;
   onValueChange: (key: ValueKey, value: string) => void;
   onBasisChange: (key: BasisKey, value: AssumptionBasis) => void;
+  onGrossKnownChange: (value: boolean) => void;
   onCopyCurrent: () => void;
 };
 
@@ -22,13 +23,14 @@ export function MoneyStep({
   errors,
   onValueChange,
   onBasisChange,
+  onGrossKnownChange,
   onCopyCurrent,
 }: MoneyStepProps) {
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 2 of 3</p>
+          <p className="eyebrow">Step 2 of 4</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
@@ -74,6 +76,56 @@ export function MoneyStep({
             onBasisChange={onBasisChange}
           />
         ))}
+
+        <fieldset className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <legend className="px-1 text-sm font-semibold text-slate-950">
+            What would your household’s total monthly income be before taxes in
+            the destination?
+          </legend>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            This is used only for the housing-burden check. MoveWise will not
+            guess gross income from your take-home pay.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-5">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
+              <input
+                type="radio"
+                name="targetGrossIncomeKnown"
+                checked={finances.targetGrossIncomeKnown}
+                onChange={() => onGrossKnownChange(true)}
+                className="h-4 w-4 accent-teal-800"
+              />
+              Enter monthly gross income
+            </label>
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
+              <input
+                type="radio"
+                name="targetGrossIncomeKnown"
+                checked={!finances.targetGrossIncomeKnown}
+                onChange={() => onGrossKnownChange(false)}
+                className="h-4 w-4 accent-teal-800"
+              />
+              I don’t know
+            </label>
+          </div>
+          {finances.targetGrossIncomeKnown ? (
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <MoneyInput
+                id="targetGrossIncome"
+                label="Destination gross income"
+                description="Total monthly household income before taxes. Use an estimate if it is not confirmed yet."
+                value={finances.targetGrossIncome}
+                basis={finances.targetGrossIncomeBasis}
+                basisKey="targetGrossIncomeBasis"
+                error={errors["finances.targetGrossIncome"]}
+                onValueChange={(value) =>
+                  onValueChange("targetGrossIncome", value)
+                }
+                onBasisChange={onBasisChange}
+              />
+            </div>
+          ) : null}
+        </fieldset>
 
         <details className="rounded-xl border border-slate-200 bg-slate-50">
           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 marker:hidden">

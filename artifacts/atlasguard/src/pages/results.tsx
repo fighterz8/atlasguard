@@ -4,6 +4,7 @@ import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 import { ComparisonOverview } from "@/features/research-results/comparison-overview";
 import { DecisionNotes } from "@/features/research-results/decision-notes";
 import { EvidencePanel } from "@/features/research-results/evidence-panel";
+import { HouseholdFit } from "@/features/research-results/household-fit";
 import {
   createResearchResultsViewModel,
   type ResearchResultsViewModel,
@@ -70,6 +71,8 @@ export function ResearchResultsExperience({
         <SummaryPanel {...model} />
 
         <ScoreExplanation score={model.score} />
+
+        {model.household ? <HouseholdFit household={model.household} /> : null}
 
         <ComparisonOverview
           route={model.route}

@@ -11,12 +11,25 @@ const validDraft = (): WizardPrototypeDraft => ({
   ...createInitialWizardDraft(),
   originSlug: "los-angeles-ca",
   destinationSlug: "seattle-wa",
+  householdMode: "individual",
+  householdFactors: {
+    ...createInitialWizardDraft().householdFactors,
+    space_fit: { role: "not_applicable", impact: "" },
+    support_network: { role: "not_applicable", impact: "" },
+    required_services_continuity: {
+      role: "not_applicable",
+      impact: "",
+    },
+    car_free_access: { role: "not_applicable", impact: "" },
+  },
   finances: {
     ...createInitialWizardDraft().finances,
     currentTakeHome: "5,000",
     targetTakeHome: "5250",
     currentHousing: "2000",
     targetHousing: "1750",
+    targetGrossIncomeKnown: true,
+    targetGrossIncome: "7000",
     currentExpenses: "1500",
     targetExpenses: "1,250",
     retainedPropertyNet: "-400",
@@ -58,7 +71,11 @@ describe("Wizard scenario adapter", () => {
             basis: "confirmed",
             plausibleRangeCents: null,
           },
-          grossIncome: null,
+          grossIncome: {
+            monthlyCents: 700_000,
+            basis: "user_estimate",
+            plausibleRangeCents: null,
+          },
           retainedPropertyNet: {
             monthlyCents: -40_000,
             basis: "user_estimate",
@@ -144,13 +161,28 @@ describe("Wizard scenario adapter", () => {
     if (!result.success) return;
 
     expect(result.scenario.finances.origin.grossIncome).toBeNull();
-    expect(result.scenario.finances.destination.grossIncome).toBeNull();
+    expect(result.scenario.finances.destination.grossIncome).toMatchObject({
+      monthlyCents: 700_000,
+      basis: "user_estimate",
+    });
     expect(
       result.scenario.finances.destination.takeHomeIncome.plausibleRangeCents,
     ).toBeNull();
     expect(
       result.scenario.finances.destination.housingCost.plausibleRangeCents,
     ).toEqual({ min: 150_000, max: 200_000 });
+  });
+
+  it("preserves unknown destination gross income as null", () => {
+    const draft = validDraft();
+    draft.finances.targetGrossIncomeKnown = false;
+    draft.finances.targetGrossIncome = "";
+
+    const result = adaptWizardDraftToScenarioInput(draft);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.scenario.finances.destination.grossIncome).toBeNull();
+    }
   });
 
   it("keeps point estimates valid when no uncertainty range is supplied", () => {

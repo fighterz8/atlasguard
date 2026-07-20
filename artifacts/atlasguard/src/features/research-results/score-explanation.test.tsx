@@ -3,8 +3,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { ScoreExplanation } from "./score-explanation";
+import { HouseholdFit } from "./household-fit";
 import { createResearchResultsViewModel } from "./model";
 import { SummaryPanel } from "./summary-panel";
+import { evaluateWizardDraft } from "../wizard-prototype/evaluate-wizard-draft";
+import { createInitialWizardDraft } from "../wizard-prototype/model";
 
 describe("MoveWise score presentation", () => {
   it("introduces the relative score without displacing the canonical decision", () => {
@@ -69,5 +72,66 @@ describe("MoveWise score presentation", () => {
     expect(html).toContain("Score capped at 59");
     expect(html).toContain("Negative destination cushion");
     expect(html).toContain("prevents a favorable score");
+  });
+
+  it("explains deterministic essentials and user-supplied household factors", () => {
+    const draft = createInitialWizardDraft();
+    Object.assign(draft, {
+      originSlug: "los-angeles-ca",
+      destinationSlug: "seattle-wa",
+      householdMode: "individual",
+    });
+    Object.assign(draft.finances, {
+      currentTakeHome: "5000",
+      targetTakeHome: "5250",
+      currentHousing: "2000",
+      targetHousing: "1750",
+      currentExpenses: "1500",
+      targetExpenses: "1250",
+    });
+    draft.householdFactors.space_fit = {
+      role: "important",
+      impact: "positive",
+    };
+    draft.householdFactors.support_network = {
+      role: "essential_unconfirmed",
+      impact: "unavailable",
+    };
+    draft.householdFactors.required_services_continuity = {
+      role: "not_applicable",
+      impact: "",
+    };
+    draft.householdFactors.car_free_access = {
+      role: "not_applicable",
+      impact: "",
+    };
+    const evaluation = evaluateWizardDraft(draft);
+    expect(evaluation.success).toBe(true);
+    if (!evaluation.success) return;
+    const model = createResearchResultsViewModel(evaluation.evaluation, {
+      analysis: evaluation.deterministicAnalysis,
+      householdAnswers: evaluation.householdAnswers,
+    });
+    expect(model.household).not.toBeNull();
+    if (!model.household) return;
+
+    const summaryHtml = renderToStaticMarkup(<SummaryPanel {...model} />);
+    const scoreHtml = renderToStaticMarkup(
+      <ScoreExplanation score={model.score} />,
+    );
+    const householdHtml = renderToStaticMarkup(
+      <HouseholdFit household={model.household} />,
+    );
+
+    expect(summaryHtml).toContain("Promising if…");
+    expect(summaryHtml).toContain("Deterministic 0.2.0");
+    expect(summaryHtml).toContain("1 essential need not confirmed");
+    expect(scoreHtml).toContain("Essential-needs check");
+    expect(scoreHtml).toContain("Score rule 0.2.0");
+    expect(householdHtml).toContain("Enough suitable space");
+    expect(householdHtml).toContain("Somewhat better");
+    expect(householdHtml).toContain("+10 points");
+    expect(householdHtml).toContain("Not part of my decision");
+    expect(householdHtml).toContain("No score change");
   });
 });

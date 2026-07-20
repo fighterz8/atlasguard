@@ -109,6 +109,13 @@ export function adaptWizardDraftToScenarioInput(
       errors,
     ),
   };
+  const targetGrossIncome = draft.finances.targetGrossIncomeKnown
+    ? dollarsToCents(
+        draft.finances.targetGrossIncome,
+        "finances.targetGrossIncome",
+        errors,
+      )
+    : null;
 
   const ranges = {
     targetTakeHome: rangeToCents(
@@ -125,6 +132,15 @@ export function adaptWizardDraftToScenarioInput(
       "finances.targetHousing",
       errors,
     ),
+    targetGrossIncome: draft.finances.targetGrossIncomeKnown
+      ? rangeToCents(
+          draft.finances.targetGrossIncomeBasis,
+          draft.finances.targetGrossIncomeRangeMin,
+          draft.finances.targetGrossIncomeRangeMax,
+          "finances.targetGrossIncome",
+          errors,
+        )
+      : null,
     targetExpenses: rangeToCents(
       draft.finances.targetExpensesBasis,
       draft.finances.targetExpensesRangeMin,
@@ -174,7 +190,13 @@ export function adaptWizardDraftToScenarioInput(
           draft.finances.targetTakeHomeBasis,
           ranges.targetTakeHome,
         ),
-        grossIncome: null,
+        grossIncome: draft.finances.targetGrossIncomeKnown
+          ? assumption(
+              targetGrossIncome!,
+              draft.finances.targetGrossIncomeBasis,
+              ranges.targetGrossIncome,
+            )
+          : null,
         housingCost: assumption(
           cents.targetHousing!,
           draft.finances.targetHousingBasis,
