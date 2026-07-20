@@ -1,7 +1,10 @@
 import {
+  calculateHousingBurdenBps,
   DETERMINISTIC_MODEL_INPUT_SCHEMA_VERSION,
   DETERMINISTIC_MODEL_RULE_VERSION,
   DeterministicModelInputSchema,
+  FINANCIAL_INPUT_EVIDENCE_IDS,
+  MAX_MONTHLY_CENTS,
   roundHalfAwayFromZero,
 } from "@workspace/contracts";
 import type {
@@ -21,7 +24,7 @@ import type { DeterministicModelResult } from "./deterministic-model-0-2";
 import { evaluateMoveDecision, evaluateResearchMoveDecision } from "./evaluate";
 import { enumeratePlausibleFinancialEndpoints } from "./financial-range-endpoints";
 
-export const MOVEWISE_DETERMINISTIC_ANALYSIS_SCHEMA_VERSION = "1.0.0" as const;
+export const MOVEWISE_DETERMINISTIC_ANALYSIS_SCHEMA_VERSION = "1.1.0" as const;
 
 type MoveWiseEvaluation =
   | VerifiedEvaluationResult
@@ -45,12 +48,24 @@ export type MoveWiseDeterministicRange = Readonly<{
   endpoints: readonly MoveWiseDeterministicRangeEndpoint[];
 }>;
 
+export type MoveWiseDeterministicDecisionChange = Readonly<{
+  inputPath: FinancialInputPath;
+  operator: "at_or_above" | "at_or_below";
+  currentValueCents: number;
+  thresholdCents: number;
+  distanceCents: number;
+  changesConditionTo: DeterministicModelResult["condition"];
+  withinPlausibleRange: boolean;
+  evidenceRefs: readonly string[];
+}>;
+
 export type MoveWiseDeterministicAnalysis = Readonly<{
   schemaVersion: typeof MOVEWISE_DETERMINISTIC_ANALYSIS_SCHEMA_VERSION;
   ruleVersion: typeof DETERMINISTIC_MODEL_RULE_VERSION;
   input: DeterministicModelInput;
   result: DeterministicModelResult;
   range: MoveWiseDeterministicRange | null;
+  decisionChanges: readonly MoveWiseDeterministicDecisionChange[];
   reproducibility: Readonly<{
     inputFingerprintSha256: string;
     benchmarkSnapshotVersion: string;
@@ -178,6 +193,196 @@ const reevaluate = (
 const sortedUnion = (values: readonly (readonly string[])[]): string[] =>
   Array.from(new Set(values.flat())).sort();
 
+const DETERMINISTIC_DECISION_CHANGE_PATHS = [
+  "finances.destination.takeHomeIncome.monthlyCents",
+  "finances.destination.grossIncome.monthlyCents",
+  "finances.destination.housingCost.monthlyCents",
+  "finances.destination.recurringExpensesExcludingHousing.monthlyCents",
+  "finances.destination.retainedPropertyNet.monthlyCents",
+] as const satisfies readonly FinancialInputPath[];
+
+type DeterministicDecisionChangePath =
+  (typeof DETERMINISTIC_DECISION_CHANGE_PATHS)[number];
+
+const assumptionForDecisionChange = (
+  scenario: ScenarioInput | DeepReadonly<ScenarioInput>,
+  path: DeterministicDecisionChangePath,
+) => {
+  const destination = scenario.finances.destination;
+  switch (path) {
+    case "finances.destination.takeHomeIncome.monthlyCents":
+      return destination.takeHomeIncome;
+    case "finances.destination.grossIncome.monthlyCents":
+      return destination.grossIncome;
+    case "finances.destination.housingCost.monthlyCents":
+      return destination.housingCost;
+    case "finances.destination.recurringExpensesExcludingHousing.monthlyCents":
+      return destination.recurringExpensesExcludingHousing;
+    case "finances.destination.retainedPropertyNet.monthlyCents":
+      return destination.retainedPropertyNet;
+  }
+};
+
+const inputAtDecisionChangeValue = (
+  input: DeterministicModelInput,
+  scenario: ScenarioInput | DeepReadonly<ScenarioInput>,
+  path: DeterministicDecisionChangePath,
+  value: number,
+): DeterministicModelInput => {
+  if (
+    input.monthlyCushionDeltaCents === null ||
+    input.destinationMonthlyCushionCents === null
+  ) {
+    throw new MoveWiseDeterministicAdapterPreflightError(
+      "Rule 0.2.0 decision-change analysis requires exact financial cushions.",
+    );
+  }
+  const destination = scenario.finances.destination;
+  const assumption = assumptionForDecisionChange(scenario, path);
+  if (assumption === null) {
+    throw new MoveWiseDeterministicAdapterPreflightError(
+      `Cannot vary unavailable input ${path}.`,
+    );
+  }
+  const change = value - assumption.monthlyCents;
+  const addsToCushion =
+    path === "finances.destination.takeHomeIncome.monthlyCents" ||
+    path === "finances.destination.retainedPropertyNet.monthlyCents";
+  const changesCushion =
+    path !== "finances.destination.grossIncome.monthlyCents";
+  const cushionChange = changesCushion ? (addsToCushion ? change : -change) : 0;
+  const housingCents =
+    path === "finances.destination.housingCost.monthlyCents"
+      ? value
+      : destination.housingCost.monthlyCents;
+  const grossIncomeCents =
+    path === "finances.destination.grossIncome.monthlyCents"
+      ? value
+      : (destination.grossIncome?.monthlyCents ?? null);
+  const takeHomeCents =
+    path === "finances.destination.takeHomeIncome.monthlyCents"
+      ? value
+      : destination.takeHomeIncome.monthlyCents;
+
+  const housingBurdenBps = calculateHousingBurdenBps(
+    housingCents,
+    grossIncomeCents,
+  );
+
+  return {
+    ...input,
+    monthlyCushionDeltaCents: input.monthlyCushionDeltaCents + cushionChange,
+    destinationMonthlyCushionCents:
+      input.destinationMonthlyCushionCents + cushionChange,
+    lowCushionCautionThresholdCents: Math.max(
+      50_000,
+      roundHalfAwayFromZero(takeHomeCents / 10),
+    ),
+    destinationHousingBurdenBps:
+      housingBurdenBps === null ? null : Math.min(10_000, housingBurdenBps),
+  };
+};
+
+const deriveDecisionChanges = (
+  scenario: ScenarioInput | DeepReadonly<ScenarioInput>,
+  input: DeterministicModelInput,
+  baseline: DeterministicModelResult,
+): MoveWiseDeterministicDecisionChange[] =>
+  DETERMINISTIC_DECISION_CHANGE_PATHS.flatMap((path) => {
+    const assumption = assumptionForDecisionChange(scenario, path);
+    if (assumption === null) return [];
+    const currentValueCents = assumption.monthlyCents;
+    const minimum =
+      path === "finances.destination.retainedPropertyNet.monthlyCents"
+        ? -MAX_MONTHLY_CENTS
+        : path === "finances.destination.grossIncome.monthlyCents"
+          ? 1
+          : 0;
+    const maximum =
+      path === "finances.destination.retainedPropertyNet.monthlyCents" &&
+      input.destinationMonthlyCushionCents !== null &&
+      input.monthlyCushionDeltaCents !== null
+        ? Math.min(
+            MAX_MONTHLY_CENTS,
+            currentValueCents +
+              (MAX_MONTHLY_CENTS - input.destinationMonthlyCushionCents),
+            currentValueCents +
+              (MAX_MONTHLY_CENTS - input.monthlyCushionDeltaCents),
+          )
+        : MAX_MONTHLY_CENTS;
+    const cache = new Map<number, DeterministicModelResult["condition"]>();
+    const conditionAt = (value: number) => {
+      const cached = cache.get(value);
+      if (cached !== undefined) return cached;
+      const condition = evaluateDeterministicModel(
+        inputAtDecisionChangeValue(input, scenario, path, value),
+      ).condition;
+      cache.set(value, condition);
+      return condition;
+    };
+    const thresholdForRight = () => {
+      if (
+        currentValueCents >= maximum ||
+        conditionAt(maximum) === baseline.condition
+      ) {
+        return null;
+      }
+      let low = currentValueCents + 1;
+      let high = maximum;
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (conditionAt(middle) === baseline.condition) low = middle + 1;
+        else high = middle;
+      }
+      return low;
+    };
+    const thresholdForLeft = () => {
+      if (
+        currentValueCents <= minimum ||
+        conditionAt(minimum) === baseline.condition
+      ) {
+        return null;
+      }
+      let low = minimum;
+      let high = currentValueCents;
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (conditionAt(middle) === baseline.condition) high = middle;
+        else low = middle + 1;
+      }
+      return low - 1;
+    };
+    const plausibleRange = assumption.plausibleRangeCents;
+    return [
+      { thresholdCents: thresholdForLeft(), operator: "at_or_below" as const },
+      { thresholdCents: thresholdForRight(), operator: "at_or_above" as const },
+    ].flatMap(({ thresholdCents, operator }) =>
+      thresholdCents === null
+        ? []
+        : [
+            {
+              inputPath: path,
+              operator,
+              currentValueCents,
+              thresholdCents,
+              distanceCents: Math.abs(thresholdCents - currentValueCents),
+              changesConditionTo: conditionAt(thresholdCents),
+              withinPlausibleRange:
+                plausibleRange !== null &&
+                thresholdCents >= plausibleRange.min &&
+                thresholdCents <= plausibleRange.max,
+              evidenceRefs: [FINANCIAL_INPUT_EVIDENCE_IDS[path]],
+            },
+          ],
+    );
+  }).sort(
+    (left, right) =>
+      Number(right.withinPlausibleRange) - Number(left.withinPlausibleRange) ||
+      left.distanceCents - right.distanceCents ||
+      left.inputPath.localeCompare(right.inputPath) ||
+      left.operator.localeCompare(right.operator),
+  );
+
 export const evaluateMoveWiseDeterministicModel = (
   evaluation: MoveWiseEvaluation,
   householdAnswers: VerifiedMoveWiseHouseholdAnswers,
@@ -255,6 +460,11 @@ export const evaluateMoveWiseDeterministicModel = (
             }),
           ),
         };
+  const decisionChanges = deriveDecisionChanges(
+    evaluation.scenarioInput,
+    input,
+    point,
+  );
 
   return deepFreeze({
     schemaVersion: MOVEWISE_DETERMINISTIC_ANALYSIS_SCHEMA_VERSION,
@@ -262,6 +472,7 @@ export const evaluateMoveWiseDeterministicModel = (
     input,
     result,
     range,
+    decisionChanges,
     reproducibility: {
       inputFingerprintSha256: evaluation.decisionProfile.inputFingerprintSha256,
       benchmarkSnapshotVersion: evaluation.benchmarkComparison.snapshot.version,

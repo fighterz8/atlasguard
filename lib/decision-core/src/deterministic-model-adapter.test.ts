@@ -179,7 +179,7 @@ describe("MoveWise deterministic-model verified adapter", () => {
       essentialRequirements: [],
     });
     expect(analysis).toMatchObject({
-      schemaVersion: "1.0.0",
+      schemaVersion: "1.1.0",
       ruleVersion: "0.2.0",
       input,
       result: {
@@ -188,6 +188,18 @@ describe("MoveWise deterministic-model verified adapter", () => {
         condition: "likely_better_move",
       },
       range: null,
+      decisionChanges: expect.arrayContaining([
+        {
+          inputPath: "finances.destination.takeHomeIncome.monthlyCents",
+          operator: "at_or_below",
+          currentValueCents: 560_000,
+          thresholdCents: 528_750,
+          distanceCents: 31_250,
+          changesConditionTo: "worth_closer_look",
+          withinPlausibleRange: false,
+          evidenceRefs: ["input.destination.take_home"],
+        },
+      ]),
       reproducibility: {
         inputFingerprintSha256:
           evaluation.decisionProfile.inputFingerprintSha256,
@@ -204,6 +216,46 @@ describe("MoveWise deterministic-model verified adapter", () => {
         endpointInputFingerprintSha256: [],
       },
     });
+  });
+
+  it("derives exact rule-0.2 decision changes without falling back to the legacy rule", () => {
+    const input = confirmedInput();
+    const evaluation = evaluateMoveDecision(input, benchmarkWith());
+    const analysis = evaluateMoveWiseDeterministicModel(
+      evaluation,
+      familyAnswers(),
+    );
+    const takeHomeChange = analysis.decisionChanges.find(
+      ({ inputPath }) =>
+        inputPath === "finances.destination.takeHomeIncome.monthlyCents",
+    );
+
+    expect(takeHomeChange).toMatchObject({
+      operator: "at_or_below",
+      currentValueCents: 560_000,
+      thresholdCents: 528_750,
+      distanceCents: 31_250,
+      changesConditionTo: "worth_closer_look",
+      withinPlausibleRange: false,
+    });
+
+    const justSafe = confirmedInput();
+    justSafe.finances.destination.takeHomeIncome.monthlyCents = 528_751;
+    const atThreshold = confirmedInput();
+    atThreshold.finances.destination.takeHomeIncome.monthlyCents = 528_750;
+
+    expect(
+      evaluateMoveWiseDeterministicModel(
+        evaluateMoveDecision(justSafe, benchmarkWith()),
+        familyAnswers(),
+      ).result.condition,
+    ).toBe("likely_better_move");
+    expect(
+      evaluateMoveWiseDeterministicModel(
+        evaluateMoveDecision(atThreshold, benchmarkWith()),
+        familyAnswers(),
+      ).result.condition,
+    ).toBe("worth_closer_look");
   });
 
   it("derives the $500 floor and the 10% low-cushion threshold", () => {
