@@ -68,6 +68,19 @@ Second replacement preview:
 - Deployment: `dpl_Cfzae6m9nv5RL5BCLLaZT78uPn1M`
 - Wizard: `https://movewise-eyz0toi8e-fighterz8s-projects.vercel.app/research/wizard`
 
+### Real WebKit root-cause correction
+
+The classic bundle still failed on the physical iPhone. Playwright WebKit then reproduced the exact hosted failure rather than relying on Chromium device emulation. The application was failing closed because WebKit and V8 produced adjacent IEEE-754 results for the ACS commute margin-of-error calculation through their native `Math.hypot` implementations. That one-bit difference changed the checksum-bound Austin metro profile. A scaled, engine-independent Euclidean-norm implementation now produces the already-approved V8 value in both engines, so no benchmark checksum, score, rule, or calibration result changed.
+
+The same WebKit run identified an unrelated rejected promise in Vercel's injected preview-feedback toolbar. It occurs outside the MoveWise bundle after the application renders and does not block the Wizard. Replit development plugins are nevertheless now restricted to Vite's development command and cannot enter application builds.
+
+Full verification passes 52 files / 376 tests. A production build and the exact hosted preview both render the Wizard in real WebKit with an iPhone 16 Chrome user agent; the MoveWise application itself reports no startup exception or failed request. Physical-device confirmation remains the final acceptance gate.
+
+Third replacement preview:
+
+- Deployment: `dpl_2wFhxc4mUBHByh6oPsN22gPQAic2`
+- Wizard: `https://movewise-acdm7xtb4-fighterz8s-projects.vercel.app/research/wizard`
+
 ## Preserved boundaries
 
 This slice does not change accepted rule-`0.2.0` scoring, weights, caps, conditions, or fixture outcomes. It adds no minimum-evidence gate, rule `0.3.0`, numeric tax calculator, storage, public API activation, external data provider, push, merge, or production deployment.
