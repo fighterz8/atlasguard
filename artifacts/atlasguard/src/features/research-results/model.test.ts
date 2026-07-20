@@ -378,7 +378,7 @@ describe("research results view model", () => {
     );
   });
 
-  it("labels MoveWise defaults separately from user overrides and shows tenure", () => {
+  it("labels public estimates, baselines, overrides, and transition tenure separately", () => {
     const evaluation = evaluateWizardDraft(reviewedDraft());
     expect(evaluation.success).toBe(true);
     if (!evaluation.success) return;
@@ -387,26 +387,27 @@ describe("research results view model", () => {
       analysis: evaluation.deterministicAnalysis,
       householdAnswers: evaluation.householdAnswers,
       destinationAssumptions: {
-        takeHome: "movewise_baseline",
+        takeHome: "movewise_public_estimate",
         housing: "user_override",
         expenses: "movewise_baseline",
         currentHousingTenure: "own",
-        destinationHousingTenure: "rent",
+        destinationHousingTenure: "rent_then_buy",
+        incomeGuidance: null,
       },
     });
 
     expect(model.score.readiness.explanation).toContain(
-      "2 destination amounts are still using the visible MoveWise starting baseline",
+      "1 destination amount is still using the visible MoveWise starting baseline",
     );
     expect(model.comparison.financialRows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: "take_home_income",
-          sourceLabel: "MoveWise starting assumption",
+          sourceLabel: "MoveWise public-data estimate",
         }),
         expect.objectContaining({
           id: "housing_cost",
-          label: "Housing · owning → renting",
+          label: "Housing · owning → renting first, buying later",
           sourceLabel: "You told us",
         }),
         expect.objectContaining({

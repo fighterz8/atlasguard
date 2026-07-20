@@ -111,6 +111,7 @@ function YesNoQuestion({
 const tenureOptions = [
   { value: "rent", label: "Rent" },
   { value: "buy", label: "Buy" },
+  { value: "rent_then_buy", label: "Rent first, buy later" },
   { value: "either", label: "Open to either" },
 ] as const;
 const housingTypeOptions = [
@@ -201,7 +202,7 @@ export function HouseholdStep({
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <SelectField
               id="householdPlan-housing-tenure"
-              label="Rent or buy"
+              label="Housing plan after the move"
               value={plan.housing.tenure}
               options={tenureOptions}
               error={errors["householdPlan.housing.tenure"]}

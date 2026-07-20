@@ -1,13 +1,20 @@
-import type { WizardPrototypeDraft } from "./model";
+import { getResearchMetroIncomeGuidance } from "@workspace/benchmark-data";
+import type { ResearchMetroIncomeGuidance } from "@workspace/benchmark-data";
 
-export type DestinationPlanningSource = "movewise_baseline" | "user_override";
+import type { HousingTenure, WizardPrototypeDraft } from "./model";
+
+export type DestinationPlanningSource =
+  | "movewise_public_estimate"
+  | "movewise_baseline"
+  | "user_override";
 
 export type DestinationPlanningAssumptions = Readonly<{
   takeHome: DestinationPlanningSource;
   housing: DestinationPlanningSource;
   expenses: DestinationPlanningSource;
   currentHousingTenure: "rent" | "own";
-  destinationHousingTenure: "rent" | "buy" | "either";
+  destinationHousingTenure: HousingTenure;
+  incomeGuidance: ResearchMetroIncomeGuidance | null;
 }>;
 
 const useDestinationValue = (
@@ -24,10 +31,24 @@ export function createDestinationPlanningDraft(
   evaluatedDraft: WizardPrototypeDraft;
   assumptions: DestinationPlanningAssumptions;
 }> {
-  const takeHome = useDestinationValue(
-    draft.finances.targetTakeHome,
-    draft.finances.currentTakeHome,
+  const currentTakeHome = Number(
+    draft.finances.currentTakeHome.trim().replace(/,/g, ""),
   );
+  const incomeGuidance = getResearchMetroIncomeGuidance(
+    draft.originSlug,
+    draft.destinationSlug,
+    currentTakeHome,
+  );
+  const takeHome =
+    draft.finances.targetTakeHome.trim() === "" && incomeGuidance !== null
+      ? {
+          value: String(incomeGuidance.suggestedMonthlyTakeHomeDollars),
+          source: "movewise_public_estimate" as const,
+        }
+      : useDestinationValue(
+          draft.finances.targetTakeHome,
+          draft.finances.currentTakeHome,
+        );
   const housing = useDestinationValue(
     draft.finances.targetHousing,
     draft.finances.currentHousing,
@@ -53,9 +74,17 @@ export function createDestinationPlanningDraft(
         targetHousing: housing.value,
         targetExpenses: expenses.value,
         targetTakeHomeBasis:
-          takeHome.source === "movewise_baseline"
+          takeHome.source !== "user_override"
             ? "user_estimate"
             : draft.finances.targetTakeHomeBasis,
+        targetTakeHomeRangeMin:
+          takeHome.source === "movewise_public_estimate"
+            ? String(incomeGuidance!.plausibleMonthlyTakeHomeRangeDollars.low)
+            : draft.finances.targetTakeHomeRangeMin,
+        targetTakeHomeRangeMax:
+          takeHome.source === "movewise_public_estimate"
+            ? String(incomeGuidance!.plausibleMonthlyTakeHomeRangeDollars.high)
+            : draft.finances.targetTakeHomeRangeMax,
         targetHousingBasis:
           housing.source === "movewise_baseline"
             ? "user_estimate"
@@ -72,6 +101,7 @@ export function createDestinationPlanningDraft(
       expenses: expenses.source,
       currentHousingTenure: draft.finances.currentHousingTenure,
       destinationHousingTenure: draft.householdPlan.housing.tenure,
+      incomeGuidance,
     },
   };
 }

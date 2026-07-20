@@ -36,19 +36,23 @@ describe("Wizard submission routing", () => {
     expect(result.kind).toBe("deterministic");
     expect(result.deterministicAnalysis.ruleVersion).toBe("0.2.0");
     expect(result.evaluation.scenarioInput.finances.destination).toMatchObject({
-      takeHomeIncome: { monthlyCents: 620_000, basis: "user_estimate" },
+      takeHomeIncome: { monthlyCents: 567_500, basis: "user_estimate" },
       housingCost: { monthlyCents: 260_000, basis: "user_estimate" },
       recurringExpensesExcludingHousing: {
         monthlyCents: 210_000,
         basis: "user_estimate",
       },
     });
-    expect(result.destinationAssumptions).toEqual({
-      takeHome: "movewise_baseline",
+    expect(result.destinationAssumptions).toMatchObject({
+      takeHome: "movewise_public_estimate",
       housing: "movewise_baseline",
       expenses: "movewise_baseline",
       currentHousingTenure: "rent",
       destinationHousingTenure: "rent",
+      incomeGuidance: {
+        suggestedMonthlyTakeHomeDollars: 5_675,
+        destinationToOriginRatioBps: 9_154,
+      },
     });
   });
 
@@ -81,12 +85,12 @@ describe("Wizard submission routing", () => {
     expect(result.success).toBe(true);
     if (!result.success) return;
     expect(result.evaluation.scenarioInput.finances.destination).toMatchObject({
-      takeHomeIncome: { monthlyCents: 620_000 },
+      takeHomeIncome: { monthlyCents: 567_500 },
       housingCost: { monthlyCents: 220_000 },
       recurringExpensesExcludingHousing: { monthlyCents: 210_000 },
     });
     expect(result.destinationAssumptions).toMatchObject({
-      takeHome: "movewise_baseline",
+      takeHome: "movewise_public_estimate",
       housing: "user_override",
       expenses: "movewise_baseline",
     });

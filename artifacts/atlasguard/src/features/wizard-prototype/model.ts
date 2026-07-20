@@ -39,7 +39,7 @@ export const householdFactorLabels = {
 } as const satisfies Record<MoveWiseHouseholdFactorId, string>;
 
 export type YesNoAnswer = "yes" | "no";
-export type HousingTenure = "rent" | "buy" | "either";
+export type HousingTenure = "rent" | "buy" | "rent_then_buy" | "either";
 export type HousingType =
   | "apartment_or_condo"
   | "townhome"

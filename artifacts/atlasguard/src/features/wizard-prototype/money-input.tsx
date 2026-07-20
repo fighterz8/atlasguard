@@ -12,7 +12,10 @@ type MoneyInputProps = {
   error?: string;
   basis: AssumptionBasis | "confirmed";
   basisKey?: BasisKey;
-  sourceLabel?: "MoveWise starting assumption" | "You told us";
+  sourceLabel?:
+    | "MoveWise public-data estimate"
+    | "MoveWise starting assumption"
+    | "You told us";
   onReset?: () => void;
   onValueChange: (value: string) => void;
   onBasisChange?: (key: BasisKey, value: AssumptionBasis) => void;

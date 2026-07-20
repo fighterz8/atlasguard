@@ -21,6 +21,7 @@ import type { MoveWiseDeterministicAnalysis } from "@workspace/decision-core";
 
 import { householdFactorLabels } from "../wizard-prototype/model";
 import type { DestinationPlanningAssumptions } from "../wizard-prototype/destination-planning-assumptions";
+import type { DestinationPlanningSource } from "../wizard-prototype/destination-planning-assumptions";
 
 const dollars = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -350,18 +351,21 @@ export const createResearchResultsViewModel = (
         planningSources.expenses,
       ].filter((source) => source === "movewise_baseline").length
     : 0;
-  const sourcePresentation = (
-    source: "movewise_baseline" | "user_override" | undefined,
-  ) =>
-    source === "movewise_baseline"
+  const sourcePresentation = (source: DestinationPlanningSource | undefined) =>
+    source === "movewise_public_estimate"
       ? {
-          sourceLabel: "MoveWise starting assumption",
+          sourceLabel: "MoveWise public-data estimate",
           sourceTone: "benchmark" as const,
         }
-      : {
-          sourceLabel: "You told us",
-          sourceTone: "neutral" as const,
-        };
+      : source === "movewise_baseline"
+        ? {
+            sourceLabel: "MoveWise starting assumption",
+            sourceTone: "benchmark" as const,
+          }
+        : {
+            sourceLabel: "You told us",
+            sourceTone: "neutral" as const,
+          };
   const destinationAssumptions = result.scenarioInput.finances.destination;
   const cushionInputs = [
     destinationAssumptions.takeHomeIncome,
@@ -444,7 +448,7 @@ export const createResearchResultsViewModel = (
     {
       id: "housing_cost",
       label: planningSources
-        ? `Housing · ${planningSources.currentHousingTenure === "rent" ? "renting" : "owning"} → ${planningSources.destinationHousingTenure === "rent" ? "renting" : planningSources.destinationHousingTenure === "buy" ? "buying" : "renting or buying"}`
+        ? `Housing · ${planningSources.currentHousingTenure === "rent" ? "renting" : "owning"} → ${planningSources.destinationHousingTenure === "rent" ? "renting" : planningSources.destinationHousingTenure === "buy" ? "buying" : planningSources.destinationHousingTenure === "rent_then_buy" ? "renting first, buying later" : "renting or buying"}`
         : "Housing",
       originValue: formatMoney(originFinances.monthlyHousingCostCents),
       destinationValue: formatMoney(

@@ -1,4 +1,7 @@
-import { getResearchMetroHousingContext } from "@workspace/benchmark-data";
+import {
+  getResearchMetroHousingContext,
+  getResearchMetroIncomeGuidance,
+} from "@workspace/benchmark-data";
 import { Home, Landmark } from "lucide-react";
 import React from "react";
 
@@ -32,6 +35,8 @@ const dollars = new Intl.NumberFormat("en-US", {
 });
 
 const formatCents = (value: number) => dollars.format(value / 100);
+const parseMonthlyDollars = (value: string) =>
+  Number(value.trim().replace(/,/g, ""));
 
 export function MoneyStep({
   finances,
@@ -51,6 +56,14 @@ export function MoneyStep({
     originSlug === "" || destinationSlug === ""
       ? null
       : getResearchMetroHousingContext(originSlug, destinationSlug);
+  const incomeGuidance =
+    originSlug === "" || destinationSlug === ""
+      ? null
+      : getResearchMetroIncomeGuidance(
+          originSlug,
+          destinationSlug,
+          parseMonthlyDollars(finances.currentTakeHome),
+        );
   const taxTone =
     taxContext?.direction === "destination_may_increase_take_home"
       ? ("favorable" as const)
@@ -74,9 +87,10 @@ export function MoneyStep({
         <Landmark aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Enter the money facts you know today. MoveWise starts the destination at
-        the same monthly amounts so your result is ready immediately. Every
-        starting assumption stays visible and editable.
+        Enter the money facts you know today. MoveWise uses public metro income
+        data for the destination take-home estimate and visible baselines for
+        costs where a personal budget cannot be inferred. Every assumption stays
+        editable.
       </p>
 
       {taxContext ? (
@@ -199,13 +213,16 @@ export function MoneyStep({
             Your destination starting assumptions
           </h2>
           <p className="mt-2 text-sm leading-6 text-teal-900/80">
-            These fields begin at your current monthly amounts. That is a
-            neutral planning baseline—not a prediction that destination pay or
-            costs will match. Change any field you expect to be different.
+            Destination take-home uses the latest supported Census metro
+            household-income comparison. Housing and other costs begin at your
+            current amounts because regional medians are context, not your
+            personal budget. Change any field you expect to be different.
           </p>
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
             {moneyComparisons.map((definition) => {
               const hasOverride = finances[definition.target.id].trim() !== "";
+              const hasPublicIncomeEstimate =
+                definition.kind === "take_home" && incomeGuidance !== null;
               return (
                 <div
                   key={definition.kind}
@@ -219,14 +236,20 @@ export function MoneyStep({
                     value={
                       hasOverride
                         ? finances[definition.target.id]
-                        : finances[definition.current.id]
+                        : hasPublicIncomeEstimate
+                          ? String(
+                              incomeGuidance.suggestedMonthlyTakeHomeDollars,
+                            )
+                          : finances[definition.current.id]
                     }
                     basis={finances[definition.target.basisKey]}
                     basisKey={definition.target.basisKey}
                     sourceLabel={
                       hasOverride
                         ? "You told us"
-                        : "MoveWise starting assumption"
+                        : hasPublicIncomeEstimate
+                          ? "MoveWise public-data estimate"
+                          : "MoveWise starting assumption"
                     }
                     error={errors[`finances.${definition.target.id}`]}
                     onValueChange={(value) =>
@@ -243,6 +266,41 @@ export function MoneyStep({
               );
             })}
           </div>
+          {incomeGuidance ? (
+            <div className="mt-4 rounded-lg border border-teal-200 bg-white p-4">
+              <p className="text-sm font-semibold text-slate-950">
+                How the destination income estimate was formed
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                MoveWise adjusted your current take-home by the
+                destination-to-origin metro median household-income ratio. The
+                editable estimate is{" "}
+                {dollars.format(incomeGuidance.suggestedMonthlyTakeHomeDollars)}{" "}
+                per month, with a data uncertainty range of{" "}
+                {dollars.format(
+                  incomeGuidance.plausibleMonthlyTakeHomeRangeDollars.low,
+                )}
+                –
+                {dollars.format(
+                  incomeGuidance.plausibleMonthlyTakeHomeRangeDollars.high,
+                )}
+                .
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                U.S. Census Bureau · {incomeGuidance.source.observationPeriod} ·
+                ACS table {incomeGuidance.source.tableId}. This is a planning
+                estimate, not a paycheck or job-offer forecast.
+              </p>
+              <a
+                href={incomeGuidance.source.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold text-teal-800 underline decoration-teal-300 underline-offset-2 hover:text-teal-950"
+              >
+                View official Census source
+              </a>
+            </div>
+          ) : null}
           {housingContext ? (
             <div className="mt-4 rounded-lg border border-teal-200 bg-white p-4">
               <p className="text-sm font-semibold text-slate-950">
