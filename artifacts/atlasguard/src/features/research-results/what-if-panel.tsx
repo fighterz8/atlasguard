@@ -63,7 +63,7 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
 
   const updateInput = (key: WhatIfKey, value: string) => {
     setInputValues((current) => ({ ...current, [key]: value }));
-    const normalized = value.trim().replaceAll(",", "");
+    const normalized = value.trim().replace(/,/g, "");
     if (!/^-?\d+$/.test(normalized)) return;
     const dollars = Number(normalized);
     if (!Number.isSafeInteger(dollars) || Math.abs(dollars) > 100_000_000)

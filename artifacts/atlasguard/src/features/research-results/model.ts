@@ -12,6 +12,7 @@ import type {
   VerifiedMoveWiseHouseholdAnswers,
   VerifiedResearchEvaluationResult,
 } from "@workspace/contracts";
+import { clonePlainData } from "../../lib/clone-plain-data";
 import {
   evaluateMoveWiseRule,
   evaluateResearchMoveDecision,
@@ -103,7 +104,7 @@ const findingCopy: Record<string, string> = {
 };
 
 const findingText = (finding: Finding) =>
-  findingCopy[finding.code] ?? finding.code.replaceAll("_", " ");
+  findingCopy[finding.code] ?? finding.code.replace(/_/g, " ");
 
 const nextStepCopy: Record<string, string> = {
   review_decision_evidence:
@@ -153,7 +154,7 @@ const scenarioWithWhatIfValues = (
   scenario: WhatIfScenario,
   values: ResearchWhatIfValues,
 ): ScenarioInput => {
-  const mutableScenario = structuredClone(scenario) as ScenarioInput;
+  const mutableScenario = clonePlainData(scenario) as ScenarioInput;
   return {
     ...mutableScenario,
     finances: {
@@ -720,7 +721,7 @@ export const createResearchResultsViewModel = (
   const deterministicDecisionChange = deterministic?.decisionChanges[0];
   const profileVerificationSteps = profile.nextSteps
     .filter(({ code }) => code !== "review_decision_evidence")
-    .map((step) => nextStepCopy[step.code] ?? step.code.replaceAll("_", " "));
+    .map((step) => nextStepCopy[step.code] ?? step.code.replace(/_/g, " "));
   const deterministicHouseholdSteps = deterministicResult
     ? [
         ...deterministicResult.conditionalRequirementIds.map(

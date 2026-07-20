@@ -20,7 +20,31 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div
+        id="movewise-startup-status"
+        role="status"
+        style="
+          box-sizing: border-box;
+          max-width: 40rem;
+          margin: 4rem auto;
+          padding: 1.5rem;
+          color: #253128;
+          font:
+            500 1rem/1.5 system-ui,
+            sans-serif;
+        "
+      >
+        <strong style="display: block; margin-bottom: 0.5rem"
+          >MoveWise is loading…</strong
+        >
+        If this message remains, refresh the page or open this link in your
+        device’s primary browser.
+      </div>
+    </div>
+    <noscript>
+      MoveWise needs JavaScript enabled to run this research preview.
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

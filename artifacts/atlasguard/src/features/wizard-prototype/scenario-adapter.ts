@@ -31,7 +31,7 @@ const dollarsToCents = (
   field: string,
   errors: WizardErrors,
 ): number | null => {
-  const normalized = value.trim().replaceAll(",", "");
+  const normalized = value.trim().replace(/,/g, "");
 
   try {
     const dollars = BigInt(normalized);

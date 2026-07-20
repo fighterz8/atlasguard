@@ -8,6 +8,7 @@ import type {
   WizardPrototypeDraft,
 } from "@/features/wizard-prototype/model";
 import { WizardPrototype } from "@/features/wizard-prototype/wizard-prototype";
+import { clonePlainData } from "../lib/clone-plain-data";
 import { ResearchResultsExperience } from "@/pages/results";
 
 export default function WizardPrototypePage() {
@@ -24,7 +25,7 @@ export default function WizardPrototypePage() {
       const result = evaluateWizardDraft(draft);
       if (!result.success) return result.errors;
 
-      setEvaluatedDraft(structuredClone(draft));
+      setEvaluatedDraft(clonePlainData(draft));
       setEvaluation(result.evaluation);
       setResultModel(
         createResearchResultsViewModel(result.evaluation, {

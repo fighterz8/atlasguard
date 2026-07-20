@@ -67,7 +67,7 @@ export const evaluateMoveWiseScore = (
         left.inputFingerprintSha256.localeCompare(right.inputFingerprintSha256),
     );
   const minimum = endpoints[0];
-  const maximumValue = endpoints.at(-1)?.value;
+  const maximumValue = endpoints[endpoints.length - 1]?.value;
   const maximum = endpoints.find((endpoint) => endpoint.value === maximumValue);
   if (minimum === undefined || maximum === undefined) {
     throw new MoveWiseScorePreflightError(

@@ -166,7 +166,7 @@ const validateMoney = (
   label: string,
   allowZero: boolean,
 ) => {
-  const normalized = value.trim().replaceAll(",", "");
+  const normalized = value.trim().replace(/,/g, "");
   if (normalized === "") {
     errors[`finances.${key}`] = `${label} is required.`;
     return;
@@ -191,7 +191,7 @@ const validateSignedMoney = (
   value: string,
   label: string,
 ) => {
-  const normalized = value.trim().replaceAll(",", "");
+  const normalized = value.trim().replace(/,/g, "");
   if (normalized === "") {
     errors[`finances.${key}`] = `${label} is required.`;
     return;
@@ -204,7 +204,7 @@ const validateSignedMoney = (
 };
 
 const wholeDollarAmount = (value: string) => {
-  const amount = Number(value.trim().replaceAll(",", ""));
+  const amount = Number(value.trim().replace(/,/g, ""));
   return Number.isFinite(amount) && Number.isInteger(amount) ? amount : null;
 };
 

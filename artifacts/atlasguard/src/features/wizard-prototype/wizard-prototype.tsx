@@ -11,6 +11,7 @@ import type {
   MoveWiseHouseholdFactorId,
   MoveWiseHouseholdMode,
 } from "@workspace/contracts";
+import { clonePlainData } from "../../lib/clone-plain-data";
 
 import { HouseholdStep } from "./household-step";
 import {
@@ -145,7 +146,7 @@ export function WizardPrototype({
     initialDraft ? "money" : "move",
   );
   const [draft, setDraft] = useState<WizardPrototypeDraft>(() =>
-    initialDraft ? structuredClone(initialDraft) : createInitialWizardDraft(),
+    initialDraft ? clonePlainData(initialDraft) : createInitialWizardDraft(),
   );
   const [errors, setErrors] = useState<WizardErrors>({});
   const [reviewComplete, setReviewComplete] = useState(false);
@@ -200,7 +201,7 @@ export function WizardPrototype({
       if (onEvaluate) {
         setIsEvaluating(true);
         evaluationTimerRef.current = window.setTimeout(() => {
-          const evaluationErrors = onEvaluate(structuredClone(draft));
+          const evaluationErrors = onEvaluate(clonePlainData(draft));
           evaluationTimerRef.current = null;
           setIsEvaluating(false);
           setErrors(evaluationErrors);
@@ -235,7 +236,7 @@ export function WizardPrototype({
   };
 
   const loadExample = () => {
-    setDraft(structuredClone(exampleDraft));
+    setDraft(clonePlainData(exampleDraft));
     setErrors({});
     setReviewComplete(false);
   };

@@ -417,9 +417,10 @@ export const evaluateMoveWiseDeterministicModel = (
         left.value - right.value ||
         left.inputFingerprintSha256.localeCompare(right.inputFingerprintSha256),
     );
+  const lastEndpoint = endpoints[endpoints.length - 1];
   if (
-    endpoints.length > 0 &&
-    (point.value < endpoints[0]!.value || point.value > endpoints.at(-1)!.value)
+    lastEndpoint !== undefined &&
+    (point.value < endpoints[0]!.value || point.value > lastEndpoint.value)
   ) {
     throw new MoveWiseDeterministicAdapterPreflightError(
       "The deterministic-model point fell outside its plausible endpoint range.",
@@ -438,7 +439,7 @@ export const evaluateMoveWiseDeterministicModel = (
       ? null
       : {
           min: endpoints[0]!.value,
-          max: endpoints.at(-1)!.value,
+          max: lastEndpoint!.value,
           variedInputPaths,
           blockerCodes: sortedUnion(
             endpoints.map(({ blockerCodes }) => blockerCodes),

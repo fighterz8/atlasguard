@@ -16,7 +16,7 @@ const currency = new Intl.NumberFormat("en-US", {
 });
 
 const wholeDollars = (value: string) => {
-  const amount = Number(value.trim().replaceAll(",", ""));
+  const amount = Number(value.trim().replace(/,/g, ""));
   return Number.isSafeInteger(amount) && amount >= 0 ? amount : null;
 };
 
