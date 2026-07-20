@@ -337,6 +337,45 @@ export const createResearchResultsViewModel = (
   const financialChange = profile.financialPosition.change;
   const originFinances = profile.financialPosition.origin;
   const destinationFinances = profile.financialPosition.destination;
+  const deterministic = deterministicContext?.analysis;
+  const deterministicResult = deterministic?.result;
+  const destinationAssumptions = result.scenarioInput.finances.destination;
+  const cushionInputs = [
+    destinationAssumptions.takeHomeIncome,
+    destinationAssumptions.housingCost,
+    destinationAssumptions.recurringExpensesExcludingHousing,
+    destinationAssumptions.retainedPropertyNet,
+  ];
+  const needsConfirmation = (basis: string) => basis !== "confirmed";
+  const cushionNeedsConfirmation = cushionInputs.some(({ basis }) =>
+    needsConfirmation(basis),
+  );
+  const destinationEstimateCount = [
+    ...cushionInputs,
+    ...(destinationAssumptions.grossIncome === null
+      ? []
+      : [destinationAssumptions.grossIncome]),
+  ].filter(({ basis }) => needsConfirmation(basis)).length;
+  const financialReadiness =
+    destinationAssumptions.grossIncome === null
+      ? {
+          label: "Preliminary",
+          tone: "caution" as const,
+          explanation:
+            "The housing-burden safety check could not run because destination gross income was not provided. The score is shown, but treat it as preliminary.",
+        }
+      : destinationEstimateCount > 0
+        ? {
+            label: "Needs confirmation",
+            tone: "caution" as const,
+            explanation: `${destinationEstimateCount} destination ${destinationEstimateCount === 1 ? "amount is" : "amounts are"} still estimates. MoveWise calculated the result from them, but did not independently verify them.`,
+          }
+        : {
+            label: "Inputs confirmed",
+            tone: "favorable" as const,
+            explanation:
+              "You marked every destination money input as confirmed. The result still inherits the limits of the available city evidence.",
+          };
   const financialRows = [
     {
       id: "monthly_cushion",
@@ -346,6 +385,13 @@ export const createResearchResultsViewModel = (
       deltaValue: formatMoney(financialChange.monthlyCushionDeltaCents),
       classification: financialChange.classification,
       emphasis: true,
+      ...(deterministicResult
+        ? {
+            sourceLabel: "MoveWise calculated",
+            sourceTone: "benchmark" as const,
+            needsConfirmation: cushionNeedsConfirmation,
+          }
+        : {}),
     },
     {
       id: "take_home_income",
@@ -364,6 +410,15 @@ export const createResearchResultsViewModel = (
         true,
       ),
       emphasis: false,
+      ...(deterministicResult
+        ? {
+            sourceLabel: "You told us",
+            sourceTone: "neutral" as const,
+            needsConfirmation: needsConfirmation(
+              destinationAssumptions.takeHomeIncome.basis,
+            ),
+          }
+        : {}),
     },
     {
       id: "housing_cost",
@@ -382,6 +437,15 @@ export const createResearchResultsViewModel = (
         false,
       ),
       emphasis: false,
+      ...(deterministicResult
+        ? {
+            sourceLabel: "You told us",
+            sourceTone: "neutral" as const,
+            needsConfirmation: needsConfirmation(
+              destinationAssumptions.housingCost.basis,
+            ),
+          }
+        : {}),
     },
     {
       id: "recurring_expenses",
@@ -400,6 +464,15 @@ export const createResearchResultsViewModel = (
         false,
       ),
       emphasis: false,
+      ...(deterministicResult
+        ? {
+            sourceLabel: "You told us",
+            sourceTone: "neutral" as const,
+            needsConfirmation: needsConfirmation(
+              destinationAssumptions.recurringExpensesExcludingHousing.basis,
+            ),
+          }
+        : {}),
     },
     ...(originFinances.monthlyRetainedPropertyNetCents !== 0 ||
     destinationFinances.monthlyRetainedPropertyNetCents !== 0
@@ -423,6 +496,15 @@ export const createResearchResultsViewModel = (
               true,
             ),
             emphasis: false,
+            ...(deterministicResult
+              ? {
+                  sourceLabel: "You told us",
+                  sourceTone: "neutral" as const,
+                  needsConfirmation: needsConfirmation(
+                    destinationAssumptions.retainedPropertyNet.basis,
+                  ),
+                }
+              : {}),
           },
         ]
       : []),
@@ -516,8 +598,6 @@ export const createResearchResultsViewModel = (
     );
   }
 
-  const deterministic = deterministicContext?.analysis;
-  const deterministicResult = deterministic?.result;
   const deterministicAnswers = deterministicContext?.householdAnswers;
   const deterministicContributions = deterministicResult
     ? [
@@ -630,6 +710,7 @@ export const createResearchResultsViewModel = (
     ?.activeBlockerCodes[0] as
     | keyof typeof deterministicBlockerCopy
     | undefined;
+  const deterministicDecisionChange = deterministic?.decisionChanges[0];
   const profileVerificationSteps = profile.nextSteps
     .filter(({ code }) => code !== "review_decision_evidence")
     .map((step) => nextStepCopy[step.code] ?? step.code.replaceAll("_", " "));
@@ -767,8 +848,33 @@ export const createResearchResultsViewModel = (
                 ? ("lift" as const)
                 : ("tradeoff" as const),
             },
-      decisionChangingAssumption:
-        deterministicResult || decisionChangingAssumption === null
+      decisionChangingAssumption: deterministicResult
+        ? deterministicDecisionChange === undefined
+          ? null
+          : {
+              label:
+                scoreThresholdLabels[deterministicDecisionChange.inputPath] ??
+                deterministicDecisionChange.inputPath,
+              currentValue: formatMoney(
+                deterministicDecisionChange.currentValueCents,
+              ),
+              threshold: formatMoney(
+                deterministicDecisionChange.thresholdCents,
+              ),
+              operator:
+                deterministicDecisionChange.operator === "at_or_above"
+                  ? "at least"
+                  : "at or below",
+              distance: formatMoney(deterministicDecisionChange.distanceCents),
+              changesConditionTo:
+                deterministicConditionCopy[
+                  deterministicDecisionChange.changesConditionTo
+                ].label,
+              withinPlausibleRange:
+                deterministicDecisionChange.withinPlausibleRange,
+              evidenceRefs: [...deterministicDecisionChange.evidenceRefs],
+            }
+        : decisionChangingAssumption === null
           ? null
           : {
               label:
@@ -800,6 +906,7 @@ export const createResearchResultsViewModel = (
             `input:${deterministic.reproducibility.inputFingerprintSha256}`,
             `household:${deterministic.reproducibility.householdAnswerSha256}`,
             `benchmark:${deterministic.reproducibility.benchmarkSnapshotSha256}`,
+            ...(deterministicDecisionChange?.evidenceRefs ?? []),
           ]
         : scoreCalculationEvidenceRefs,
       scoreVersion: deterministic?.ruleVersion ?? analysis.score.scoreVersion,
@@ -807,6 +914,7 @@ export const createResearchResultsViewModel = (
         ? ("deterministic" as const)
         : ("legacy" as const),
       essentialSummary,
+      readiness: financialReadiness,
       cautionCodes: deterministicResult
         ? [...deterministicResult.cautionCodes]
         : [],

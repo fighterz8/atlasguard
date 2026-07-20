@@ -316,11 +316,35 @@ describe("research results view model", () => {
       value: evaluation.deterministicAnalysis.result.value,
       scoreVersion: "0.2.0",
       mode: "deterministic",
+      decisionChangingAssumption: {
+        changesConditionTo: "High financial risk under these assumptions",
+      },
+      readiness: {
+        label: "Preliminary",
+        tone: "caution",
+        explanation: expect.stringContaining(
+          "housing-burden safety check could not run",
+        ),
+      },
       essentialSummary: {
         label: "1 essential need not confirmed",
         tone: "caution",
       },
     });
+    expect(model.comparison.financialRows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "monthly_cushion",
+          sourceLabel: "MoveWise calculated",
+          needsConfirmation: true,
+        }),
+        expect.objectContaining({
+          id: "take_home_income",
+          sourceLabel: "You told us",
+          needsConfirmation: true,
+        }),
+      ]),
+    );
     expect(model.household).toMatchObject({
       modeLabel: "Individual move",
       factors: expect.arrayContaining([

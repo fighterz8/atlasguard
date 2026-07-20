@@ -57,6 +57,9 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
             <span className="mt-2 block text-sm font-normal leading-6 text-slate-600">
               Exact monthly arithmetic from the assumptions shown below.
             </span>
+            <span className="mt-2 block">
+              <StatusBadge tone="benchmark">MoveWise calculated</StatusBadge>
+            </span>
           </dd>
         </div>
         <div className="border-b border-slate-200 bg-favorable-surface/55 px-4 py-5 sm:border-b-0 sm:border-r sm:px-5">
@@ -89,21 +92,9 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
         </div>
         <div className="bg-caution-surface/70 px-4 py-5 sm:px-5">
           <dt className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
-            {score.mode === "deterministic"
-              ? "Essential-needs check"
-              : "Closest decision change"}
+            Closest decision change
           </dt>
-          {score.mode === "deterministic" && score.essentialSummary ? (
-            <dd className="mt-2">
-              <StatusBadge tone={score.essentialSummary.tone}>
-                {score.essentialSummary.label}
-              </StatusBadge>
-              <span className="mt-3 block text-xs leading-5 text-slate-700">
-                An unconfirmed or unmet essential need can override the numeric
-                score. Results identifies the exact need below.
-              </span>
-            </dd>
-          ) : score.decisionChangingAssumption ? (
+          {score.decisionChangingAssumption ? (
             <dd className="mt-2">
               <span className="block text-lg font-semibold text-slate-950">
                 {score.decisionChangingAssumption.label}
@@ -131,6 +122,37 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
           )}
         </div>
       </dl>
+
+      <div className="mt-6 flex flex-col gap-3 border-l-4 border-caution bg-caution-surface px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-caution">
+            Decision readiness
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {score.readiness.explanation}
+          </p>
+        </div>
+        <StatusBadge tone={score.readiness.tone}>
+          {score.readiness.label}
+        </StatusBadge>
+      </div>
+
+      {score.mode === "deterministic" && score.essentialSummary ? (
+        <div className="mt-6 border-l-4 border-caution bg-caution-surface px-5 py-4">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-caution">
+            Essential-needs override
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <StatusBadge tone={score.essentialSummary.tone}>
+              {score.essentialSummary.label}
+            </StatusBadge>
+            <p className="text-sm leading-6 text-slate-700">
+              An unconfirmed or unmet essential need can override the numeric
+              score. Results identifies the exact need below.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {score.activeBlocker ? (
         <div

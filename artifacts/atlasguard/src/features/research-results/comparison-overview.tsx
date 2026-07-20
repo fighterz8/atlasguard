@@ -89,7 +89,19 @@ export function ComparisonOverview({
                   scope="row"
                   className={`py-4 pr-3 ${row.emphasis ? "font-semibold text-slate-950" : "font-medium text-slate-700"}`}
                 >
-                  {row.label}
+                  <span className="block">{row.label}</span>
+                  {row.sourceLabel ? (
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <StatusBadge tone={row.sourceTone ?? "neutral"}>
+                        {row.sourceLabel}
+                      </StatusBadge>
+                      {row.needsConfirmation ? (
+                        <StatusBadge tone="caution">
+                          Needs confirmation
+                        </StatusBadge>
+                      ) : null}
+                    </span>
+                  ) : null}
                 </th>
                 <td className="px-2 py-4 text-right text-sm tabular-nums text-slate-800">
                   {row.originValue}
@@ -121,6 +133,16 @@ export function ComparisonOverview({
             >
               {row.label}
             </p>
+            {row.sourceLabel ? (
+              <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                <StatusBadge tone={row.sourceTone ?? "neutral"}>
+                  {row.sourceLabel}
+                </StatusBadge>
+                {row.needsConfirmation ? (
+                  <StatusBadge tone="caution">Needs confirmation</StatusBadge>
+                ) : null}
+              </div>
+            ) : null}
             <dl className="grid grid-cols-3 gap-2">
               {[
                 [route.originCity, row.originValue],

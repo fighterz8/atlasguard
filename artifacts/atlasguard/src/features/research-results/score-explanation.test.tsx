@@ -126,7 +126,12 @@ describe("MoveWise score presentation", () => {
     expect(summaryHtml).toContain("Promising if…");
     expect(summaryHtml).toContain("Deterministic 0.2.0");
     expect(summaryHtml).toContain("1 essential need not confirmed");
-    expect(scoreHtml).toContain("Essential-needs check");
+    expect(scoreHtml).toContain("Closest decision change");
+    expect(scoreHtml).toContain("Essential-needs override");
+    expect(scoreHtml).toContain("High financial risk under these assumptions");
+    expect(scoreHtml).toContain("MoveWise calculated");
+    expect(scoreHtml).toContain("Preliminary");
+    expect(scoreHtml).toContain("housing-burden safety check could not run");
     expect(scoreHtml).toContain("Score rule 0.2.0");
     expect(householdHtml).toContain("Enough suitable space");
     expect(householdHtml).toContain("Somewhat better");
