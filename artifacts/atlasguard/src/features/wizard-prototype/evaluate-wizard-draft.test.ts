@@ -8,15 +8,19 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
   originSlug: "los-angeles-ca",
   destinationSlug: "seattle-wa",
   householdMode: "individual",
-  householdFactors: {
-    ...createInitialWizardDraft().householdFactors,
-    space_fit: { role: "not_applicable", impact: "" },
-    support_network: { role: "not_applicable", impact: "" },
-    required_services_continuity: {
-      role: "not_applicable",
-      impact: "",
+  householdPlan: {
+    ...createInitialWizardDraft().householdPlan,
+    housing: {
+      tenure: "rent",
+      type: "apartment_or_condo",
+      bedrooms: "2",
+      bathrooms: "1",
+      maxMonthlyCost: "2000",
+      stopsMove: "no",
     },
-    car_free_access: { role: "not_applicable", impact: "" },
+    supportNetwork: { needed: "no", stopsMove: "" },
+    requiredServices: { needed: "no", stopsMove: "" },
+    carFreeAccess: { needed: "no", stopsMove: "" },
   },
   finances: {
     ...createInitialWizardDraft().finances,
@@ -40,6 +44,21 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
 });
 
 describe("Wizard deterministic evaluation", () => {
+  it("rejects a current-only draft before attempting deterministic evaluation", () => {
+    const draft = reviewedDraft();
+    draft.finances.targetTakeHome = "";
+    draft.finances.targetHousing = "";
+    draft.finances.targetExpenses = "";
+
+    expect(evaluateWizardDraft(draft)).toEqual({
+      success: false,
+      errors: {
+        scenario:
+          "Complete destination financial estimates are required for a deterministic result.",
+      },
+    });
+  });
+
   it("evaluates reviewed assumptions through the research-only trust boundary", () => {
     const result = evaluateWizardDraft(reviewedDraft());
 
@@ -56,7 +75,7 @@ describe("Wizard deterministic evaluation", () => {
       result: {
         ruleVersion: "0.2.0",
         metricContributions: {
-          household: { status: "excluded", contribution: 0 },
+          household: { status: "unavailable", contribution: 0 },
         },
       },
     });

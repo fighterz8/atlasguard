@@ -1,7 +1,8 @@
-import { Copy, Home, Landmark } from "lucide-react";
+import { getResearchMetroHousingContext } from "@workspace/benchmark-data";
+import { Home, Landmark } from "lucide-react";
 import React from "react";
 
-import { MoneyComparisonCard, moneyComparisons } from "./money-comparison-card";
+import { moneyComparisons } from "./money-comparison-card";
 import type { BasisKey, FinanceKey, ValueKey } from "./money-control-types";
 import { MoneyInput } from "./money-input";
 import type {
@@ -21,8 +22,16 @@ type MoneyStepProps = {
   onValueChange: (key: ValueKey, value: string) => void;
   onBasisChange: (key: BasisKey, value: AssumptionBasis) => void;
   onGrossKnownChange: (value: boolean) => void;
-  onCopyCurrent: () => void;
+  onCopyCurrent?: () => void;
 };
+
+const dollars = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+const formatCents = (value: number) => dollars.format(value / 100);
 
 export function MoneyStep({
   finances,
@@ -32,12 +41,15 @@ export function MoneyStep({
   onValueChange,
   onBasisChange,
   onGrossKnownChange,
-  onCopyCurrent,
 }: MoneyStepProps) {
   const taxContext =
     originSlug === "" || destinationSlug === ""
       ? null
       : getStateIncomeTaxContext(originSlug, destinationSlug);
+  const housingContext =
+    originSlug === "" || destinationSlug === ""
+      ? null
+      : getResearchMetroHousingContext(originSlug, destinationSlug);
   const taxTone =
     taxContext?.direction === "destination_may_increase_take_home"
       ? ("favorable" as const)
@@ -55,14 +67,14 @@ export function MoneyStep({
             tabIndex={-1}
             className="section-heading"
           >
-            Compare your monthly picture
+            Your current monthly baseline
           </h1>
         </div>
         <Landmark aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Enter what is true today, then use the sliders to explore what might
-        change after the move. You can always type an exact amount.
+        Enter the money facts you know today. MoveWise builds the destination
+        side from research and marks anything that still needs confirmation.
       </p>
 
       {taxContext ? (
@@ -104,37 +116,118 @@ export function MoneyStep({
         </aside>
       ) : null}
 
-      <div className="mt-6 flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-teal-950">
-            Expect housing and other costs to stay similar?
-          </p>
-          <p className="mt-1 text-xs leading-5 text-teal-900/75">
-            Copy current housing and recurring costs. Enter destination
-            take-home separately because taxes and pay can change across states.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onCopyCurrent}
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-teal-300 bg-white px-4 py-2 text-sm font-semibold text-teal-900 transition-colors hover:border-teal-500 hover:bg-teal-100"
-        >
-          <Copy aria-hidden="true" className="h-4 w-4" />
-          Copy current costs
-        </button>
-      </div>
-
       <div className="mt-6 space-y-5">
-        {moneyComparisons.map((definition) => (
-          <MoneyComparisonCard
-            key={definition.kind}
-            definition={definition}
-            finances={finances}
-            errors={errors}
-            onValueChange={onValueChange}
-            onBasisChange={onBasisChange}
-          />
-        ))}
+        <section
+          aria-labelledby="current-money-heading"
+          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+        >
+          <div className="border-b border-slate-200 pb-4">
+            <h2
+              id="current-money-heading"
+              className="text-base font-semibold text-slate-950"
+            >
+              Your current monthly baseline
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Use normal monthly amounts after tax for income, housing, and
+              recurring costs outside housing.
+            </p>
+          </div>
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {moneyComparisons.map((definition) => (
+              <div
+                key={definition.kind}
+                className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+              >
+                <MoneyInput
+                  id={definition.current.id}
+                  label={definition.title}
+                  accessibleLabel={`Current ${definition.title.toLowerCase()}`}
+                  description={definition.current.description}
+                  value={finances[definition.current.id]}
+                  basis="confirmed"
+                  error={errors[`finances.${definition.current.id}`]}
+                  onValueChange={(value) =>
+                    onValueChange(definition.current.id, value)
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside className="rounded-xl border border-teal-200 bg-teal-50 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge tone="neutral">MoveWise calculated</StatusBadge>
+            <span className="text-xs font-medium text-teal-900/75">
+              Destination plan
+            </span>
+          </div>
+          <h2 className="mt-3 text-base font-semibold text-teal-950">
+            MoveWise builds the destination side
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-teal-900/80">
+            The next result can use this baseline to show what destination
+            evidence is available, what still needs confirmation, and where a
+            deterministic score should wait for your own destination numbers.
+          </p>
+          {housingContext ? (
+            <div className="mt-4 rounded-lg border border-teal-200 bg-white p-4">
+              <p className="text-sm font-semibold text-slate-950">
+                Available metro rent context
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                {housingContext.origin.label}:{" "}
+                {formatCents(housingContext.metric.originValue)} ·{" "}
+                {housingContext.destination.label}:{" "}
+                {formatCents(housingContext.metric.destinationValue)}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Context-only ACS median gross rent. It is not your housing
+                budget and is not substituted into the score.
+              </p>
+            </div>
+          ) : null}
+        </aside>
+
+        <details className="rounded-xl border border-slate-200 bg-slate-50">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 marker:hidden">
+            <Landmark aria-hidden="true" className="h-4 w-4 text-slate-500" />I
+            already know destination numbers
+          </summary>
+          <div className="space-y-5 border-t border-slate-200 bg-white p-4">
+            <div>
+              <StatusBadge tone="neutral">Optional override</StatusBadge>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Enter all three destination amounts when you want MoveWise to
+                use your own destination estimate now.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {moneyComparisons.map((definition) => (
+                <div
+                  key={definition.kind}
+                  className="rounded-lg border border-teal-200 bg-teal-50/50 p-4"
+                >
+                  <MoneyInput
+                    id={definition.target.id}
+                    label={definition.title}
+                    accessibleLabel={`Destination ${definition.title.toLowerCase()}`}
+                    description={definition.target.description}
+                    value={finances[definition.target.id]}
+                    basis={finances[definition.target.basisKey]}
+                    basisKey={definition.target.basisKey}
+                    error={errors[`finances.${definition.target.id}`]}
+                    onValueChange={(value) =>
+                      onValueChange(definition.target.id, value)
+                    }
+                    onBasisChange={onBasisChange}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </details>
 
         <fieldset className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <legend className="px-1 text-sm font-semibold text-slate-950">

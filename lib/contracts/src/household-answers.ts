@@ -5,6 +5,12 @@ import { Sha256Schema } from "./primitives";
 
 export const MOVEWISE_HOUSEHOLD_ANSWER_SCHEMA_VERSION = "1.0.0" as const;
 export const MOVEWISE_HOUSEHOLD_QUESTION_VERSION = "1.0.0" as const;
+export const MOVEWISE_HOUSEHOLD_PLAN_QUESTION_VERSION = "2.0.0" as const;
+
+export const MoveWiseHouseholdQuestionVersionSchema = z.enum([
+  MOVEWISE_HOUSEHOLD_QUESTION_VERSION,
+  MOVEWISE_HOUSEHOLD_PLAN_QUESTION_VERSION,
+]);
 
 export const MoveWiseHouseholdModeSchema = z.enum(["individual", "family"]);
 
@@ -92,7 +98,7 @@ export const MoveWiseHouseholdFactorAnswerSchema = z
 
 const householdAnswerFields = {
   schemaVersion: z.literal(MOVEWISE_HOUSEHOLD_ANSWER_SCHEMA_VERSION),
-  questionVersion: z.literal(MOVEWISE_HOUSEHOLD_QUESTION_VERSION),
+  questionVersion: MoveWiseHouseholdQuestionVersionSchema,
   mode: MoveWiseHouseholdModeSchema,
   factors: z.array(MoveWiseHouseholdFactorAnswerSchema),
 } as const;

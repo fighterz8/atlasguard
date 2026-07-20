@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   MOVEWISE_HOUSEHOLD_ANSWER_SCHEMA_VERSION,
+  MOVEWISE_HOUSEHOLD_PLAN_QUESTION_VERSION,
   MOVEWISE_HOUSEHOLD_QUESTION_VERSION,
   MoveWiseHouseholdAnswerChecksumMismatchError,
   calculateMoveWiseHouseholdAnswersChecksum,
@@ -106,6 +107,19 @@ describe("MoveWise household answers", () => {
     expect(Object.isFrozen(answers)).toBe(true);
     expect(Object.isFrozen(answers.factors)).toBe(true);
     expect(Object.isFrozen(answers.factors[0])).toBe(true);
+  });
+
+  it("accepts the concrete household-plan question version without changing historical payloads", () => {
+    const planPayload = familyPayload();
+    planPayload.questionVersion = MOVEWISE_HOUSEHOLD_PLAN_QUESTION_VERSION;
+
+    expect(createMoveWiseHouseholdAnswers(planPayload)).toMatchObject({
+      questionVersion: "2.0.0",
+      sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+    expect(createMoveWiseHouseholdAnswers(familyPayload())).toMatchObject({
+      questionVersion: "1.0.0",
+    });
   });
 
   it("requires every mode-applicable factor exactly once in canonical order", () => {

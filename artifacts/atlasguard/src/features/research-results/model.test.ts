@@ -16,15 +16,19 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
   originSlug: "los-angeles-ca",
   destinationSlug: "seattle-wa",
   householdMode: "individual",
-  householdFactors: {
-    ...createInitialWizardDraft().householdFactors,
-    space_fit: { role: "not_applicable", impact: "" },
-    support_network: { role: "not_applicable", impact: "" },
-    required_services_continuity: {
-      role: "not_applicable",
-      impact: "",
+  householdPlan: {
+    ...createInitialWizardDraft().householdPlan,
+    housing: {
+      tenure: "rent",
+      type: "apartment_or_condo",
+      bedrooms: "2",
+      bathrooms: "1",
+      maxMonthlyCost: "2000",
+      stopsMove: "no",
     },
-    car_free_access: { role: "not_applicable", impact: "" },
+    supportNetwork: { needed: "no", stopsMove: "" },
+    requiredServices: { needed: "no", stopsMove: "" },
+    carFreeAccess: { needed: "no", stopsMove: "" },
   },
   finances: {
     ...createInitialWizardDraft().finances,
@@ -294,14 +298,7 @@ describe("research results view model", () => {
 
   it("activates deterministic rule 0.2.0 only with its verified Wizard context", () => {
     const draft = reviewedDraft();
-    draft.householdFactors.space_fit = {
-      role: "important",
-      impact: "positive",
-    };
-    draft.householdFactors.support_network = {
-      role: "essential_unconfirmed",
-      impact: "unavailable",
-    };
+    draft.householdPlan.supportNetwork = { needed: "yes", stopsMove: "yes" };
     const evaluation = evaluateWizardDraft(draft);
     expect(evaluation.success).toBe(true);
     if (!evaluation.success) return;
@@ -351,10 +348,10 @@ describe("research results view model", () => {
       factors: expect.arrayContaining([
         expect.objectContaining({
           id: "space_fit",
-          label: "Enough suitable space",
-          contribution: 10,
+          label: "Suitable housing",
+          contribution: 0,
           statusLabel: "Important",
-          impactLabel: "Somewhat better",
+          impactLabel: "Not sure yet",
         }),
         expect.objectContaining({
           id: "support_network",
@@ -368,9 +365,12 @@ describe("research results view model", () => {
         }),
       ]),
     });
-    expect(model.score.missingComponents).toEqual(["Opportunity context"]);
+    expect(model.score.missingComponents).toEqual([
+      "Household fit",
+      "Opportunity context",
+    ]);
     expect(model.nextSteps[0]).toBe(
-      "Confirm whether being near people you rely on will work before relying on this result.",
+      "Confirm whether nearby support will work before relying on this result.",
     );
     expect(model.nextSteps).not.toContain(
       "Add any household factors that could materially change day-to-day life.",

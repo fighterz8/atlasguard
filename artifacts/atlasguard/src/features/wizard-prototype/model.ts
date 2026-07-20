@@ -4,7 +4,6 @@ import {
   supportedResearchPlaces,
   type SupportedResearchPlaceSlug,
 } from "@workspace/benchmark-data";
-import { MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE } from "@workspace/contracts";
 import type {
   MoveWiseHouseholdFactorId,
   MoveWiseHouseholdMode,
@@ -28,44 +27,90 @@ export type ClimateHeatPreference =
   | "fewer_hot_days"
   | "more_hot_days"
   | "does_not_matter";
-export type HouseholdRole =
-  | "important"
-  | "essential_met"
-  | "essential_unconfirmed"
-  | "essential_unmet"
-  | "not_applicable";
-export type HouseholdImpact =
-  | "strong_negative"
-  | "negative"
-  | "neutral"
-  | "positive"
-  | "strong_positive"
-  | "unavailable";
-export type HouseholdFactorDraft = {
-  role: HouseholdRole | "";
-  impact: HouseholdImpact | "";
-};
+export const HOUSEHOLD_PLAN_VERSION = "1.0.0" as const;
 
 export const householdFactorLabels = {
-  space_fit: "Enough suitable space",
-  support_network: "Being near people you rely on",
-  childcare_continuity: "Keeping workable childcare arrangements",
-  school_continuity: "Keeping a workable school path",
-  required_services_continuity:
-    "Keeping required therapy, disability, or support services",
-  car_free_access: "Completing essential routines without driving",
+  space_fit: "Suitable housing",
+  support_network: "Nearby support",
+  childcare_continuity: "Workable childcare",
+  school_continuity: "A suitable school path",
+  required_services_continuity: "Required services",
+  car_free_access: "Car-free routines",
 } as const satisfies Record<MoveWiseHouseholdFactorId, string>;
 
-const createInitialHouseholdFactors = (): Record<
-  MoveWiseHouseholdFactorId,
-  HouseholdFactorDraft
-> => ({
-  space_fit: { role: "", impact: "" },
-  support_network: { role: "", impact: "" },
-  childcare_continuity: { role: "", impact: "" },
-  school_continuity: { role: "", impact: "" },
-  required_services_continuity: { role: "", impact: "" },
-  car_free_access: { role: "", impact: "" },
+export type YesNoAnswer = "yes" | "no";
+export type HousingTenure = "rent" | "buy" | "either";
+export type HousingType =
+  | "apartment_or_condo"
+  | "townhome"
+  | "detached"
+  | "flexible";
+export type BedroomNeed = "studio" | "1" | "2" | "3" | "4_plus";
+export type BathroomNeed = "1" | "1_5" | "2" | "3_plus";
+export type ChildcareArrangement =
+  | "center"
+  | "home_based"
+  | "in_home_caregiver"
+  | "family_or_friend"
+  | "before_after_school"
+  | "flexible";
+export type SchoolGradeBand =
+  | "preschool"
+  | "elementary"
+  | "middle"
+  | "high"
+  | "multiple";
+export type SchoolPreference = "public" | "private" | "either";
+
+export type ConditionalHouseholdNeed = {
+  needed: YesNoAnswer | "";
+  stopsMove: YesNoAnswer | "";
+};
+
+export type HouseholdPlanDraft = {
+  version: typeof HOUSEHOLD_PLAN_VERSION;
+  housing: {
+    tenure: HousingTenure | "";
+    type: HousingType | "";
+    bedrooms: BedroomNeed | "";
+    bathrooms: BathroomNeed | "";
+    maxMonthlyCost: string;
+    stopsMove: YesNoAnswer | "";
+  };
+  childcare: ConditionalHouseholdNeed & {
+    arrangement: ChildcareArrangement | "";
+  };
+  school: ConditionalHouseholdNeed & {
+    gradeBand: SchoolGradeBand | "";
+    preference: SchoolPreference | "";
+    requirements: string;
+  };
+  supportNetwork: ConditionalHouseholdNeed;
+  requiredServices: ConditionalHouseholdNeed;
+  carFreeAccess: ConditionalHouseholdNeed;
+};
+
+export const createInitialHouseholdPlan = (): HouseholdPlanDraft => ({
+  version: HOUSEHOLD_PLAN_VERSION,
+  housing: {
+    tenure: "",
+    type: "",
+    bedrooms: "",
+    bathrooms: "",
+    maxMonthlyCost: "",
+    stopsMove: "",
+  },
+  childcare: { needed: "", arrangement: "", stopsMove: "" },
+  school: {
+    needed: "",
+    gradeBand: "",
+    preference: "",
+    requirements: "",
+    stopsMove: "",
+  },
+  supportNetwork: { needed: "", stopsMove: "" },
+  requiredServices: { needed: "", stopsMove: "" },
+  carFreeAccess: { needed: "", stopsMove: "" },
 });
 
 export const supportedPlaces = supportedResearchPlaces;
@@ -105,7 +150,7 @@ export type WizardPrototypeDraft = {
   commuteImportance: PriorityImportance;
   climateHeatPreference: ClimateHeatPreference;
   climateHeatImportance: Exclude<PriorityImportance, "does_not_matter">;
-  householdFactors: Record<MoveWiseHouseholdFactorId, HouseholdFactorDraft>;
+  householdPlan: HouseholdPlanDraft;
 };
 
 export type WizardErrors = Record<string, string>;
@@ -143,7 +188,7 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
   commuteImportance: "important",
   climateHeatPreference: "fewer_hot_days",
   climateHeatImportance: "important",
-  householdFactors: createInitialHouseholdFactors(),
+  householdPlan: createInitialHouseholdPlan(),
 });
 
 export const copyCurrentCosts = (
@@ -155,6 +200,24 @@ export const copyCurrentCosts = (
   targetHousingBasis: "user_estimate",
   targetExpensesBasis: "user_estimate",
 });
+
+const destinationOverrideKeys = [
+  "targetTakeHome",
+  "targetHousing",
+  "targetExpenses",
+] as const;
+
+export type DestinationFinanceOverrideStatus = "none" | "partial" | "complete";
+
+export const getDestinationFinanceOverrideStatus = (
+  finances: WizardPrototypeDraft["finances"],
+): DestinationFinanceOverrideStatus => {
+  const supplied = destinationOverrideKeys.filter(
+    (key) => finances[key].trim() !== "",
+  ).length;
+  if (supplied === 0) return "none";
+  return supplied === destinationOverrideKeys.length ? "complete" : "partial";
+};
 
 export const getPlace = (slug: SupportedPlaceSlug | "") =>
   getSupportedResearchPlace(slug);
@@ -343,19 +406,58 @@ export function validateWizardStep(
     );
     validateMoney(
       errors,
-      "targetTakeHome",
-      draft.finances.targetTakeHome,
-      "Target take-home income",
-      false,
-    );
-    validateMoney(
-      errors,
       "currentHousing",
       draft.finances.currentHousing,
       "Current housing cost",
       true,
     );
-    if (draft.finances.targetGrossIncomeKnown) {
+    const destinationOverrideStatus = getDestinationFinanceOverrideStatus(
+      draft.finances,
+    );
+    if (destinationOverrideStatus === "partial") {
+      if (draft.finances.targetTakeHome.trim() === "") {
+        errors["finances.targetTakeHome"] =
+          "Destination take-home is required to use your own destination numbers.";
+      }
+      if (draft.finances.targetHousing.trim() === "") {
+        errors["finances.targetHousing"] =
+          "Destination housing is required to use your own destination numbers.";
+      }
+      if (draft.finances.targetExpenses.trim() === "") {
+        errors["finances.targetExpenses"] =
+          "Destination recurring expenses are required to use your own destination numbers.";
+      }
+    }
+    if (destinationOverrideStatus !== "none") {
+      if (draft.finances.targetTakeHome.trim() !== "")
+        validateMoney(
+          errors,
+          "targetTakeHome",
+          draft.finances.targetTakeHome,
+          "Destination take-home income",
+          false,
+        );
+      if (draft.finances.targetHousing.trim() !== "")
+        validateMoney(
+          errors,
+          "targetHousing",
+          draft.finances.targetHousing,
+          "Destination housing cost",
+          true,
+        );
+      if (draft.finances.targetExpenses.trim() !== "")
+        validateMoney(
+          errors,
+          "targetExpenses",
+          draft.finances.targetExpenses,
+          "Destination recurring expenses",
+          true,
+        );
+    }
+    if (
+      destinationOverrideStatus !== "none" &&
+      draft.finances.targetGrossIncomeKnown
+    ) {
       if (draft.finances.targetGrossIncome.trim() === "") {
         errors["finances.targetGrossIncome"] =
           "Destination gross income is required when marked known.";
@@ -371,23 +473,9 @@ export function validateWizardStep(
     }
     validateMoney(
       errors,
-      "targetHousing",
-      draft.finances.targetHousing,
-      "Target housing cost",
-      true,
-    );
-    validateMoney(
-      errors,
       "currentExpenses",
       draft.finances.currentExpenses,
       "Current recurring expenses",
-      true,
-    );
-    validateMoney(
-      errors,
-      "targetExpenses",
-      draft.finances.targetExpenses,
-      "Target recurring expenses",
       true,
     );
     validateSignedMoney(
@@ -396,21 +484,26 @@ export function validateWizardStep(
       draft.finances.retainedPropertyNet,
       "Retained-property monthly net",
     );
-    validatePlausibleRange(errors, draft.finances, {
-      valueKey: "targetTakeHome",
-      basisKey: "targetTakeHomeBasis",
-      minKey: "targetTakeHomeRangeMin",
-      maxKey: "targetTakeHomeRangeMax",
-      label: "Target take-home income",
-    });
-    validatePlausibleRange(errors, draft.finances, {
-      valueKey: "targetHousing",
-      basisKey: "targetHousingBasis",
-      minKey: "targetHousingRangeMin",
-      maxKey: "targetHousingRangeMax",
-      label: "Target housing cost",
-    });
-    if (draft.finances.targetGrossIncomeKnown) {
+    if (destinationOverrideStatus !== "none")
+      validatePlausibleRange(errors, draft.finances, {
+        valueKey: "targetTakeHome",
+        basisKey: "targetTakeHomeBasis",
+        minKey: "targetTakeHomeRangeMin",
+        maxKey: "targetTakeHomeRangeMax",
+        label: "Target take-home income",
+      });
+    if (destinationOverrideStatus !== "none")
+      validatePlausibleRange(errors, draft.finances, {
+        valueKey: "targetHousing",
+        basisKey: "targetHousingBasis",
+        minKey: "targetHousingRangeMin",
+        maxKey: "targetHousingRangeMax",
+        label: "Target housing cost",
+      });
+    if (
+      destinationOverrideStatus !== "none" &&
+      draft.finances.targetGrossIncomeKnown
+    ) {
       validatePlausibleRange(errors, draft.finances, {
         valueKey: "targetGrossIncome",
         basisKey: "targetGrossIncomeBasis",
@@ -420,13 +513,14 @@ export function validateWizardStep(
         allowZero: false,
       });
     }
-    validatePlausibleRange(errors, draft.finances, {
-      valueKey: "targetExpenses",
-      basisKey: "targetExpensesBasis",
-      minKey: "targetExpensesRangeMin",
-      maxKey: "targetExpensesRangeMax",
-      label: "Target recurring expenses",
-    });
+    if (destinationOverrideStatus !== "none")
+      validatePlausibleRange(errors, draft.finances, {
+        valueKey: "targetExpenses",
+        basisKey: "targetExpensesBasis",
+        minKey: "targetExpensesRangeMin",
+        maxKey: "targetExpensesRangeMax",
+        label: "Target recurring expenses",
+      });
     validatePlausibleRange(errors, draft.finances, {
       valueKey: "retainedPropertyNet",
       basisKey: "retainedPropertyNetBasis",
@@ -442,18 +536,82 @@ export function validateWizardStep(
       errors.householdMode = "Choose who would be making this move.";
       return errors;
     }
-    for (const factorId of MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE[
-      draft.householdMode
-    ]) {
-      const factor = draft.householdFactors[factorId];
-      if (factor.role === "") {
-        errors[`household.${factorId}.role`] =
-          `Choose the role of ${householdFactorLabels[factorId]}.`;
-      } else if (factor.role !== "not_applicable" && factor.impact === "") {
-        errors[`household.${factorId}.impact`] =
-          `Choose how ${householdFactorLabels[factorId]} would change.`;
+    const { householdPlan } = draft;
+    const requiredHousingFields = [
+      ["tenure", "Choose whether you plan to rent or buy."],
+      ["type", "Choose the kind of home that could work."],
+      ["bedrooms", "Choose the minimum number of bedrooms."],
+      ["bathrooms", "Choose the minimum number of bathrooms."],
+      ["stopsMove", "Choose whether housing would stop the move."],
+    ] as const;
+    for (const [field, message] of requiredHousingFields) {
+      if (householdPlan.housing[field] === "") {
+        errors[`householdPlan.housing.${field}`] = message;
       }
     }
+
+    const normalizedBudget = householdPlan.housing.maxMonthlyCost
+      .trim()
+      .replace(/,/g, "");
+    if (normalizedBudget === "") {
+      errors["householdPlan.housing.maxMonthlyCost"] =
+        "Enter the most you want to spend on housing each month.";
+    } else if (!/^\d+$/.test(normalizedBudget)) {
+      errors["householdPlan.housing.maxMonthlyCost"] =
+        "Housing budget must be a whole-dollar amount.";
+    }
+
+    const validateConditionalNeed = (
+      path: "supportNetwork" | "requiredServices" | "carFreeAccess",
+      label: string,
+    ) => {
+      const need = householdPlan[path];
+      if (need.needed === "") {
+        errors[`householdPlan.${path}.needed`] =
+          `Choose whether ${label} matters for this move.`;
+      } else if (need.needed === "yes" && need.stopsMove === "") {
+        errors[`householdPlan.${path}.stopsMove`] =
+          `Choose whether missing ${label} would stop the move.`;
+      }
+    };
+
+    if (draft.householdMode === "family") {
+      if (householdPlan.childcare.needed === "") {
+        errors["householdPlan.childcare.needed"] =
+          "Choose whether your household needs childcare.";
+      } else if (householdPlan.childcare.needed === "yes") {
+        if (householdPlan.childcare.arrangement === "") {
+          errors["householdPlan.childcare.arrangement"] =
+            "Choose the childcare arrangement you need.";
+        }
+        if (householdPlan.childcare.stopsMove === "") {
+          errors["householdPlan.childcare.stopsMove"] =
+            "Choose whether missing workable childcare would stop the move.";
+        }
+      }
+
+      if (householdPlan.school.needed === "") {
+        errors["householdPlan.school.needed"] =
+          "Choose whether your household needs a school path.";
+      } else if (householdPlan.school.needed === "yes") {
+        if (householdPlan.school.gradeBand === "") {
+          errors["householdPlan.school.gradeBand"] =
+            "Choose the grade band you need to plan for.";
+        }
+        if (householdPlan.school.preference === "") {
+          errors["householdPlan.school.preference"] =
+            "Choose the school path you are open to.";
+        }
+        if (householdPlan.school.stopsMove === "") {
+          errors["householdPlan.school.stopsMove"] =
+            "Choose whether missing a suitable school path would stop the move.";
+        }
+      }
+    }
+
+    validateConditionalNeed("supportNetwork", "nearby support");
+    validateConditionalNeed("requiredServices", "required services");
+    validateConditionalNeed("carFreeAccess", "car-free routines");
   }
 
   return errors;

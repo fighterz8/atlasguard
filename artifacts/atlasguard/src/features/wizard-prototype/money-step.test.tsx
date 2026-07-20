@@ -17,7 +17,6 @@ describe("MoneyStep", () => {
         onValueChange={() => undefined}
         onBasisChange={() => undefined}
         onGrossKnownChange={() => undefined}
-        onCopyCurrent={() => undefined}
       />,
     );
 
@@ -28,7 +27,12 @@ describe("MoneyStep", () => {
     expect(html).toContain("does not calculate your paycheck");
     expect(html).toContain("California Franchise Tax Board");
     expect(html).toContain("Texas Legislative Council");
-    expect(html).toContain("Copy current costs");
+    expect(html).toContain("Your current monthly baseline");
+    expect(html).toContain("MoveWise builds the destination side");
+    expect(html).toContain("I already know destination numbers");
+    expect(html).toContain("Optional override");
+    expect(html).toContain("Available metro rent context");
+    expect(html).not.toContain("Copy current costs");
     expect(html).not.toContain("Start with current");
   });
 });

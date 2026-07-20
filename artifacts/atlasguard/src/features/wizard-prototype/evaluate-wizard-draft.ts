@@ -10,7 +10,11 @@ import {
 import type { MoveWiseDeterministicAnalysis } from "@workspace/decision-core";
 
 import { adaptWizardDraftToHouseholdAnswers } from "./household-answer-adapter";
-import type { WizardErrors, WizardPrototypeDraft } from "./model";
+import {
+  getDestinationFinanceOverrideStatus,
+  type WizardErrors,
+  type WizardPrototypeDraft,
+} from "./model";
 import { adaptWizardDraftToScenarioInput } from "./scenario-adapter";
 
 export type WizardEvaluationResult =
@@ -25,6 +29,15 @@ export type WizardEvaluationResult =
 export function evaluateWizardDraft(
   draft: WizardPrototypeDraft,
 ): WizardEvaluationResult {
+  if (getDestinationFinanceOverrideStatus(draft.finances) !== "complete") {
+    return {
+      success: false,
+      errors: {
+        scenario:
+          "Complete destination financial estimates are required for a deterministic result.",
+      },
+    };
+  }
   const adapted = adaptWizardDraftToScenarioInput(draft);
   if (!adapted.success) return adapted;
   const household = adaptWizardDraftToHouseholdAnswers(draft);

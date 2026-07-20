@@ -32,6 +32,20 @@ const validDraft = () => ({
     retainedPropertyNetRangeMin: "-500",
     retainedPropertyNetRangeMax: "500",
   },
+  householdPlan: {
+    ...createInitialWizardDraft().householdPlan,
+    housing: {
+      tenure: "rent" as const,
+      type: "apartment_or_condo" as const,
+      bedrooms: "2" as const,
+      bathrooms: "1" as const,
+      maxMonthlyCost: "2200",
+      stopsMove: "yes" as const,
+    },
+    supportNetwork: { needed: "no" as const, stopsMove: "" as const },
+    requiredServices: { needed: "no" as const, stopsMove: "" as const },
+    carFreeAccess: { needed: "no" as const, stopsMove: "" as const },
+  },
 });
 
 describe("Wizard prototype model", () => {
@@ -120,6 +134,33 @@ describe("Wizard prototype model", () => {
     expect(validateWizardStep("money", draft)).toEqual({});
   });
 
+  it("requires only the current monthly baseline when MoveWise will research the destination", () => {
+    const draft = createInitialWizardDraft();
+    draft.originSlug = "san-diego-ca";
+    draft.destinationSlug = "austin-tx";
+    draft.householdMode = "family";
+    draft.finances.currentTakeHome = "6200";
+    draft.finances.currentHousing = "2600";
+    draft.finances.currentExpenses = "2100";
+
+    expect(validateWizardStep("money", draft)).toEqual({});
+  });
+
+  it("requires a complete destination override set when the user supplies any override", () => {
+    const draft = createInitialWizardDraft();
+    draft.finances.currentTakeHome = "6200";
+    draft.finances.currentHousing = "2600";
+    draft.finances.currentExpenses = "2100";
+    draft.finances.targetHousing = "2200";
+
+    expect(validateWizardStep("money", draft)).toMatchObject({
+      "finances.targetTakeHome":
+        "Destination take-home is required to use your own destination numbers.",
+      "finances.targetExpenses":
+        "Destination recurring expenses are required to use your own destination numbers.",
+    });
+  });
+
   it("accepts point estimates and validates a range only when supplied", () => {
     const pointEstimates = validDraft();
     pointEstimates.finances.targetTakeHomeRangeMin = "";
@@ -171,8 +212,8 @@ describe("Wizard prototype model", () => {
 
     expect(validateWizardStep("money", draft)).toMatchObject({
       "finances.targetTakeHome":
-        "Target take-home income must be a whole-dollar amount.",
-      "finances.targetHousing": "Target housing cost cannot be negative.",
+        "Destination take-home income must be a whole-dollar amount.",
+      "finances.targetHousing": "Destination housing cost cannot be negative.",
     });
   });
 
@@ -190,25 +231,51 @@ describe("Wizard prototype model", () => {
     });
   });
 
-  it("requires every mode-applicable household answer explicitly", () => {
+  it("requires a concrete individual household plan without role or impact fields", () => {
+    const empty = createInitialWizardDraft();
+    empty.householdMode = "individual";
+
+    expect(validateWizardStep("household", empty)).toMatchObject({
+      "householdPlan.housing.tenure": "Choose whether you plan to rent or buy.",
+      "householdPlan.housing.maxMonthlyCost":
+        "Enter the most you want to spend on housing each month.",
+      "householdPlan.supportNetwork.needed":
+        "Choose whether nearby support matters for this move.",
+    });
+    expect(validateWizardStep("household", validDraft())).toEqual({});
+  });
+
+  it("asks families for childcare and school details only when needed", () => {
     const draft = validDraft();
+    draft.householdMode = "family";
+    draft.householdPlan.childcare.needed = "yes";
+    draft.householdPlan.school.needed = "yes";
+
     expect(validateWizardStep("household", draft)).toMatchObject({
-      "household.space_fit.role": "Choose the role of Enough suitable space.",
-      "household.support_network.role":
-        "Choose the role of Being near people you rely on.",
+      "householdPlan.childcare.arrangement":
+        "Choose the childcare arrangement you need.",
+      "householdPlan.childcare.stopsMove":
+        "Choose whether missing workable childcare would stop the move.",
+      "householdPlan.school.gradeBand":
+        "Choose the grade band you need to plan for.",
+      "householdPlan.school.preference":
+        "Choose the school path you are open to.",
+      "householdPlan.school.stopsMove":
+        "Choose whether missing a suitable school path would stop the move.",
     });
 
-    for (const factorId of [
-      "space_fit",
-      "support_network",
-      "required_services_continuity",
-      "car_free_access",
-    ] as const) {
-      draft.householdFactors[factorId] = {
-        role: "not_applicable",
-        impact: "",
-      };
-    }
+    draft.householdPlan.childcare = {
+      needed: "no",
+      arrangement: "",
+      stopsMove: "",
+    };
+    draft.householdPlan.school = {
+      needed: "no",
+      gradeBand: "",
+      preference: "",
+      requirements: "",
+      stopsMove: "",
+    };
     expect(validateWizardStep("household", draft)).toEqual({});
   });
 

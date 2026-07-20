@@ -108,22 +108,17 @@ describe("MoveWise score presentation", () => {
       currentExpenses: "1500",
       targetExpenses: "1250",
     });
-    draft.householdFactors.space_fit = {
-      role: "important",
-      impact: "positive",
+    draft.householdPlan.housing = {
+      tenure: "rent",
+      type: "apartment_or_condo",
+      bedrooms: "2",
+      bathrooms: "1",
+      maxMonthlyCost: "2000",
+      stopsMove: "no",
     };
-    draft.householdFactors.support_network = {
-      role: "essential_unconfirmed",
-      impact: "unavailable",
-    };
-    draft.householdFactors.required_services_continuity = {
-      role: "not_applicable",
-      impact: "",
-    };
-    draft.householdFactors.car_free_access = {
-      role: "not_applicable",
-      impact: "",
-    };
+    draft.householdPlan.supportNetwork = { needed: "yes", stopsMove: "yes" };
+    draft.householdPlan.requiredServices = { needed: "no", stopsMove: "" };
+    draft.householdPlan.carFreeAccess = { needed: "no", stopsMove: "" };
     const evaluation = evaluateWizardDraft(draft);
     expect(evaluation.success).toBe(true);
     if (!evaluation.success) return;
@@ -152,9 +147,8 @@ describe("MoveWise score presentation", () => {
     expect(scoreHtml).toContain("Preliminary");
     expect(scoreHtml).toContain("housing-burden safety check could not run");
     expect(scoreHtml).toContain("Score rule 0.2.0");
-    expect(householdHtml).toContain("Enough suitable space");
-    expect(householdHtml).toContain("Somewhat better");
-    expect(householdHtml).toContain("+10 points");
+    expect(householdHtml).toContain("Suitable housing");
+    expect(householdHtml).toContain("Not sure yet");
     expect(householdHtml).toContain("Not part of my decision");
     expect(householdHtml).toContain("No score change");
   });

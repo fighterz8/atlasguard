@@ -7,21 +7,19 @@ describe("Wizard household-answer adapter", () => {
   it("creates canonical verified individual answers", () => {
     const draft = createInitialWizardDraft();
     draft.householdMode = "individual";
-    draft.householdFactors.space_fit = {
-      role: "important",
-      impact: "positive",
-    };
-    draft.householdFactors.support_network = {
-      role: "not_applicable",
-      impact: "",
-    };
-    draft.householdFactors.required_services_continuity = {
-      role: "important",
-      impact: "unavailable",
-    };
-    draft.householdFactors.car_free_access = {
-      role: "essential_unconfirmed",
-      impact: "unavailable",
+    draft.householdPlan = {
+      ...draft.householdPlan,
+      housing: {
+        tenure: "rent",
+        type: "apartment_or_condo",
+        bedrooms: "2",
+        bathrooms: "1",
+        maxMonthlyCost: "2200",
+        stopsMove: "no",
+      },
+      supportNetwork: { needed: "no", stopsMove: "" },
+      requiredServices: { needed: "yes", stopsMove: "no" },
+      carFreeAccess: { needed: "yes", stopsMove: "yes" },
     };
 
     const result = adaptWizardDraftToHouseholdAnswers(draft);
@@ -30,14 +28,14 @@ describe("Wizard household-answer adapter", () => {
     if (!result.success) return;
     expect(result.answers).toMatchObject({
       schemaVersion: "1.0.0",
-      questionVersion: "1.0.0",
+      questionVersion: "2.0.0",
       mode: "individual",
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       factors: [
         {
           factorId: "space_fit",
           importance: "important",
-          impact: "positive",
+          impact: "unavailable",
           essentialStatus: null,
         },
         {
@@ -70,8 +68,8 @@ describe("Wizard household-answer adapter", () => {
     expect(adaptWizardDraftToHouseholdAnswers(draft)).toEqual({
       success: false,
       errors: expect.objectContaining({
-        "household.space_fit.role": expect.any(String),
-        "household.childcare_continuity.role": expect.any(String),
+        "householdPlan.housing.tenure": expect.any(String),
+        "householdPlan.childcare.needed": expect.any(String),
       }),
     });
   });

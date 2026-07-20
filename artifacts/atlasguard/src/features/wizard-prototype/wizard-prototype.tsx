@@ -7,10 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON } from "@workspace/benchmark-data";
-import type {
-  MoveWiseHouseholdFactorId,
-  MoveWiseHouseholdMode,
-} from "@workspace/contracts";
+import type { MoveWiseHouseholdMode } from "@workspace/contracts";
 import { clonePlainData } from "../../lib/clone-plain-data";
 
 import { HouseholdStep } from "./household-step";
@@ -23,8 +20,7 @@ import {
   wizardSteps,
   type AssumptionBasis,
   type ClimateHeatPreference,
-  type HouseholdImpact,
-  type HouseholdRole,
+  type HouseholdPlanDraft,
   type PriorityImportance,
   type SupportedPlaceSlug,
   type WizardErrors,
@@ -70,24 +66,35 @@ const exampleDraft: WizardPrototypeDraft = {
   commuteImportance: "important",
   climateHeatPreference: "fewer_hot_days",
   climateHeatImportance: "important",
-  householdFactors: {
-    space_fit: { role: "important", impact: "positive" },
-    support_network: { role: "important", impact: "positive" },
-    childcare_continuity: { role: "not_applicable", impact: "" },
-    school_continuity: { role: "not_applicable", impact: "" },
-    required_services_continuity: {
-      role: "not_applicable",
-      impact: "",
+  householdPlan: {
+    version: "1.0.0",
+    housing: {
+      tenure: "rent",
+      type: "apartment_or_condo",
+      bedrooms: "2",
+      bathrooms: "1",
+      maxMonthlyCost: "2000",
+      stopsMove: "no",
     },
-    car_free_access: { role: "not_applicable", impact: "" },
+    childcare: { needed: "no", arrangement: "", stopsMove: "" },
+    school: {
+      needed: "no",
+      gradeBand: "",
+      preference: "",
+      requirements: "",
+      stopsMove: "",
+    },
+    supportNetwork: { needed: "yes", stopsMove: "no" },
+    requiredServices: { needed: "no", stopsMove: "" },
+    carFreeAccess: { needed: "no", stopsMove: "" },
   },
 };
 
 const errorFieldId = (path: string) =>
   path.startsWith("finances.")
     ? path.replace("finances.", "")
-    : path.startsWith("household.")
-      ? path.replace(/^household\.([^.]+)\.(role|impact)$/, "household-$1-$2")
+    : path.startsWith("householdPlan.")
+      ? path.split(".").join("-")
       : path;
 
 type RangeKey =
@@ -330,39 +337,15 @@ export function WizardPrototype({
     setDraft((current) => ({ ...current, climateHeatImportance: value }));
   };
 
-  const updateHouseholdRole = (
-    factorId: MoveWiseHouseholdFactorId,
-    value: HouseholdRole,
-  ) => {
-    setDraft((current) => ({
-      ...current,
-      householdFactors: {
-        ...current.householdFactors,
-        [factorId]: {
-          ...current.householdFactors[factorId],
-          role: value,
-          ...(value === "not_applicable" ? { impact: "" as const } : {}),
-        },
-      },
-    }));
-    clearError(`household.${factorId}.role`);
-    if (value === "not_applicable") {
-      clearError(`household.${factorId}.impact`);
-    }
-  };
-
-  const updateHouseholdImpact = (
-    factorId: MoveWiseHouseholdFactorId,
-    value: HouseholdImpact,
-  ) => {
-    setDraft((current) => ({
-      ...current,
-      householdFactors: {
-        ...current.householdFactors,
-        [factorId]: { ...current.householdFactors[factorId], impact: value },
-      },
-    }));
-    clearError(`household.${factorId}.impact`);
+  const updateHouseholdPlan = (householdPlan: HouseholdPlanDraft) => {
+    setDraft((current) => ({ ...current, householdPlan }));
+    setErrors((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(
+          ([key]) => !key.startsWith("householdPlan."),
+        ),
+      ),
+    );
   };
 
   const errorEntries = Object.entries(errors);
@@ -490,10 +473,9 @@ export function WizardPrototype({
                   {step === "household" ? (
                     <HouseholdStep
                       mode={draft.householdMode}
-                      factors={draft.householdFactors}
+                      plan={draft.householdPlan}
                       errors={errors}
-                      onRoleChange={updateHouseholdRole}
-                      onImpactChange={updateHouseholdImpact}
+                      onPlanChange={updateHouseholdPlan}
                     />
                   ) : null}
                 </div>
