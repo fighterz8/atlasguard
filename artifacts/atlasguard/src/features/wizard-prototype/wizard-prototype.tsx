@@ -14,6 +14,7 @@ import type {
 
 import { HouseholdStep } from "./household-step";
 import {
+  copyCurrentCosts,
   createInitialWizardDraft,
   getPlace,
   getNextStep,
@@ -281,19 +282,10 @@ export function WizardPrototype({
   const copyCurrentFinances = () => {
     setDraft((current) => ({
       ...current,
-      finances: {
-        ...current.finances,
-        targetTakeHome: current.finances.currentTakeHome,
-        targetHousing: current.finances.currentHousing,
-        targetExpenses: current.finances.currentExpenses,
-        targetTakeHomeBasis: "user_estimate",
-        targetHousingBasis: "user_estimate",
-        targetExpensesBasis: "user_estimate",
-      },
+      finances: copyCurrentCosts(current.finances),
     }));
     setErrors((current) => {
       const next = { ...current };
-      delete next["finances.targetTakeHome"];
       delete next["finances.targetHousing"];
       delete next["finances.targetExpenses"];
       return next;

@@ -49,10 +49,11 @@ export function MoneyStep({
       <div className="mt-6 flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-teal-950">
-            Expect most costs to stay similar?
+            Expect housing and other costs to stay similar?
           </p>
           <p className="mt-1 text-xs leading-5 text-teal-900/75">
-            Copy your current amounts, then move only the sliders that matter.
+            Copy current housing and recurring costs. Enter destination
+            take-home separately because taxes and pay can change across states.
           </p>
         </div>
         <button
@@ -61,7 +62,7 @@ export function MoneyStep({
           className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-teal-300 bg-white px-4 py-2 text-sm font-semibold text-teal-900 transition-colors hover:border-teal-500 hover:bg-teal-100"
         >
           <Copy aria-hidden="true" className="h-4 w-4" />
-          Start with current
+          Copy current costs
         </button>
       </div>
 

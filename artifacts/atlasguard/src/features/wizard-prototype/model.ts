@@ -146,6 +146,16 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
   householdFactors: createInitialHouseholdFactors(),
 });
 
+export const copyCurrentCosts = (
+  finances: WizardPrototypeDraft["finances"],
+): WizardPrototypeDraft["finances"] => ({
+  ...finances,
+  targetHousing: finances.currentHousing,
+  targetExpenses: finances.currentExpenses,
+  targetHousingBasis: "user_estimate",
+  targetExpensesBasis: "user_estimate",
+});
+
 export const getPlace = (slug: SupportedPlaceSlug | "") =>
   getSupportedResearchPlace(slug);
 
