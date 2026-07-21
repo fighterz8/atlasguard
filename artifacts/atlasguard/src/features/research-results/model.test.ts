@@ -485,6 +485,11 @@ describe("research results view model", () => {
     expect(model.priority).toMatchObject({
       originValue: "28.2 min",
       destinationValue: "26.1 min",
+      mobilityContext: {
+        destinationCommuteAwayShare: "83.9%",
+        reading: expect.stringContaining("commute away from home"),
+        role: "Context only",
+      },
     });
     expect(model.housingContext).toMatchObject({
       originValue: "$1,784",

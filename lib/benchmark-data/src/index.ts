@@ -23,6 +23,7 @@ export * from "./research-metro-housing-context";
 export * from "./research-metro-income-guidance";
 export * from "./research-metro-rent-guidance";
 export * from "./research-metro-expense-guidance";
+export * from "./research-metro-mobility-guidance";
 export * from "./research-scenarios/la-seattle-balanced";
 export * from "./source-registry";
 export * from "./source-extraction";

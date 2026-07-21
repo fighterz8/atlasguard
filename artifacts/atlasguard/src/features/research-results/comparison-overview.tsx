@@ -202,6 +202,24 @@ export function ComparisonOverview({
               <p className="text-sm leading-6 text-slate-600">
                 {priority.interpretation}
               </p>
+              {priority.mobilityContext ? (
+                <div className="mt-5 border-l-4 border-slate-300 bg-white/60 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge tone="neutral">
+                      {priority.mobilityContext.role}
+                    </StatusBadge>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                      {priority.mobilityContext.sourceLabel}
+                    </p>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {priority.mobilityContext.reading}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    {priority.mobilityContext.boundary}
+                  </p>
+                </div>
+              ) : null}
             </article>
           ) : null}
 

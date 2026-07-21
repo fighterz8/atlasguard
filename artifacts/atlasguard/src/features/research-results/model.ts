@@ -1,6 +1,7 @@
 import {
   compareResearchMetroClimateRatings,
   getResearchMetroClimateRating,
+  getResearchMetroMobilityGuidance,
   getResearchMetroHousingContext,
   loadLosAngelesToSeattleResearchBenchmark,
   losAngelesToSeattleBalancedResearchScenario,
@@ -129,6 +130,21 @@ const rentalSupplySignal = (
   return `This bedroom need is a ${
     differenceBps > 0 ? "larger" : "smaller"
   } share of renter homes in ${destinationCity} than ${originCity}.`;
+};
+
+const mobilityContextReading = (
+  destinationCity: string,
+  originCity: string,
+  destinationCommuteAwayShare: string,
+  differenceBps: number,
+) => {
+  const direction =
+    Math.abs(differenceBps) < 50
+      ? `similar to ${originCity}`
+      : differenceBps > 0
+        ? `higher than ${originCity}`
+        : `lower than ${originCity}`;
+  return `${destinationCommuteAwayShare} of ${destinationCity} workers commute away from home, ${direction}. This is daily-life context, not a car-dependence score.`;
 };
 
 const nextStepCopy: Record<string, string> = {
@@ -320,6 +336,10 @@ export const createResearchResultsViewModel = (
   const profile = result.decisionProfile;
   const { analysis } = evaluateMoveWiseRule({ evaluation: result });
   const housingContext = getResearchMetroHousingContext(
+    profile.scenario.origin.slug,
+    profile.scenario.destination.slug,
+  );
+  const mobilityGuidance = getResearchMetroMobilityGuidance(
     profile.scenario.origin.slug,
     profile.scenario.destination.slug,
   );
@@ -1110,6 +1130,27 @@ export const createResearchResultsViewModel = (
             weight: priority.weight,
             quality: commuteMetric.quality.grade.value,
             interpretation: priorityInterpretation,
+            mobilityContext: mobilityGuidance
+              ? {
+                  role: "Context only",
+                  originCommuteAwayShare: formatPercent(
+                    mobilityGuidance.origin.commuteAwayShareBps,
+                  ),
+                  destinationCommuteAwayShare: formatPercent(
+                    mobilityGuidance.destination.commuteAwayShareBps,
+                  ),
+                  reading: mobilityContextReading(
+                    profile.scenario.destination.selectedPlace.city,
+                    profile.scenario.origin.selectedPlace.city,
+                    formatPercent(
+                      mobilityGuidance.destination.commuteAwayShareBps,
+                    ),
+                    mobilityGuidance.commuteAwayShareDifferenceBps,
+                  ),
+                  sourceLabel: `${mobilityGuidance.source.publisher} · ACS tables ${mobilityGuidance.source.commuteTableId} and ${mobilityGuidance.source.workerModeTableId}`,
+                  boundary: mobilityGuidance.boundary,
+                }
+              : null,
           },
     climate:
       climatePriority.weight === 0

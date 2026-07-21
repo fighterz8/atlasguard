@@ -1,4 +1,7 @@
-import { getSupportedResearchPlace } from "@workspace/benchmark-data";
+import {
+  getResearchMetroMobilityGuidance,
+  getSupportedResearchPlace,
+} from "@workspace/benchmark-data";
 
 import { submitWizardDraft } from "./submit-wizard-draft";
 import type { WizardErrors, WizardPrototypeDraft } from "./model";
@@ -122,6 +125,10 @@ export function createMoveWiseReviewModel(
   const rentGuidance = assumptions.rentGuidance;
   const incomeGuidance = assumptions.incomeGuidance;
   const expenseGuidance = assumptions.expenseGuidance;
+  const mobilityGuidance = getResearchMetroMobilityGuidance(
+    draft.originSlug,
+    draft.destinationSlug,
+  );
   const destinationHousing =
     result.evaluation.scenarioInput.finances.destination.housingCost
       .monthlyCents;
@@ -215,6 +222,34 @@ export function createMoveWiseReviewModel(
     });
   }
 
+  if (mobilityGuidance) {
+    const commuteDelta = mobilityGuidance.displayCommuteDifferenceMinutes;
+    const commuteAwayDifference =
+      mobilityGuidance.commuteAwayShareDifferenceBps;
+    const commuteAwayDirection =
+      Math.abs(commuteAwayDifference) < 50
+        ? "similar"
+        : commuteAwayDifference > 0
+          ? "higher"
+          : "lower";
+    findings.push({
+      id: "daily-life-friction",
+      label: "Daily-life friction",
+      detail: `${destination.city} has a ${Math.abs(commuteDelta).toFixed(
+        1,
+      )}-minute ${commuteDelta <= 0 ? "shorter" : "longer"} typical commute. ${formatPercent(
+        mobilityGuidance.destination.commuteAwayShareBps,
+      )} of ${destination.city} workers commute away from home, a ${commuteAwayDirection} share than ${origin.city}. This is not a car-dependence score.`,
+      tone:
+        commuteDelta > 2
+          ? "caution"
+          : commuteDelta < -2
+            ? "favorable"
+            : "neutral",
+      role: "Context only",
+    });
+  }
+
   findings.push({
     id: "monthly-cushion",
     label: "Monthly cushion direction",
@@ -302,6 +337,20 @@ export function createMoveWiseReviewModel(
             "Bedroom-aware public rent guidance was unavailable for this move picture.",
           tone: "caution" as const,
         },
+    mobilityGuidance
+      ? {
+          id: "mobility-source",
+          label: "Mobility",
+          detail: `${mobilityGuidance.source.publisher} · ACS tables ${mobilityGuidance.source.commuteTableId}/${mobilityGuidance.source.workerModeTableId} · ${mobilityGuidance.source.observationPeriod}`,
+          tone: "neutral" as const,
+        }
+      : {
+          id: "mobility-source",
+          label: "Mobility",
+          detail:
+            "Mobility context was unavailable for this supported comparison.",
+          tone: "caution" as const,
+        },
     expenseGuidance
       ? {
           id: "expense-source",
@@ -320,7 +369,7 @@ export function createMoveWiseReviewModel(
       id: "missing-public-evidence",
       label: "Not scored yet",
       detail:
-        "Expanded household, ownership, childcare, school, and neighborhood evidence are not included in this v1 score.",
+        "Expanded household, ownership, childcare, school, neighborhood, transportation-mode, and vehicle-availability evidence are not included in this v1 score.",
       tone: "unavailable",
     },
   ];

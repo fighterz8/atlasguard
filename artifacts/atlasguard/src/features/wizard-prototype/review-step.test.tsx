@@ -60,6 +60,7 @@ describe("MoveWise review step", () => {
       "rental-supply",
       "rent-ceiling-fit",
       "recurring-expenses",
+      "daily-life-friction",
       "monthly-cushion",
       "biggest-caveat",
     ]);
@@ -103,6 +104,9 @@ describe("MoveWise review step", () => {
     expect(html).toContain("Rent ceiling fit");
     expect(html).toContain("Ownership later is context only");
     expect(html).toContain("Recurring expense translation");
+    expect(html).toContain("Daily-life friction");
+    expect(html).toContain("commute away from home");
+    expect(html).toContain("not a car-dependence score");
     expect(html).toContain("Monthly cushion direction");
     expect(html).toContain("Biggest caveat");
     expect(html).toContain("Assumptions about to be scored");
@@ -113,6 +117,7 @@ describe("MoveWise review step", () => {
     expect(html).toContain("Data coverage");
     expect(html).toContain("ACS table B19013");
     expect(html).toContain("ACS tables B25031/B25042");
+    expect(html).toContain("ACS tables B08013/B08006");
     expect(html).toContain("U.S. Bureau of Economic Analysis");
     expect(html).toContain("Edit assumptions");
     expect(html).not.toContain("MoveWise Score");
