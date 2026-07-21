@@ -1,6 +1,7 @@
 import {
   compareResearchMetroClimateRatings,
   getResearchMetroClimateRating,
+  getResearchMetroClimateRiskGuidance,
   getResearchMetroFamilyCostGuidance,
   getResearchMetroMobilityGuidance,
   getResearchMetroHousingContext,
@@ -174,6 +175,15 @@ const ownershipReading = (
   ownerValueDirection === "similar" && ownerCostDirection === "similar"
     ? `${destinationCity} and ${originCity} have similar ACS ownership context in this estimate.`
     : `${destinationCity} has ${ownerValueDirection} ACS owner-occupied home values and ${ownerCostDirection} selected monthly owner costs with a mortgage than ${originCity}.`;
+
+const climateRiskReading = (
+  destinationCity: string,
+  originCity: string,
+  direction: "lower" | "similar" | "higher",
+) =>
+  direction === "similar"
+    ? `${destinationCity} and ${originCity} have similar FEMA NRI anchor-county baseline risk in this extract.`
+    : `${destinationCity}'s selected-city anchor county has ${direction} FEMA NRI baseline risk than ${originCity}'s selected-city anchor county.`;
 
 const nextStepCopy: Record<string, string> = {
   review_decision_evidence:
@@ -384,6 +394,10 @@ export const createResearchResultsViewModel = (
     Math.round(
       profile.financialPosition.origin.monthlyRecurringExpensesCents / 100,
     ),
+  );
+  const climateRiskGuidance = getResearchMetroClimateRiskGuidance(
+    profile.scenario.origin.slug,
+    profile.scenario.destination.slug,
   );
   const ownershipGuidance = ownershipContextApplies(
     deterministicContext?.destinationAssumptions?.destinationHousingTenure,
@@ -1184,6 +1198,32 @@ export const createResearchResultsViewModel = (
           reading: familyCostGuidance.summary,
           childcareBoundary: familyCostGuidance.childcareBoundary,
           sourceLabel: `${familyCostGuidance.source.publisher} · ${familyCostGuidance.source.tableId} line ${familyCostGuidance.source.lineCode}`,
+        }
+      : null,
+    climateRiskContext: climateRiskGuidance
+      ? {
+          role: climateRiskGuidance.role,
+          originAnchorCounty: climateRiskGuidance.origin.anchorCounty,
+          destinationAnchorCounty: climateRiskGuidance.destination.anchorCounty,
+          originOverallRisk: climateRiskGuidance.origin.overallRiskRating,
+          destinationOverallRisk:
+            climateRiskGuidance.destination.overallRiskRating,
+          destinationExpectedAnnualLoss:
+            climateRiskGuidance.destination.expectedAnnualLossRating,
+          destinationSocialVulnerability:
+            climateRiskGuidance.destination.socialVulnerabilityRating,
+          destinationCommunityResilience:
+            climateRiskGuidance.destination.communityResilienceRating,
+          prominentHazards: climateRiskGuidance.destinationProminentHazards.map(
+            ({ label, rating }) => `${label}: ${rating}`,
+          ),
+          reading: climateRiskReading(
+            profile.scenario.destination.selectedPlace.city,
+            profile.scenario.origin.selectedPlace.city,
+            climateRiskGuidance.riskDirection,
+          ),
+          boundary: climateRiskGuidance.boundary,
+          sourceLabel: `${climateRiskGuidance.source.publisher} · ${climateRiskGuidance.source.dataset} ${climateRiskGuidance.source.datasetVersion}`,
         }
       : null,
     ownershipContext: ownershipGuidance

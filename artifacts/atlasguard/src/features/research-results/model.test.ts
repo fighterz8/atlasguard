@@ -286,6 +286,25 @@ describe("research results view model", () => {
     });
     expect(model.climate).not.toHaveProperty("originStation");
     expect(model.climate).not.toHaveProperty("destinationStation");
+    expect(model.climateRiskContext).toMatchObject({
+      role: "Context only",
+      originAnchorCounty: "Los Angeles County, CA",
+      destinationAnchorCounty: "King County, WA",
+      originOverallRisk: "Very High",
+      destinationOverallRisk: "Very High",
+      destinationExpectedAnnualLoss: "Very High",
+      destinationCommunityResilience: "Very High",
+      prominentHazards: expect.arrayContaining([
+        "Inland flooding: Very High",
+        "Earthquake: Very High",
+      ]),
+      reading: expect.stringContaining(
+        "similar FEMA NRI anchor-county baseline risk",
+      ),
+      boundary: expect.stringContaining("not a neighborhood or parcel rating"),
+      sourceLabel:
+        "Federal Emergency Management Agency · National Risk Index Counties December 2025 v1.20",
+    });
     expect(model.climateEvidence).toMatchObject({
       publisher: expect.stringContaining("NOAA"),
       observationPeriod: "1991-2020 climate normal",
@@ -533,6 +552,19 @@ describe("research results view model", () => {
       destinationSummary: expect.stringContaining("Mild, dry, and sunny"),
       traitChanges: expect.arrayContaining(["much milder summers"]),
     });
+    expect(model.climateRiskContext).toMatchObject({
+      originAnchorCounty: "Travis County, TX",
+      destinationAnchorCounty: "San Diego County, CA",
+      originOverallRisk: "Relatively High",
+      destinationOverallRisk: "Very High",
+      prominentHazards: expect.arrayContaining([
+        "Wildfire: Very High",
+        "Inland flooding: Very High",
+      ]),
+      reading: expect.stringContaining(
+        "higher FEMA NRI baseline risk than Austin",
+      ),
+    });
   });
 
   it("reverses pair-specific evidence without retaining forward-route copy", () => {
@@ -562,6 +594,14 @@ describe("research results view model", () => {
       ),
     });
     expect(model.climate?.traitChanges).toContain("much hotter summers");
+    expect(model.climateRiskContext).toMatchObject({
+      originAnchorCounty: "San Diego County, CA",
+      destinationAnchorCounty: "Travis County, TX",
+      destinationOverallRisk: "Relatively High",
+      reading: expect.stringContaining(
+        "lower FEMA NRI baseline risk than San Diego",
+      ),
+    });
     expect(model.housingContext.reading).not.toContain("Seattle");
   });
 
@@ -616,6 +656,12 @@ describe("research results view model", () => {
     expect(
       createResearchResultsViewModel(evaluation.evaluation).climateEvidence,
     ).toBeNull();
+    expect(
+      createResearchResultsViewModel(evaluation.evaluation).climateRiskContext,
+    ).toMatchObject({
+      role: "Context only",
+      boundary: expect.stringContaining("not a scored MoveWise rule"),
+    });
     expect(
       createResearchResultsViewModel(evaluation.evaluation).confidence
         .explanation,

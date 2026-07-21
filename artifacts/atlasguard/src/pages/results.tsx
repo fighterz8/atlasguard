@@ -76,6 +76,7 @@ export function ResearchResultsExperience({
           comparison={model.comparison}
           priority={model.priority}
           climate={model.climate}
+          climateRiskContext={model.climateRiskContext}
           incomeLaborContext={model.incomeLaborContext}
           ownershipContext={model.ownershipContext}
           familyCostContext={model.familyCostContext}

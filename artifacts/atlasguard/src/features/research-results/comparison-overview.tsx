@@ -8,6 +8,7 @@ type ComparisonOverviewProps = Pick<
   | "comparison"
   | "priority"
   | "climate"
+  | "climateRiskContext"
   | "housingContext"
   | "incomeLaborContext"
   | "ownershipContext"
@@ -35,6 +36,7 @@ export function ComparisonOverview({
   comparison,
   priority,
   climate,
+  climateRiskContext,
   housingContext,
   incomeLaborContext,
   ownershipContext,
@@ -298,7 +300,7 @@ export function ComparisonOverview({
         </div>
       ) : null}
 
-      {priority || climate ? (
+      {priority || climate || climateRiskContext ? (
         <div className="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-14">
           {priority ? (
             <article aria-labelledby="commute-comparison-heading">
@@ -356,10 +358,10 @@ export function ComparisonOverview({
             </article>
           ) : null}
 
-          {climate ? (
+          {climate || climateRiskContext ? (
             <article aria-labelledby="climate-comparison-heading">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                Preference: {climate.preference}
+                {climate ? `Preference: ${climate.preference}` : "Context only"}
               </p>
               <div className="mt-2 flex items-baseline justify-between gap-4 border-b border-slate-300 pb-3">
                 <h3
@@ -368,31 +370,111 @@ export function ComparisonOverview({
                 >
                   Climate
                 </h3>
-                <StatusBadge tone={classificationTone[climate.classification]}>
-                  {classificationCopy[climate.classification]}
+                <StatusBadge
+                  tone={
+                    climate
+                      ? classificationTone[climate.classification]
+                      : "neutral"
+                  }
+                >
+                  {climate
+                    ? classificationCopy[climate.classification]
+                    : "Context only"}
                 </StatusBadge>
               </div>
-              <div className="grid gap-5 py-5 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">
-                    {route.originCity}
+              {climate ? (
+                <>
+                  <div className="grid gap-5 py-5 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500">
+                        {route.originCity}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        {climate.originSummary}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500">
+                        {route.destinationCity}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        {climate.destinationSummary}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="border-t border-slate-200 pt-4 text-sm leading-6 text-slate-600">
+                    {climate.traitChanges.join(" · ")}
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {climate.originSummary}
+                </>
+              ) : null}
+              {climateRiskContext ? (
+                <div className="mt-5 border-l-4 border-slate-300 bg-white/60 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge tone="neutral">
+                      {climateRiskContext.role}
+                    </StatusBadge>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                      {climateRiskContext.sourceLabel}
+                    </p>
+                  </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-slate-500">
+                        Anchor county · {route.originCity}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-950">
+                        {climateRiskContext.originAnchorCounty}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        Overall risk:{" "}
+                        <span className="font-semibold text-slate-800">
+                          {climateRiskContext.originOverallRisk}
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">
+                        Anchor county · {route.destinationCity}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-950">
+                        {climateRiskContext.destinationAnchorCounty}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        Overall risk:{" "}
+                        <span className="font-semibold text-slate-800">
+                          {climateRiskContext.destinationOverallRisk}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-700">
+                    {climateRiskContext.reading} Destination expected annual
+                    loss is{" "}
+                    <span className="font-medium">
+                      {climateRiskContext.destinationExpectedAnnualLoss}
+                    </span>
+                    , social vulnerability is{" "}
+                    <span className="font-medium">
+                      {climateRiskContext.destinationSocialVulnerability}
+                    </span>
+                    , and community resilience is{" "}
+                    <span className="font-medium">
+                      {climateRiskContext.destinationCommunityResilience}
+                    </span>
+                    .
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
+                    Prominent destination hazard ratings:{" "}
+                    <span className="font-medium">
+                      {climateRiskContext.prominentHazards.join("; ")}
+                    </span>
+                    .
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    {climateRiskContext.boundary}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">
-                    {route.destinationCity}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {climate.destinationSummary}
-                  </p>
-                </div>
-              </div>
-              <p className="border-t border-slate-200 pt-4 text-sm leading-6 text-slate-600">
-                {climate.traitChanges.join(" · ")}
-              </p>
+              ) : null}
             </article>
           ) : null}
         </div>

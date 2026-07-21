@@ -1,4 +1,5 @@
 import {
+  getResearchMetroClimateRiskGuidance,
   getResearchMetroFamilyCostGuidance,
   getResearchMetroMobilityGuidance,
   getResearchMetroOwnershipGuidance,
@@ -136,6 +137,10 @@ export function createMoveWiseReviewModel(
     Number(draft.finances.currentExpenses.trim().replace(/,/g, "")),
   );
   const ownershipGuidance = getResearchMetroOwnershipGuidance(
+    draft.originSlug,
+    draft.destinationSlug,
+  );
+  const climateRiskGuidance = getResearchMetroClimateRiskGuidance(
     draft.originSlug,
     draft.destinationSlug,
   );
@@ -277,6 +282,23 @@ export function createMoveWiseReviewModel(
             ? "caution"
             : "neutral",
       role: familyCostGuidance.role,
+    });
+  }
+
+  if (climateRiskGuidance) {
+    const hazards = climateRiskGuidance.destinationProminentHazards
+      .map(({ label, rating }) => `${label}: ${rating}`)
+      .join("; ");
+    findings.push({
+      id: "climate-risk-context",
+      label: "Climate and risk context",
+      detail: `${climateRiskGuidance.summary} ${destination.city}'s anchor county is ${climateRiskGuidance.destination.overallRiskRating} overall risk; prominent FEMA NRI hazard ratings include ${hazards}. This is county-level context only, not a forecast or scored safety model.`,
+      tone:
+        climateRiskGuidance.riskDirection === "higher" ||
+        climateRiskGuidance.destination.overallRiskRating === "Very High"
+          ? "caution"
+          : "neutral",
+      role: climateRiskGuidance.role,
     });
   }
 
@@ -423,6 +445,20 @@ export function createMoveWiseReviewModel(
             "Owner value and selected owner-cost context was unavailable for this supported comparison.",
           tone: "caution" as const,
         },
+    climateRiskGuidance
+      ? {
+          id: "climate-risk-source",
+          label: "Climate and risk",
+          detail: `${climateRiskGuidance.source.publisher} · ${climateRiskGuidance.source.dataset} · ${climateRiskGuidance.source.datasetVersion} · selected-city anchor counties`,
+          tone: "neutral" as const,
+        }
+      : {
+          id: "climate-risk-source",
+          label: "Climate and risk",
+          detail:
+            "FEMA county-level climate and natural-hazard context was unavailable for this supported comparison.",
+          tone: "caution" as const,
+        },
     expenseGuidance
       ? {
           id: "expense-source",
@@ -441,7 +477,7 @@ export function createMoveWiseReviewModel(
       id: "missing-public-evidence",
       label: "Not scored yet",
       detail:
-        "Expanded household, ownership financing, childcare, school, neighborhood, transportation-mode, and vehicle-availability evidence are not included in this v1 score.",
+        "Expanded household, ownership financing, childcare, school, neighborhood, property-level climate risk, transportation-mode, and vehicle-availability evidence are not included in this v1 score.",
       tone: "unavailable",
     },
   ];

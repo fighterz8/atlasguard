@@ -62,6 +62,7 @@ describe("MoveWise review step", () => {
       "ownership-later",
       "recurring-expenses",
       "family-operating-costs",
+      "climate-risk-context",
       "daily-life-friction",
       "monthly-cushion",
       "biggest-caveat",
@@ -110,6 +111,9 @@ describe("MoveWise review step", () => {
     expect(html).toContain("Recurring expense translation");
     expect(html).toContain("Family operating costs");
     expect(html).toContain("not childcare-price data");
+    expect(html).toContain("Climate and risk context");
+    expect(html).toContain("county-level context only");
+    expect(html).toContain("FEMA NRI");
     expect(html).toContain("Daily-life friction");
     expect(html).toContain("commute away from home");
     expect(html).toContain("not a car-dependence score");
@@ -125,6 +129,7 @@ describe("MoveWise review step", () => {
     expect(html).toContain("ACS tables B25031/B25042");
     expect(html).toContain("ACS tables B08013/B08006");
     expect(html).toContain("ACS tables B25077/B25088");
+    expect(html).toContain("National Risk Index Counties");
     expect(html).toContain("U.S. Bureau of Economic Analysis");
     expect(html).toContain("Edit assumptions");
     expect(html).not.toContain("MoveWise Score");
