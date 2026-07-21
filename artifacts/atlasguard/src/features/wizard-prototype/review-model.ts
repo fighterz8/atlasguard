@@ -1,6 +1,7 @@
 import {
   getResearchMetroFamilyCostGuidance,
   getResearchMetroMobilityGuidance,
+  getResearchMetroOwnershipGuidance,
   getSupportedResearchPlace,
 } from "@workspace/benchmark-data";
 
@@ -77,6 +78,9 @@ const planningSourceTone: Record<DestinationPlanningSource, ReviewTone> = {
 const differenceText = (amount: number, noun: string) =>
   `${formatDollars(Math.abs(amount))} ${amount <= 0 ? "lower" : "higher"} ${noun}`;
 
+const ownershipContextApplies = (tenure: string) =>
+  tenure === "rent_then_buy" || tenure === "buy";
+
 const supplyComparisonText = (
   destinationCity: string,
   originCity: string,
@@ -130,6 +134,10 @@ export function createMoveWiseReviewModel(
     draft.originSlug,
     draft.destinationSlug,
     Number(draft.finances.currentExpenses.trim().replace(/,/g, "")),
+  );
+  const ownershipGuidance = getResearchMetroOwnershipGuidance(
+    draft.originSlug,
+    draft.destinationSlug,
   );
   const mobilityGuidance = getResearchMetroMobilityGuidance(
     draft.originSlug,
@@ -213,6 +221,35 @@ export function createMoveWiseReviewModel(
     });
   }
 
+  if (
+    ownershipContextApplies(assumptions.destinationHousingTenure) &&
+    ownershipGuidance
+  ) {
+    findings.push({
+      id: "ownership-later",
+      label:
+        assumptions.destinationHousingTenure === "buy"
+          ? "Ownership context"
+          : "Ownership-later context",
+      detail: `${destination.city} owner-occupied median value is ${differenceText(
+        ownershipGuidance.ownerValueDifferenceDollars,
+        `than ${origin.city}`,
+      )}; selected monthly owner costs with a mortgage are ${differenceText(
+        ownershipGuidance.monthlyOwnerCostWithMortgageDifferenceDollars,
+        `than ${origin.city}`,
+      )}. This is not a mortgage quote or scored buying model.`,
+      tone:
+        ownershipGuidance.ownerValueDirection === "higher" ||
+        ownershipGuidance.ownerCostDirection === "higher"
+          ? "caution"
+          : ownershipGuidance.ownerValueDirection === "lower" &&
+              ownershipGuidance.ownerCostDirection === "lower"
+            ? "favorable"
+            : "neutral",
+      role: ownershipGuidance.role,
+    });
+  }
+
   if (expenseGuidance) {
     const expenseDelta =
       expenseGuidance.suggestedMonthlyExpensesDollars -
@@ -286,7 +323,7 @@ export function createMoveWiseReviewModel(
     id: "biggest-caveat",
     label: "Biggest caveat",
     detail:
-      "MoveWise is evaluating the immediate rent-first stage. Ownership, childcare, schools, and neighborhood fit remain context only until public evidence and rules are added.",
+      "MoveWise is evaluating the immediate rent-first stage. Ownership financing, childcare, schools, and neighborhood fit remain context only until user-reviewed inputs and approved rules are added.",
     tone: "caution",
     role: "Context only",
   });
@@ -372,6 +409,20 @@ export function createMoveWiseReviewModel(
             "Mobility context was unavailable for this supported comparison.",
           tone: "caution" as const,
         },
+    ownershipGuidance
+      ? {
+          id: "ownership-source",
+          label: "Ownership",
+          detail: `${ownershipGuidance.source.publisher} · ACS tables ${ownershipGuidance.source.ownerValueTableId}/${ownershipGuidance.source.selectedOwnerCostsTableId} · ${ownershipGuidance.source.observationPeriod}`,
+          tone: "neutral" as const,
+        }
+      : {
+          id: "ownership-source",
+          label: "Ownership",
+          detail:
+            "Owner value and selected owner-cost context was unavailable for this supported comparison.",
+          tone: "caution" as const,
+        },
     expenseGuidance
       ? {
           id: "expense-source",
@@ -390,7 +441,7 @@ export function createMoveWiseReviewModel(
       id: "missing-public-evidence",
       label: "Not scored yet",
       detail:
-        "Expanded household, ownership, childcare, school, neighborhood, transportation-mode, and vehicle-availability evidence are not included in this v1 score.",
+        "Expanded household, ownership financing, childcare, school, neighborhood, transportation-mode, and vehicle-availability evidence are not included in this v1 score.",
       tone: "unavailable",
     },
   ];
@@ -404,11 +455,15 @@ export function createMoveWiseReviewModel(
       housingStage:
         assumptions.destinationHousingTenure === "rent_then_buy"
           ? "Renting first"
-          : "Renting",
+          : assumptions.destinationHousingTenure === "buy"
+            ? "Buying plan"
+            : "Renting",
       housingLaterPlan:
         assumptions.destinationHousingTenure === "rent_then_buy"
           ? "Ownership later is context only"
-          : "No ownership timeline in this score",
+          : assumptions.destinationHousingTenure === "buy"
+            ? "Ownership is context only in this score"
+            : "No ownership timeline in this score",
       scoringScope: "Immediate rental stage · deterministic rule 0.2.0",
       findings,
       assumptions: reviewAssumptions,

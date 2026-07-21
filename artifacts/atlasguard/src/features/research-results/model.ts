@@ -5,6 +5,7 @@ import {
   getResearchMetroMobilityGuidance,
   getResearchMetroHousingContext,
   getResearchMetroIncomeGuidance,
+  getResearchMetroOwnershipGuidance,
   loadLosAngelesToSeattleResearchBenchmark,
   losAngelesToSeattleBalancedResearchScenario,
 } from "@workspace/benchmark-data";
@@ -120,6 +121,12 @@ const housingTenureLabel = (
       ? "buying"
       : "renting or buying";
 
+const ownershipContextApplies = (
+  tenure:
+    | DestinationPlanningAssumptions["destinationHousingTenure"]
+    | undefined,
+) => tenure === "rent_then_buy" || tenure === "buy";
+
 const rentalSupplySignal = (
   destinationCity: string,
   originCity: string,
@@ -157,6 +164,16 @@ const incomeLaborReading = (
   direction === "similar"
     ? `${destinationCity} and ${originCity} have similar ACS metro household income in this estimate. This is labor-market context, not a household-specific salary forecast.`
     : `${destinationCity} metro household income is ${direction} than ${originCity} in this ACS estimate. This is labor-market context, not a household-specific salary forecast.`;
+
+const ownershipReading = (
+  destinationCity: string,
+  originCity: string,
+  ownerValueDirection: "lower" | "similar" | "higher",
+  ownerCostDirection: "lower" | "similar" | "higher",
+) =>
+  ownerValueDirection === "similar" && ownerCostDirection === "similar"
+    ? `${destinationCity} and ${originCity} have similar ACS ownership context in this estimate.`
+    : `${destinationCity} has ${ownerValueDirection} ACS owner-occupied home values and ${ownerCostDirection} selected monthly owner costs with a mortgage than ${originCity}.`;
 
 const nextStepCopy: Record<string, string> = {
   review_decision_evidence:
@@ -368,6 +385,14 @@ export const createResearchResultsViewModel = (
       profile.financialPosition.origin.monthlyRecurringExpensesCents / 100,
     ),
   );
+  const ownershipGuidance = ownershipContextApplies(
+    deterministicContext?.destinationAssumptions?.destinationHousingTenure,
+  )
+    ? getResearchMetroOwnershipGuidance(
+        profile.scenario.origin.slug,
+        profile.scenario.destination.slug,
+      )
+    : null;
   if (housingContext === null) {
     throw new Error(
       "Research preview requires promoted housing context for the selected metros.",
@@ -1159,6 +1184,57 @@ export const createResearchResultsViewModel = (
           reading: familyCostGuidance.summary,
           childcareBoundary: familyCostGuidance.childcareBoundary,
           sourceLabel: `${familyCostGuidance.source.publisher} · ${familyCostGuidance.source.tableId} line ${familyCostGuidance.source.lineCode}`,
+        }
+      : null,
+    ownershipContext: ownershipGuidance
+      ? {
+          role: ownershipGuidance.role,
+          originOwnerValue: dollars.format(
+            ownershipGuidance.origin.medianOwnerOccupiedValueDollars,
+          ),
+          destinationOwnerValue: dollars.format(
+            ownershipGuidance.destination.medianOwnerOccupiedValueDollars,
+          ),
+          ownerValueDifference:
+            ownershipGuidance.ownerValueDifferenceDollars === 0
+              ? "$0 difference"
+              : `${dollars.format(
+                  Math.abs(ownershipGuidance.ownerValueDifferenceDollars),
+                )} ${
+                  ownershipGuidance.ownerValueDifferenceDollars < 0
+                    ? "lower"
+                    : "higher"
+                }`,
+          originMonthlyOwnerCostsWithMortgage: dollars.format(
+            ownershipGuidance.origin
+              .monthlySelectedOwnerCostsWithMortgageDollars,
+          ),
+          destinationMonthlyOwnerCostsWithMortgage: dollars.format(
+            ownershipGuidance.destination
+              .monthlySelectedOwnerCostsWithMortgageDollars,
+          ),
+          monthlyOwnerCostDifference:
+            ownershipGuidance.monthlyOwnerCostWithMortgageDifferenceDollars ===
+            0
+              ? "$0 difference"
+              : `${dollars.format(
+                  Math.abs(
+                    ownershipGuidance.monthlyOwnerCostWithMortgageDifferenceDollars,
+                  ),
+                )} ${
+                  ownershipGuidance.monthlyOwnerCostWithMortgageDifferenceDollars <
+                  0
+                    ? "lower"
+                    : "higher"
+                }`,
+          reading: ownershipReading(
+            profile.scenario.destination.selectedPlace.city,
+            profile.scenario.origin.selectedPlace.city,
+            ownershipGuidance.ownerValueDirection,
+            ownershipGuidance.ownerCostDirection,
+          ),
+          boundary: ownershipGuidance.boundary,
+          sourceLabel: `${ownershipGuidance.source.publisher} · ACS tables ${ownershipGuidance.source.ownerValueTableId}/${ownershipGuidance.source.selectedOwnerCostsTableId}`,
         }
       : null,
     housingContext: {

@@ -59,6 +59,7 @@ describe("MoveWise review step", () => {
       "bedroom-rent-fit",
       "rental-supply",
       "rent-ceiling-fit",
+      "ownership-later",
       "recurring-expenses",
       "family-operating-costs",
       "daily-life-friction",
@@ -104,6 +105,8 @@ describe("MoveWise review step", () => {
     expect(html).toContain("Rental supply signal");
     expect(html).toContain("Rent ceiling fit");
     expect(html).toContain("Ownership later is context only");
+    expect(html).toContain("Ownership-later context");
+    expect(html).toContain("not a mortgage quote");
     expect(html).toContain("Recurring expense translation");
     expect(html).toContain("Family operating costs");
     expect(html).toContain("not childcare-price data");
@@ -121,6 +124,7 @@ describe("MoveWise review step", () => {
     expect(html).toContain("ACS table B19013");
     expect(html).toContain("ACS tables B25031/B25042");
     expect(html).toContain("ACS tables B08013/B08006");
+    expect(html).toContain("ACS tables B25077/B25088");
     expect(html).toContain("U.S. Bureau of Economic Analysis");
     expect(html).toContain("Edit assumptions");
     expect(html).not.toContain("MoveWise Score");

@@ -10,6 +10,7 @@ type ComparisonOverviewProps = Pick<
   | "climate"
   | "housingContext"
   | "incomeLaborContext"
+  | "ownershipContext"
   | "familyCostContext"
 > & {
   reviewedAssumptions?: boolean;
@@ -36,6 +37,7 @@ export function ComparisonOverview({
   climate,
   housingContext,
   incomeLaborContext,
+  ownershipContext,
   familyCostContext,
   reviewedAssumptions = false,
 }: ComparisonOverviewProps) {
@@ -172,6 +174,60 @@ export function ComparisonOverview({
           </div>
         ))}
       </div>
+
+      {ownershipContext ? (
+        <div className="mt-6 border-l-4 border-slate-300 bg-white/60 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge tone="neutral">{ownershipContext.role}</StatusBadge>
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+              {ownershipContext.sourceLabel}
+            </p>
+          </div>
+          <div className="mt-3 grid gap-4 sm:grid-cols-[1fr_1fr_2fr]">
+            <div>
+              <p className="text-xs text-slate-500">
+                Owner value · {route.originCity}
+              </p>
+              <p className="mt-1 text-sm font-semibold tabular-nums text-slate-950">
+                {ownershipContext.originOwnerValue}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">
+                Owner value · {route.destinationCity}
+              </p>
+              <p className="mt-1 text-sm font-semibold tabular-nums text-slate-950">
+                {ownershipContext.destinationOwnerValue}
+              </p>
+            </div>
+            <p className="text-sm leading-6 text-slate-700">
+              {ownershipContext.reading}{" "}
+              <span className="font-medium">
+                Owner value is {ownershipContext.ownerValueDifference}; monthly
+                owner costs with a mortgage are{" "}
+                {ownershipContext.monthlyOwnerCostDifference}.
+              </span>
+            </p>
+          </div>
+          <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-2">
+            <p className="text-xs leading-5 text-slate-600">
+              Selected owner costs with mortgage · {route.originCity}:{" "}
+              <span className="font-semibold text-slate-800">
+                {ownershipContext.originMonthlyOwnerCostsWithMortgage}
+              </span>
+            </p>
+            <p className="text-xs leading-5 text-slate-600">
+              Selected owner costs with mortgage · {route.destinationCity}:{" "}
+              <span className="font-semibold text-slate-800">
+                {ownershipContext.destinationMonthlyOwnerCostsWithMortgage}
+              </span>
+            </p>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            {ownershipContext.boundary}
+          </p>
+        </div>
+      ) : null}
 
       {incomeLaborContext ? (
         <div className="mt-6 border-l-4 border-slate-300 bg-white/60 px-4 py-3">

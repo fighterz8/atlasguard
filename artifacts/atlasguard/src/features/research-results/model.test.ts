@@ -466,6 +466,18 @@ describe("research results view model", () => {
     expect(
       model.comparison.financialRows.some((row) => row.needsConfirmation),
     ).toBe(false);
+    expect(model.ownershipContext).toMatchObject({
+      role: "Context only",
+      originOwnerValue: "$908,500",
+      destinationOwnerValue: "$743,000",
+      ownerValueDifference: "$165,500 lower",
+      originMonthlyOwnerCostsWithMortgage: "$3,255",
+      destinationMonthlyOwnerCostsWithMortgage: "$2,989",
+      monthlyOwnerCostDifference: "$266 lower",
+      reading: expect.stringContaining("selected monthly owner costs"),
+      boundary: expect.stringContaining("not a mortgage quote"),
+      sourceLabel: "U.S. Census Bureau · ACS tables B25077/B25088",
+    });
   });
 
   it("builds pair-specific Austin to San Diego results", () => {
@@ -507,6 +519,7 @@ describe("research results view model", () => {
       reading: expect.stringContaining("family operating costs"),
       childcareBoundary: expect.stringContaining("not childcare-price data"),
     });
+    expect(model.ownershipContext).toBeNull();
     expect(model.housingContext).toMatchObject({
       originValue: "$1,784",
       destinationValue: "$2,336",
