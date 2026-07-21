@@ -78,7 +78,7 @@ export function MoneyStep({
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 2 of 4</p>
+          <p className="eyebrow">Step 2 of 5</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
@@ -256,9 +256,7 @@ export function MoneyStep({
                     }
                     basis={finances[definition.target.basisKey]}
                     basisKey={
-                      isDeferredHousing
-                        ? undefined
-                        : definition.target.basisKey
+                      isDeferredHousing ? undefined : definition.target.basisKey
                     }
                     sourceLabel={
                       hasOverride
@@ -328,7 +326,9 @@ export function MoneyStep({
                 MoveWise applied the destination-to-origin BEA regional price
                 level ratio to your current non-housing recurring expenses. The
                 editable estimate is{" "}
-                {dollars.format(expenseGuidance.suggestedMonthlyExpensesDollars)}{" "}
+                {dollars.format(
+                  expenseGuidance.suggestedMonthlyExpensesDollars,
+                )}{" "}
                 per month.
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">

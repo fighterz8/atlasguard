@@ -29,7 +29,7 @@ describe("HouseholdStep", () => {
       />,
     );
 
-    expect(html).toContain("Step 4 of 4");
+    expect(html).toContain("Step 4 of 5");
     expect(html).toContain("Your first rental plan");
     expect(html).toContain("Minimum bedrooms");
     expect(html).toContain("Maximum monthly rent");

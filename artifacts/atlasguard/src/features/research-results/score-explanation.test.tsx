@@ -9,6 +9,7 @@ import { createResearchResultsViewModel } from "./model";
 import { SummaryPanel } from "./summary-panel";
 import { evaluateWizardDraft } from "../wizard-prototype/evaluate-wizard-draft";
 import { createInitialWizardDraft } from "../wizard-prototype/model";
+import { ResearchResultsExperience } from "../../pages/results";
 
 describe("MoveWise score presentation", () => {
   it("introduces the relative score without displacing the canonical decision", () => {
@@ -173,5 +174,18 @@ describe("MoveWise score presentation", () => {
     expect(householdHtml).not.toContain("Not sure yet");
     expect(decisionNotesHtml).not.toContain("Verify the expected destination");
     expect(decisionNotesHtml).not.toContain("Assumptions to watch");
+  });
+
+  it("shows what changes before score mechanics in the guided Results read", () => {
+    (globalThis as typeof globalThis & { React: typeof React }).React = React;
+    const html = renderToStaticMarkup(
+      <ResearchResultsExperience model={createResearchResultsViewModel()} />,
+    );
+
+    expect(html.indexOf("What changes if you move")).toBeGreaterThan(-1);
+    expect(html.indexOf("What sits behind the score")).toBeGreaterThan(-1);
+    expect(html.indexOf("What changes if you move")).toBeLessThan(
+      html.indexOf("What sits behind the score"),
+    );
   });
 });

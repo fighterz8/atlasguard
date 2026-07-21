@@ -165,12 +165,11 @@ export function HouseholdStep({
           destinationSlug,
           plan.housing.bedrooms,
         );
-  const origin = originSlug === "" ? null : getSupportedResearchPlace(originSlug);
+  const origin =
+    originSlug === "" ? null : getSupportedResearchPlace(originSlug);
   const destination =
     destinationSlug === "" ? null : getSupportedResearchPlace(destinationSlug);
-  const normalizedBudget = plan.housing.maxMonthlyCost
-    .trim()
-    .replace(/,/g, "");
+  const normalizedBudget = plan.housing.maxMonthlyCost.trim().replace(/,/g, "");
   const budget = /^\d+$/.test(normalizedBudget)
     ? Number(normalizedBudget)
     : null;
@@ -185,8 +184,12 @@ export function HouseholdStep({
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 4 of 4</p>
-          <h1 id="wizard-step-heading" tabIndex={-1} className="section-heading">
+          <p className="eyebrow">Step 4 of 5</p>
+          <h1
+            id="wizard-step-heading"
+            tabIndex={-1}
+            className="section-heading"
+          >
             Your first rental plan
           </h1>
         </div>
@@ -204,7 +207,9 @@ export function HouseholdStep({
             <Home aria-hidden="true" className="h-4 w-4" />
           </span>
           <div>
-            <h2 className="font-semibold text-slate-950">Rent-first v1 scope</h2>
+            <h2 className="font-semibold text-slate-950">
+              Rent-first v1 scope
+            </h2>
             <p className="mt-1 text-sm leading-5 text-slate-600">
               V1 evaluates the immediate rental stage. A later purchase remains
               visible in your plan but does not enter this score.
@@ -283,17 +288,30 @@ export function HouseholdStep({
               {destination.city}: {dollars.format(destinationRent!)} per month
             </p>
             <p className="mt-2 text-sm leading-6 text-teal-950/80">
-              That is {dollars.format(Math.abs(rentDifference))} {rentDifference <= 0 ? "less" : "more"} than the same bedroom category in {origin.city}. {guidance.stockCategoryLabel.replace(/^./, (letter) => letter.toUpperCase())} make up {percent(guidance.destination.renterStockShareBps)} of {destination.city} renter-occupied homes versus {percent(guidance.origin.renterStockShareBps)} in {origin.city}.
+              That is {dollars.format(Math.abs(rentDifference))}{" "}
+              {rentDifference <= 0 ? "less" : "more"} than the same bedroom
+              category in {origin.city}.{" "}
+              {guidance.stockCategoryLabel.replace(/^./, (letter) =>
+                letter.toUpperCase(),
+              )}{" "}
+              make up {percent(guidance.destination.renterStockShareBps)} of{" "}
+              {destination.city} renter-occupied homes versus{" "}
+              {percent(guidance.origin.renterStockShareBps)} in {origin.city}.
             </p>
             {budgetDifference !== null ? (
-              <p className={`mt-3 text-sm font-semibold ${budgetDifference >= 0 ? "text-teal-950" : "text-risk"}`}>
+              <p
+                className={`mt-3 text-sm font-semibold ${budgetDifference >= 0 ? "text-teal-950" : "text-risk"}`}
+              >
                 {budgetDifference >= 0
                   ? `${dollars.format(destinationRent!)} is ${dollars.format(budgetDifference)} under your ceiling.`
                   : `${dollars.format(destinationRent!)} is ${dollars.format(Math.abs(budgetDifference))} over your ceiling.`}
               </p>
             ) : null}
             <p className="mt-3 text-xs leading-5 text-teal-900/70">
-              U.S. Census Bureau · {RESEARCH_METRO_RENT_SOURCE.observationPeriod} · tables B25031 and B25042. Occupied rental stock is a market proxy, not live listing availability or a guarantee of a matching home.
+              U.S. Census Bureau ·{" "}
+              {RESEARCH_METRO_RENT_SOURCE.observationPeriod} · tables B25031 and
+              B25042. Occupied rental stock is a market proxy, not live listing
+              availability or a guarantee of a matching home.
             </p>
           </aside>
         ) : null}

@@ -49,12 +49,13 @@ const validDraft = () => ({
 });
 
 describe("Wizard prototype model", () => {
-  it("uses the accepted four-step decision flow", () => {
+  it("uses the accepted five-step decision flow with review before results", () => {
     expect(wizardSteps.map(({ id }) => id)).toEqual([
       "move",
       "money",
       "priorities",
       "household",
+      "review",
     ]);
   });
 
@@ -252,13 +253,14 @@ describe("Wizard prototype model", () => {
       errors: {},
     });
     expect(getNextStep("priorities", validDraft()).step).toBe("household");
+    expect(getNextStep("household", validDraft()).step).toBe("review");
   });
 
   it("moves backward without mutating the draft", () => {
     const draft = validDraft();
     const before = structuredClone(draft);
 
-    expect(getPreviousStep("household")).toBe("priorities");
+    expect(getPreviousStep("review")).toBe("household");
     expect(draft).toEqual(before);
   });
 });

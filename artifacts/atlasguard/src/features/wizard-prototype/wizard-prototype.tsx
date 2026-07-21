@@ -30,6 +30,9 @@ import { MoneyStep, type BasisKey, type ValueKey } from "./money-step";
 import { MoveStep } from "./move-step";
 import { PrioritiesStep } from "./priorities-step";
 import { PrototypeShell } from "./prototype-shell";
+import { createMoveWiseReviewModel } from "./review-model";
+import type { MoveWiseReviewModel } from "./review-model";
+import { ReviewStep } from "./review-step";
 import { StepProgress } from "./step-progress";
 
 const exampleDraft: WizardPrototypeDraft = {
@@ -176,6 +179,9 @@ export function WizardPrototype({
   );
   const [errors, setErrors] = useState<WizardErrors>({});
   const [reviewComplete, setReviewComplete] = useState(false);
+  const [reviewModel, setReviewModel] = useState<MoveWiseReviewModel | null>(
+    null,
+  );
   const [isEvaluating, setIsEvaluating] = useState(false);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const evaluationTimerRef = useRef<number | null>(null);
@@ -224,6 +230,20 @@ export function WizardPrototype({
     }
 
     if (step === "household") {
+      const review = createMoveWiseReviewModel(clonePlainData(draft));
+      if (!review.success) {
+        setErrors(review.errors);
+        focusErrors(review.errors);
+        return;
+      }
+      setReviewModel(review.model);
+      setStep("review");
+      setReviewComplete(false);
+      focusStepHeading();
+      return;
+    }
+
+    if (step === "review") {
       if (onEvaluate) {
         setIsEvaluating(true);
         evaluationTimerRef.current = window.setTimeout(() => {
@@ -257,6 +277,7 @@ export function WizardPrototype({
     setDraft(createInitialWizardDraft());
     setStep("move");
     setErrors({});
+    setReviewModel(null);
     setReviewComplete(false);
     focusStepHeading();
   };
@@ -264,6 +285,7 @@ export function WizardPrototype({
   const loadExample = () => {
     setDraft(clonePlainData(exampleDraft));
     setErrors({});
+    setReviewModel(null);
     setReviewComplete(false);
   };
 
@@ -497,13 +519,24 @@ export function WizardPrototype({
                     />
                   ) : null}
                   {step === "household" ? (
-      <HouseholdStep
-        mode={draft.householdMode}
-        originSlug={draft.originSlug}
-        destinationSlug={draft.destinationSlug}
-        plan={draft.householdPlan}
+                    <HouseholdStep
+                      mode={draft.householdMode}
+                      originSlug={draft.originSlug}
+                      destinationSlug={draft.destinationSlug}
+                      plan={draft.householdPlan}
                       errors={errors}
                       onPlanChange={updateHouseholdPlan}
+                    />
+                  ) : null}
+                  {step === "review" && reviewModel ? (
+                    <ReviewStep
+                      model={reviewModel}
+                      onEditAssumptions={() => {
+                        setStep("money");
+                        setErrors({});
+                        setReviewComplete(false);
+                        focusStepHeading();
+                      }}
                     />
                   ) : null}
                 </div>
@@ -554,7 +587,7 @@ export function WizardPrototype({
                     onClick={continueForward}
                     className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-900"
                   >
-                    {step === "household" ? "See my result" : "Continue"}
+                    {step === "review" ? "Run final comparison" : "Continue"}
                     <ArrowRight aria-hidden="true" className="h-4 w-4" />
                   </button>
                 </div>
@@ -581,8 +614,8 @@ export function WizardPrototype({
                   : "choose a destination"}
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                Your answers stay editable. Use Back anytime—there is no
-                separate review chore at the end.
+                Your answers stay editable. MoveWise will show a review step
+                before the final comparison.
               </p>
             </div>
             <div className="rounded-xl bg-slate-950 p-5 text-white shadow-sm">

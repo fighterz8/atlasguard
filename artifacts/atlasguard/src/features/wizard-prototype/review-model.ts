@@ -1,0 +1,288 @@
+import { getSupportedResearchPlace } from "@workspace/benchmark-data";
+
+import { submitWizardDraft } from "./submit-wizard-draft";
+import type { WizardErrors, WizardPrototypeDraft } from "./model";
+import type { DestinationPlanningSource } from "./destination-planning-assumptions";
+
+type ReviewTone = "favorable" | "caution" | "risk" | "neutral" | "unavailable";
+type ReviewRole = "Scored" | "Used in estimate" | "Context only";
+
+export type MoveWiseReviewFinding = Readonly<{
+  id: string;
+  label: string;
+  detail: string;
+  tone: ReviewTone;
+  role: ReviewRole;
+}>;
+
+export type MoveWiseReviewAssumption = Readonly<{
+  id: string;
+  label: string;
+  value: string;
+  source: string;
+  role: ReviewRole;
+  tone: ReviewTone;
+}>;
+
+export type MoveWiseReviewCoverage = Readonly<{
+  id: string;
+  label: string;
+  detail: string;
+  tone: ReviewTone;
+}>;
+
+export type MoveWiseReviewModel = Readonly<{
+  routeLabel: string;
+  originCity: string;
+  destinationCity: string;
+  housingStage: string;
+  scoringScope: string;
+  findings: readonly MoveWiseReviewFinding[];
+  assumptions: readonly MoveWiseReviewAssumption[];
+  coverage: readonly MoveWiseReviewCoverage[];
+}>;
+
+export type MoveWiseReviewResult =
+  | Readonly<{ success: true; model: MoveWiseReviewModel }>
+  | Readonly<{ success: false; errors: WizardErrors }>;
+
+const dollars = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+const formatMoney = (cents: number) => dollars.format(cents / 100);
+const formatDollars = (value: number) => dollars.format(value);
+const formatPercent = (basisPoints: number) =>
+  `${(basisPoints / 100).toFixed(1)}%`;
+
+const planningSourceLabel: Record<DestinationPlanningSource, string> = {
+  movewise_public_estimate: "MoveWise public estimate",
+  movewise_baseline: "MoveWise fallback baseline",
+  user_override: "You entered this value",
+};
+
+const planningSourceTone: Record<DestinationPlanningSource, ReviewTone> = {
+  movewise_public_estimate: "neutral",
+  movewise_baseline: "caution",
+  user_override: "favorable",
+};
+
+const differenceText = (amount: number, noun: string) =>
+  `${formatDollars(Math.abs(amount))} ${amount <= 0 ? "lower" : "higher"} ${noun}`;
+
+export function createMoveWiseReviewModel(
+  draft: WizardPrototypeDraft,
+): MoveWiseReviewResult {
+  const result = submitWizardDraft(draft);
+  if (!result.success) return { success: false, errors: result.errors };
+
+  const origin = getSupportedResearchPlace(draft.originSlug);
+  const destination = getSupportedResearchPlace(draft.destinationSlug);
+  if (origin === null || destination === null) {
+    return {
+      success: false,
+      errors: {
+        destinationSlug:
+          "MoveWise could not resolve this comparison for review.",
+      },
+    };
+  }
+  const profile = result.evaluation.decisionProfile;
+  const finances = profile.financialPosition;
+  const cushionDelta =
+    finances.destination.monthlyCushionCents -
+    finances.origin.monthlyCushionCents;
+  const assumptions = result.destinationAssumptions;
+  const rentGuidance = assumptions.rentGuidance;
+  const incomeGuidance = assumptions.incomeGuidance;
+  const expenseGuidance = assumptions.expenseGuidance;
+  const destinationHousing =
+    result.evaluation.scenarioInput.finances.destination.housingCost
+      .monthlyCents;
+  const destinationTakeHome =
+    result.evaluation.scenarioInput.finances.destination.takeHomeIncome
+      .monthlyCents;
+  const destinationExpenses =
+    result.evaluation.scenarioInput.finances.destination
+      .recurringExpensesExcludingHousing.monthlyCents;
+  const rentCeilingDifference =
+    assumptions.maximumMonthlyRentDollars - destinationHousing / 100;
+
+  const findings: MoveWiseReviewFinding[] = [];
+
+  if (incomeGuidance) {
+    const incomeDelta =
+      incomeGuidance.suggestedMonthlyTakeHomeDollars -
+      incomeGuidance.currentMonthlyTakeHomeDollars;
+    findings.push({
+      id: "destination-income",
+      label: "Destination income estimate",
+      detail: `${destination.city} take-home starts at ${formatDollars(
+        incomeGuidance.suggestedMonthlyTakeHomeDollars,
+      )}, ${differenceText(incomeDelta, "than your current take-home")} using ACS metro income context.`,
+      tone: incomeDelta >= 0 ? "favorable" : "caution",
+      role: "Used in estimate",
+    });
+  }
+
+  if (rentGuidance) {
+    findings.push({
+      id: "bedroom-rent-fit",
+      label: "Bedroom-aware rent fit",
+      detail: `${rentGuidance.rentCategoryLabel} is ${differenceText(
+        rentGuidance.monthlyDifferenceDollars,
+        `than ${origin.city}`,
+      )}. ${rentGuidance.stockCategoryLabel.replace(/^./, (letter) =>
+        letter.toUpperCase(),
+      )} are ${formatPercent(
+        rentGuidance.destination.renterStockShareBps,
+      )} of ${destination.city} renter homes.`,
+      tone: rentGuidance.monthlyDifferenceDollars <= 0 ? "favorable" : "risk",
+      role: "Scored",
+    });
+  }
+
+  if (expenseGuidance) {
+    const expenseDelta =
+      expenseGuidance.suggestedMonthlyExpensesDollars -
+      expenseGuidance.currentMonthlyExpensesDollars;
+    findings.push({
+      id: "recurring-expenses",
+      label: "Recurring expense translation",
+      detail: `${destination.city} non-housing recurring expenses start at ${formatDollars(
+        expenseGuidance.suggestedMonthlyExpensesDollars,
+      )}, ${differenceText(expenseDelta, "than your current expenses")} using BEA regional prices.`,
+      tone: expenseDelta <= 0 ? "favorable" : "caution",
+      role: "Used in estimate",
+    });
+  }
+
+  findings.push({
+    id: "monthly-cushion",
+    label: "Monthly cushion direction",
+    detail: `The destination budget is ${formatMoney(
+      Math.abs(cushionDelta),
+    )} ${cushionDelta >= 0 ? "better" : "worse"} per month before final score mechanics.`,
+    tone:
+      cushionDelta > 0 ? "favorable" : cushionDelta < 0 ? "risk" : "neutral",
+    role: "Scored",
+  });
+
+  findings.push({
+    id: "biggest-caveat",
+    label: "Biggest caveat",
+    detail:
+      "MoveWise is evaluating the immediate rent-first stage. Ownership, childcare, schools, and neighborhood fit remain context only until public evidence and rules are added.",
+    tone: "caution",
+    role: "Context only",
+  });
+
+  const reviewAssumptions: MoveWiseReviewAssumption[] = [
+    {
+      id: "take-home",
+      label: "Destination take-home",
+      value: formatMoney(destinationTakeHome),
+      source: planningSourceLabel[assumptions.takeHome],
+      role: "Used in estimate",
+      tone: planningSourceTone[assumptions.takeHome],
+    },
+    {
+      id: "housing",
+      label: "Destination rent",
+      value: formatMoney(destinationHousing),
+      source: planningSourceLabel[assumptions.housing],
+      role: "Scored",
+      tone: planningSourceTone[assumptions.housing],
+    },
+    {
+      id: "expenses",
+      label: "Destination recurring expenses",
+      value: formatMoney(destinationExpenses),
+      source: planningSourceLabel[assumptions.expenses],
+      role: "Used in estimate",
+      tone: planningSourceTone[assumptions.expenses],
+    },
+    {
+      id: "rent-ceiling",
+      label: "Rent ceiling",
+      value: formatDollars(assumptions.maximumMonthlyRentDollars),
+      source:
+        rentCeilingDifference >= 0
+          ? `${formatDollars(rentCeilingDifference)} over the rent estimate`
+          : `${formatDollars(Math.abs(rentCeilingDifference))} under the rent estimate`,
+      role: assumptions.rentCeilingNonNegotiable ? "Scored" : "Context only",
+      tone: rentCeilingDifference >= 0 ? "favorable" : "risk",
+    },
+  ];
+
+  const coverage: MoveWiseReviewCoverage[] = [
+    incomeGuidance
+      ? {
+          id: "income-source",
+          label: "Income",
+          detail: `${incomeGuidance.source.publisher} · ACS table ${incomeGuidance.source.tableId} · ${incomeGuidance.source.observationPeriod}`,
+          tone: "neutral" as const,
+        }
+      : {
+          id: "income-source",
+          label: "Income",
+          detail:
+            "Public income guidance was unavailable, so MoveWise used the editable fallback baseline.",
+          tone: "caution" as const,
+        },
+    rentGuidance
+      ? {
+          id: "rent-source",
+          label: "Rent and rental stock",
+          detail: `${rentGuidance.source.publisher} · ACS tables ${rentGuidance.source.rentTableId}/${rentGuidance.source.stockTableId} · ${rentGuidance.source.observationPeriod}`,
+          tone: "neutral" as const,
+        }
+      : {
+          id: "rent-source",
+          label: "Rent and rental stock",
+          detail:
+            "Bedroom-aware public rent guidance was unavailable for this move picture.",
+          tone: "caution" as const,
+        },
+    expenseGuidance
+      ? {
+          id: "expense-source",
+          label: "Recurring expenses",
+          detail: `${expenseGuidance.source.publisher} · ${expenseGuidance.source.tableId} line ${expenseGuidance.source.lineCode} · ${expenseGuidance.source.observationPeriod}`,
+          tone: "neutral" as const,
+        }
+      : {
+          id: "expense-source",
+          label: "Recurring expenses",
+          detail:
+            "Regional price translation was unavailable, so MoveWise used the editable fallback baseline.",
+          tone: "caution" as const,
+        },
+    {
+      id: "missing-public-evidence",
+      label: "Not scored yet",
+      detail:
+        "Expanded household, ownership, childcare, school, and neighborhood evidence are not included in this v1 score.",
+      tone: "unavailable",
+    },
+  ];
+
+  return {
+    success: true,
+    model: {
+      routeLabel: `${origin.city} to ${destination.city}`,
+      originCity: origin.city,
+      destinationCity: destination.city,
+      housingStage:
+        assumptions.destinationHousingTenure === "rent_then_buy"
+          ? "Rent first, buy later"
+          : "Rent first",
+      scoringScope: "Immediate rental stage · deterministic rule 0.2.0",
+      findings,
+      assumptions: reviewAssumptions,
+      coverage,
+    },
+  };
+}

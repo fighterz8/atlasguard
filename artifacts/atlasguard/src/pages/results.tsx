@@ -1,17 +1,18 @@
 import { ArrowLeft, RotateCcw } from "lucide-react";
+import React from "react";
 import type { VerifiedResearchEvaluationResult } from "@workspace/contracts";
 
-import { ComparisonOverview } from "@/features/research-results/comparison-overview";
-import { DecisionNotes } from "@/features/research-results/decision-notes";
-import { EvidencePanel } from "@/features/research-results/evidence-panel";
-import { HouseholdFit } from "@/features/research-results/household-fit";
+import { ComparisonOverview } from "../features/research-results/comparison-overview";
+import { DecisionNotes } from "../features/research-results/decision-notes";
+import { EvidencePanel } from "../features/research-results/evidence-panel";
+import { HouseholdFit } from "../features/research-results/household-fit";
 import {
   createResearchResultsViewModel,
   type ResearchResultsViewModel,
-} from "@/features/research-results/model";
-import { SummaryPanel } from "@/features/research-results/summary-panel";
-import { ScoreExplanation } from "@/features/research-results/score-explanation";
-import { WhatIfPanel } from "@/features/research-results/what-if-panel";
+} from "../features/research-results/model";
+import { SummaryPanel } from "../features/research-results/summary-panel";
+import { ScoreExplanation } from "../features/research-results/score-explanation";
+import { WhatIfPanel } from "../features/research-results/what-if-panel";
 
 type ResearchResultsExperienceProps = {
   model: ResearchResultsViewModel;
@@ -70,8 +71,6 @@ export function ResearchResultsExperience({
       <main className="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
         <SummaryPanel {...model} />
 
-        <ScoreExplanation score={model.score} />
-
         <ComparisonOverview
           route={model.route}
           comparison={model.comparison}
@@ -82,6 +81,8 @@ export function ResearchResultsExperience({
         />
 
         {model.household ? <HouseholdFit household={model.household} /> : null}
+
+        <ScoreExplanation score={model.score} />
 
         <DecisionNotes {...model} />
 

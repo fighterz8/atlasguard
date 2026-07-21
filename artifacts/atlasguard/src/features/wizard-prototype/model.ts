@@ -14,6 +14,7 @@ export const wizardSteps = [
   { id: "money", label: "Your money", shortLabel: "Money" },
   { id: "priorities", label: "Daily life", shortLabel: "Daily life" },
   { id: "household", label: "Household needs", shortLabel: "Household" },
+  { id: "review", label: "Review", shortLabel: "Review" },
 ] as const;
 
 export type WizardStepId = (typeof wizardSteps)[number]["id"];
@@ -545,7 +546,6 @@ export function validateWizardStep(
       errors["householdPlan.housing.maxMonthlyCost"] =
         "Housing budget must be a whole-dollar amount.";
     }
-
   }
 
   return errors;

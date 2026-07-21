@@ -81,7 +81,7 @@ export function PrioritiesStep({
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 3 of 4</p>
+          <p className="eyebrow">Step 3 of 5</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
