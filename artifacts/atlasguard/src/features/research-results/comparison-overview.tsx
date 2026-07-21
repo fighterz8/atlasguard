@@ -4,7 +4,12 @@ import type { ResearchResultsViewModel } from "./model";
 
 type ComparisonOverviewProps = Pick<
   ResearchResultsViewModel,
-  "route" | "comparison" | "priority" | "climate" | "housingContext"
+  | "route"
+  | "comparison"
+  | "priority"
+  | "climate"
+  | "housingContext"
+  | "familyCostContext"
 > & {
   reviewedAssumptions?: boolean;
 };
@@ -29,6 +34,7 @@ export function ComparisonOverview({
   priority,
   climate,
   housingContext,
+  familyCostContext,
   reviewedAssumptions = false,
 }: ComparisonOverviewProps) {
   return (
@@ -164,6 +170,40 @@ export function ComparisonOverview({
           </div>
         ))}
       </div>
+
+      {familyCostContext ? (
+        <div className="mt-6 border-l-4 border-slate-300 bg-white/60 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge tone="neutral">{familyCostContext.role}</StatusBadge>
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+              {familyCostContext.sourceLabel}
+            </p>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_2fr]">
+            <div>
+              <p className="text-xs text-slate-500">{route.originCity}</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums text-slate-950">
+                {familyCostContext.originMonthlyExpenses}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">{route.destinationCity}</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums text-slate-950">
+                {familyCostContext.destinationMonthlyExpenses}
+              </p>
+            </div>
+            <p className="text-sm leading-6 text-slate-700">
+              {familyCostContext.reading}{" "}
+              <span className="font-medium">
+                {familyCostContext.difference}.
+              </span>
+            </p>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            {familyCostContext.childcareBoundary}
+          </p>
+        </div>
+      ) : null}
 
       {priority || climate ? (
         <div className="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-14">

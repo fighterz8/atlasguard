@@ -1,6 +1,7 @@
 import {
   compareResearchMetroClimateRatings,
   getResearchMetroClimateRating,
+  getResearchMetroFamilyCostGuidance,
   getResearchMetroMobilityGuidance,
   getResearchMetroHousingContext,
   loadLosAngelesToSeattleResearchBenchmark,
@@ -342,6 +343,13 @@ export const createResearchResultsViewModel = (
   const mobilityGuidance = getResearchMetroMobilityGuidance(
     profile.scenario.origin.slug,
     profile.scenario.destination.slug,
+  );
+  const familyCostGuidance = getResearchMetroFamilyCostGuidance(
+    profile.scenario.origin.slug,
+    profile.scenario.destination.slug,
+    Math.round(
+      profile.financialPosition.origin.monthlyRecurringExpensesCents / 100,
+    ),
   );
   if (housingContext === null) {
     throw new Error(
@@ -1091,6 +1099,30 @@ export const createResearchResultsViewModel = (
     comparison: {
       financialRows,
     },
+    familyCostContext: familyCostGuidance
+      ? {
+          role: familyCostGuidance.role,
+          originMonthlyExpenses: dollars.format(
+            familyCostGuidance.originMonthlyExpensesDollars,
+          ),
+          destinationMonthlyExpenses: dollars.format(
+            familyCostGuidance.destinationMonthlyExpensesDollars,
+          ),
+          difference:
+            familyCostGuidance.monthlyDifferenceDollars === 0
+              ? "$0 difference"
+              : `${dollars.format(
+                  Math.abs(familyCostGuidance.monthlyDifferenceDollars),
+                )} ${
+                  familyCostGuidance.monthlyDifferenceDollars < 0
+                    ? "lower"
+                    : "higher"
+                }`,
+          reading: familyCostGuidance.summary,
+          childcareBoundary: familyCostGuidance.childcareBoundary,
+          sourceLabel: `${familyCostGuidance.source.publisher} · ${familyCostGuidance.source.tableId} line ${familyCostGuidance.source.lineCode}`,
+        }
+      : null,
     housingContext: {
       decisionUse: housingContext.decisionUse,
       boundary: "Area context—not your budget",

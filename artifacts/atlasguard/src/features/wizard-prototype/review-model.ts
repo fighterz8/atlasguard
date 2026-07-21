@@ -1,4 +1,5 @@
 import {
+  getResearchMetroFamilyCostGuidance,
   getResearchMetroMobilityGuidance,
   getSupportedResearchPlace,
 } from "@workspace/benchmark-data";
@@ -125,6 +126,11 @@ export function createMoveWiseReviewModel(
   const rentGuidance = assumptions.rentGuidance;
   const incomeGuidance = assumptions.incomeGuidance;
   const expenseGuidance = assumptions.expenseGuidance;
+  const familyCostGuidance = getResearchMetroFamilyCostGuidance(
+    draft.originSlug,
+    draft.destinationSlug,
+    Number(draft.finances.currentExpenses.trim().replace(/,/g, "")),
+  );
   const mobilityGuidance = getResearchMetroMobilityGuidance(
     draft.originSlug,
     draft.destinationSlug,
@@ -219,6 +225,21 @@ export function createMoveWiseReviewModel(
       )}, ${differenceText(expenseDelta, "than your current expenses")} using BEA regional prices.`,
       tone: expenseDelta <= 0 ? "favorable" : "caution",
       role: "Used in estimate",
+    });
+  }
+
+  if (familyCostGuidance) {
+    findings.push({
+      id: "family-operating-costs",
+      label: "Family operating costs",
+      detail: `${familyCostGuidance.summary} This is not childcare-price data, so childcare remains context only until age-specific public evidence is added.`,
+      tone:
+        familyCostGuidance.direction === "lower"
+          ? "favorable"
+          : familyCostGuidance.direction === "higher"
+            ? "caution"
+            : "neutral",
+      role: familyCostGuidance.role,
     });
   }
 

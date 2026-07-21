@@ -60,6 +60,7 @@ describe("MoveWise review step", () => {
       "rental-supply",
       "rent-ceiling-fit",
       "recurring-expenses",
+      "family-operating-costs",
       "daily-life-friction",
       "monthly-cushion",
       "biggest-caveat",
@@ -104,6 +105,8 @@ describe("MoveWise review step", () => {
     expect(html).toContain("Rent ceiling fit");
     expect(html).toContain("Ownership later is context only");
     expect(html).toContain("Recurring expense translation");
+    expect(html).toContain("Family operating costs");
+    expect(html).toContain("not childcare-price data");
     expect(html).toContain("Daily-life friction");
     expect(html).toContain("commute away from home");
     expect(html).toContain("not a car-dependence score");

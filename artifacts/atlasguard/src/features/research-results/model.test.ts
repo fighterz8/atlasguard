@@ -491,6 +491,12 @@ describe("research results view model", () => {
         role: "Context only",
       },
     });
+    expect(model.familyCostContext).toMatchObject({
+      role: "Context only",
+      destinationMonthlyExpenses: "$1,661",
+      reading: expect.stringContaining("family operating costs"),
+      childcareBoundary: expect.stringContaining("not childcare-price data"),
+    });
     expect(model.housingContext).toMatchObject({
       originValue: "$1,784",
       destinationValue: "$2,336",

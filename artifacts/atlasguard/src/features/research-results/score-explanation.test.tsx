@@ -183,6 +183,8 @@ describe("MoveWise score presentation", () => {
     );
 
     expect(html.indexOf("What changes if you move")).toBeGreaterThan(-1);
+    expect(html).toContain("family operating costs");
+    expect(html).toContain("not childcare-price data");
     expect(html.indexOf("What sits behind the score")).toBeGreaterThan(-1);
     expect(html.indexOf("What changes if you move")).toBeLessThan(
       html.indexOf("What sits behind the score"),
