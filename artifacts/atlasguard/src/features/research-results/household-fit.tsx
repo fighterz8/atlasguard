@@ -44,6 +44,27 @@ export function HouseholdFit({ household }: HouseholdFitProps) {
 
       {plan ? (
         <>
+          <div className="mt-10 border-y border-slate-300 py-5">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-start">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                  {plan.stageLabel}
+                </p>
+                <p className="mt-2 text-base leading-7 text-slate-700">
+                  {plan.realitySummary}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-slate-950">
+                  {plan.laterPlanLabel}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Buying later does not change this first-stage rental score.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
@@ -87,7 +108,7 @@ export function HouseholdFit({ household }: HouseholdFitProps) {
                 </div>
               </dl>
               <p className="mt-4 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
-                A market-level availability signal, not a live listing count.
+                {plan.supplySignal} Not a live listing count.
               </p>
             </article>
 

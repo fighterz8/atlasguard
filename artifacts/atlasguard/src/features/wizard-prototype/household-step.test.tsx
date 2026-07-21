@@ -31,6 +31,10 @@ describe("HouseholdStep", () => {
 
     expect(html).toContain("Step 4 of 5");
     expect(html).toContain("Your first rental plan");
+    expect(html).toContain("First housing stage");
+    expect(html).toContain("Rent first");
+    expect(html).toContain("Rent first, with ownership later");
+    expect(html).toContain("Ownership later is saved as context");
     expect(html).toContain("Minimum bedrooms");
     expect(html).toContain("Maximum monthly rent");
     expect(html).toContain("Is this rent ceiling non-negotiable?");
@@ -66,6 +70,9 @@ describe("HouseholdStep", () => {
     );
 
     expect(html).toContain("Rent-first v1 scope");
+    expect(html).toContain(
+      "buying later does not change the first-stage score",
+    );
     expect(html).not.toContain("Childcare plan");
     expect(html).not.toContain("School plan");
   });

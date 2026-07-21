@@ -36,6 +36,7 @@ export type MoveWiseReviewModel = Readonly<{
   originCity: string;
   destinationCity: string;
   housingStage: string;
+  housingLaterPlan: string;
   scoringScope: string;
   findings: readonly MoveWiseReviewFinding[];
   assumptions: readonly MoveWiseReviewAssumption[];
@@ -71,6 +72,29 @@ const planningSourceTone: Record<DestinationPlanningSource, ReviewTone> = {
 
 const differenceText = (amount: number, noun: string) =>
   `${formatDollars(Math.abs(amount))} ${amount <= 0 ? "lower" : "higher"} ${noun}`;
+
+const supplyComparisonText = (
+  destinationCity: string,
+  originCity: string,
+  stockCategoryLabel: string,
+  destinationShareBps: number,
+  differenceBps: number,
+) => {
+  const category = stockCategoryLabel.replace(/^./, (letter) =>
+    letter.toUpperCase(),
+  );
+  const direction =
+    Math.abs(differenceBps) < 50
+      ? `a similar share of renter homes in ${destinationCity} and ${originCity}`
+      : differenceBps > 0
+        ? `a larger share of renter homes in ${destinationCity} than ${originCity}`
+        : `a smaller share of renter homes in ${destinationCity} than ${originCity}`;
+  const scarcity =
+    destinationShareBps < 1_000
+      ? "That still makes this requirement a relatively narrow part of the rental market."
+      : "That is a market-level availability signal, not a live listing count.";
+  return `${category} are ${formatPercent(destinationShareBps)} of ${destinationCity} renter homes, ${direction}. ${scarcity}`;
+};
 
 export function createMoveWiseReviewModel(
   draft: WizardPrototypeDraft,
@@ -141,6 +165,38 @@ export function createMoveWiseReviewModel(
       )} of ${destination.city} renter homes.`,
       tone: rentGuidance.monthlyDifferenceDollars <= 0 ? "favorable" : "risk",
       role: "Scored",
+    });
+
+    findings.push({
+      id: "rental-supply",
+      label: "Rental supply signal",
+      detail: supplyComparisonText(
+        destination.city,
+        origin.city,
+        rentGuidance.stockCategoryLabel,
+        rentGuidance.destination.renterStockShareBps,
+        rentGuidance.renterStockShareDifferenceBps,
+      ),
+      tone:
+        rentGuidance.destination.renterStockShareBps < 1_000
+          ? "caution"
+          : "neutral",
+      role: "Context only",
+    });
+
+    findings.push({
+      id: "rent-ceiling-fit",
+      label: "Rent ceiling fit",
+      detail:
+        rentCeilingDifference >= 0
+          ? `${formatMoney(destinationHousing)} is ${formatDollars(
+              rentCeilingDifference,
+            )} under your rent ceiling.`
+          : `${formatMoney(destinationHousing)} is ${formatDollars(
+              Math.abs(rentCeilingDifference),
+            )} over your rent ceiling.`,
+      tone: rentCeilingDifference >= 0 ? "favorable" : "risk",
+      role: assumptions.rentCeilingNonNegotiable ? "Scored" : "Context only",
     });
   }
 
@@ -277,8 +333,12 @@ export function createMoveWiseReviewModel(
       destinationCity: destination.city,
       housingStage:
         assumptions.destinationHousingTenure === "rent_then_buy"
-          ? "Rent first, buy later"
-          : "Rent first",
+          ? "Renting first"
+          : "Renting",
+      housingLaterPlan:
+        assumptions.destinationHousingTenure === "rent_then_buy"
+          ? "Ownership later is context only"
+          : "No ownership timeline in this score",
       scoringScope: "Immediate rental stage · deterministic rule 0.2.0",
       findings,
       assumptions: reviewAssumptions,

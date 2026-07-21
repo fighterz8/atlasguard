@@ -128,8 +128,8 @@ function YesNoQuestion({
 }
 
 const tenureOptions = [
-  { value: "rent", label: "Rent for the first stage" },
-  { value: "rent_then_buy", label: "Rent first, buy later" },
+  { value: "rent", label: "Rent first" },
+  { value: "rent_then_buy", label: "Rent first, with ownership later" },
 ] as const;
 
 const bedroomOptions = [
@@ -211,8 +211,9 @@ export function HouseholdStep({
               Rent-first v1 scope
             </h2>
             <p className="mt-1 text-sm leading-5 text-slate-600">
-              V1 evaluates the immediate rental stage. A later purchase remains
-              visible in your plan but does not enter this score.
+              V1 evaluates the immediate rental stage. Ownership later is saved
+              as context, but buying later does not change the first-stage
+              score.
             </p>
           </div>
         </div>
@@ -220,7 +221,7 @@ export function HouseholdStep({
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <SelectField
             id="householdPlan-housing-tenure"
-            label="Housing plan after the move"
+            label="First housing stage"
             value={plan.housing.tenure}
             options={tenureOptions}
             error={errors["householdPlan.housing.tenure"]}

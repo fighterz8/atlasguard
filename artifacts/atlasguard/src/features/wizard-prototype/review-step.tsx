@@ -55,6 +55,9 @@ export function ReviewStep({ model, onEditAssumptions }: ReviewStepProps) {
             <p className="mt-2 text-base font-semibold text-slate-950">
               {model.housingStage}
             </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              {model.housingLaterPlan}
+            </p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">

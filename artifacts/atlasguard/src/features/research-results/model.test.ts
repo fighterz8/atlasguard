@@ -385,12 +385,16 @@ describe("research results view model", () => {
     expect(model.household).toMatchObject({
       modeLabel: "Individual move",
       rentalPlan: {
+        stageLabel: "First stage: renting",
+        laterPlanLabel: "No ownership timeline in this score",
         bedroomLabel: "2-bedroom rental",
         originRent: "$2,263",
         destinationRent: "$2,162",
         rentDifference: "$101 less",
         originStockShare: "38.1%",
         destinationStockShare: "34.1%",
+        supplySignal: expect.stringContaining("smaller share"),
+        realitySummary: expect.stringContaining("above your rent ceiling"),
         ceiling: "$2,000",
         ceilingStatus: "Above preferred rent ceiling",
         ceilingDifference: "$162 over",
@@ -450,7 +454,7 @@ describe("research results view model", () => {
         }),
         expect.objectContaining({
           id: "housing_cost",
-          label: "Housing · owning → renting first, buying later",
+          label: "Housing · owning → first stage rent",
           sourceLabel: "You told us",
         }),
         expect.objectContaining({

@@ -49,11 +49,16 @@ describe("MoveWise review step", () => {
     expect(result.success).toBe(true);
     if (!result.success) return;
     expect(result.model.routeLabel).toBe("San Diego to Austin");
-    expect(result.model.housingStage).toBe("Rent first, buy later");
+    expect(result.model.housingStage).toBe("Renting first");
+    expect(result.model.housingLaterPlan).toBe(
+      "Ownership later is context only",
+    );
     expect(result.model.scoringScope).toContain("deterministic rule 0.2.0");
     expect(result.model.findings.map((finding) => finding.id)).toEqual([
       "destination-income",
       "bedroom-rent-fit",
+      "rental-supply",
+      "rent-ceiling-fit",
       "recurring-expenses",
       "monthly-cushion",
       "biggest-caveat",
@@ -94,6 +99,9 @@ describe("MoveWise review step", () => {
     expect(html).toContain("MoveWise found");
     expect(html).toContain("Destination income estimate");
     expect(html).toContain("Bedroom-aware rent fit");
+    expect(html).toContain("Rental supply signal");
+    expect(html).toContain("Rent ceiling fit");
+    expect(html).toContain("Ownership later is context only");
     expect(html).toContain("Recurring expense translation");
     expect(html).toContain("Monthly cushion direction");
     expect(html).toContain("Biggest caveat");

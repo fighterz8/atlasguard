@@ -108,6 +108,29 @@ const findingCopy: Record<string, string> = {
 const findingText = (finding: Finding) =>
   findingCopy[finding.code] ?? finding.code.replace(/_/g, " ");
 
+const housingTenureLabel = (
+  tenure: DestinationPlanningAssumptions["destinationHousingTenure"],
+) =>
+  tenure === "rent" || tenure === "rent_then_buy"
+    ? "first stage rent"
+    : tenure === "buy"
+      ? "buying"
+      : "renting or buying";
+
+const rentalSupplySignal = (
+  destinationCity: string,
+  originCity: string,
+  destinationShareBps: number,
+  differenceBps: number,
+) => {
+  if (Math.abs(differenceBps) < 50) {
+    return `This bedroom need makes up a similar share of renter homes in ${destinationCity} and ${originCity}.`;
+  }
+  return `This bedroom need is a ${
+    differenceBps > 0 ? "larger" : "smaller"
+  } share of renter homes in ${destinationCity} than ${originCity}.`;
+};
+
 const nextStepCopy: Record<string, string> = {
   review_decision_evidence:
     "Add any household factors that could materially change day-to-day life.",
@@ -393,7 +416,7 @@ export const createResearchResultsViewModel = (
       destinationAssumptions.grossIncome === null
         ? "The housing-burden safety check could not run because destination gross income was not provided."
         : "The housing-burden safety check used the destination gross income supplied."
-    } V1 evaluates the immediate rental stage; expanded household fit and ownership financing are outside this score.`,
+    } V1 evaluates first-stage rent; ownership timing is context only until MoveWise has a complete buying model.`,
   };
   const financialRows = [
     {
@@ -437,7 +460,11 @@ export const createResearchResultsViewModel = (
     {
       id: "housing_cost",
       label: planningSources
-        ? `Housing · ${planningSources.currentHousingTenure === "rent" ? "renting" : "owning"} → ${planningSources.destinationHousingTenure === "rent" ? "renting" : planningSources.destinationHousingTenure === "buy" ? "buying" : planningSources.destinationHousingTenure === "rent_then_buy" ? "renting first, buying later" : "renting or buying"}`
+        ? `Housing · ${
+            planningSources.currentHousingTenure === "rent"
+              ? "renting"
+              : "owning"
+          } → ${housingTenureLabel(planningSources.destinationHousingTenure)}`
         : "Housing",
       originValue: formatMoney(originFinances.monthlyHousingCostCents),
       destinationValue: formatMoney(
@@ -680,7 +707,27 @@ export const createResearchResultsViewModel = (
                   const ceilingDifferenceDollars =
                     evaluatedRentDollars -
                     planningSources.maximumMonthlyRentDollars;
+                  const ceilingReading =
+                    ceilingDifferenceDollars <= 0
+                      ? `${dollars.format(evaluatedRentDollars)} is ${dollars.format(
+                          Math.abs(ceilingDifferenceDollars),
+                        )} under your rent ceiling`
+                      : `${dollars.format(evaluatedRentDollars)} is ${dollars.format(
+                          ceilingDifferenceDollars,
+                        )} above your rent ceiling`;
+                  const supplySignal = rentalSupplySignal(
+                    profile.scenario.destination.selectedPlace.city,
+                    profile.scenario.origin.selectedPlace.city,
+                    rentGuidance.destination.renterStockShareBps,
+                    rentGuidance.renterStockShareDifferenceBps,
+                  );
                   return {
+                    stageLabel: "First stage: renting",
+                    laterPlanLabel:
+                      planningSources.destinationHousingTenure ===
+                      "rent_then_buy"
+                        ? "Ownership later is context only"
+                        : "No ownership timeline in this score",
                     bedroomLabel:
                       bedroomLabels[planningSources.requestedBedrooms],
                     originRent: dollars.format(
@@ -705,6 +752,8 @@ export const createResearchResultsViewModel = (
                     destinationStockShare: formatPercent(
                       rentGuidance.destination.renterStockShareBps,
                     ),
+                    supplySignal,
+                    realitySummary: `${ceilingReading}. ${supplySignal} This is not a live listing guarantee.`,
                     ceiling: dollars.format(
                       planningSources.maximumMonthlyRentDollars,
                     ),
