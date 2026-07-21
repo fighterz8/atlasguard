@@ -47,6 +47,13 @@ type SupportedIncomeMetroSlug =
 const roundRatio = (numerator: number, denominator: number): number =>
   Math.round(numerator / denominator);
 
+const directionFromRatio = (
+  destinationToOriginRatioBps: number,
+): ResearchMetroIncomeGuidance["direction"] => {
+  if (Math.abs(destinationToOriginRatioBps - 10_000) < 100) return "similar";
+  return destinationToOriginRatioBps < 10_000 ? "lower" : "higher";
+};
+
 const withNationalIndex = (
   value: (typeof RESEARCH_METRO_INCOME_SOURCE.metros)[SupportedIncomeMetroSlug],
 ) => ({
@@ -59,6 +66,7 @@ const withNationalIndex = (
 
 export type ResearchMetroIncomeGuidance = Readonly<{
   version: typeof RESEARCH_METRO_INCOME_SOURCE.version;
+  role: "Context only";
   currentMonthlyTakeHomeDollars: number;
   suggestedMonthlyTakeHomeDollars: number;
   plausibleMonthlyTakeHomeRangeDollars: Readonly<{
@@ -66,11 +74,14 @@ export type ResearchMetroIncomeGuidance = Readonly<{
     high: number;
   }>;
   destinationToOriginRatioBps: number;
+  direction: "lower" | "similar" | "higher";
+  summary: string;
   origin: ReturnType<typeof withNationalIndex>;
   destination: ReturnType<typeof withNationalIndex>;
   national: typeof RESEARCH_METRO_INCOME_SOURCE.national;
   method: string;
   boundary: string;
+  laborMarketBoundary: string;
   source: Readonly<{
     publisher: string;
     tableId: string;
@@ -118,23 +129,33 @@ export const getResearchMetroIncomeGuidance = (
         destination.marginOfError90Dollars),
     origin.annualMedianHouseholdIncomeDollars - origin.marginOfError90Dollars,
   );
+  const destinationToOriginRatioBps = roundRatio(
+    destination.annualMedianHouseholdIncomeDollars * 10_000,
+    origin.annualMedianHouseholdIncomeDollars,
+  );
+  const direction = directionFromRatio(destinationToOriginRatioBps);
 
   return Object.freeze({
     version: RESEARCH_METRO_INCOME_SOURCE.version,
+    role: "Context only",
     currentMonthlyTakeHomeDollars,
     suggestedMonthlyTakeHomeDollars: estimate,
     plausibleMonthlyTakeHomeRangeDollars: Object.freeze({ low, high }),
-    destinationToOriginRatioBps: roundRatio(
-      destination.annualMedianHouseholdIncomeDollars * 10_000,
-      origin.annualMedianHouseholdIncomeDollars,
-    ),
+    destinationToOriginRatioBps,
+    direction,
+    summary:
+      direction === "similar"
+        ? "ACS metro household-income context is similar between these metros."
+        : `ACS metro household-income context is ${direction} in the destination metro.`,
     origin: Object.freeze(withNationalIndex(origin)),
     destination: Object.freeze(withNationalIndex(destination)),
     national: RESEARCH_METRO_INCOME_SOURCE.national,
     method:
       "Applies the destination-to-origin ACS median household-income ratio to the user's current take-home amount.",
     boundary:
-      "This preserves the user's relative position against metro household-income medians. It is an editable planning estimate, not a paycheck forecast, job offer, tax calculation, or claim that the household will earn the metro median.",
+      "This preserves the user's relative position against metro household-income medians. It is an editable planning estimate, not a salary prediction, paycheck forecast, job offer, tax calculation, occupational wage estimate, or claim that the household will earn the metro median.",
+    laborMarketBoundary:
+      "This is metro household-income context, not a salary prediction, paycheck forecast, job offer, tax calculation, employment probability, and not an occupation wage estimate.",
     source: Object.freeze({
       publisher: RESEARCH_METRO_INCOME_SOURCE.publisher,
       tableId: RESEARCH_METRO_INCOME_SOURCE.tableId,

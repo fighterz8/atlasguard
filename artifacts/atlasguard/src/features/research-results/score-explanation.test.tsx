@@ -183,6 +183,9 @@ describe("MoveWise score presentation", () => {
     );
 
     expect(html.indexOf("What changes if you move")).toBeGreaterThan(-1);
+    expect(html).toContain("metro household income");
+    expect(html).toContain("not a salary prediction");
+    expect(html).toContain("not an occupation wage estimate");
     expect(html).toContain("family operating costs");
     expect(html).toContain("not childcare-price data");
     expect(html.indexOf("What sits behind the score")).toBeGreaterThan(-1);

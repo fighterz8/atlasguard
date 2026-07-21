@@ -4,6 +4,7 @@ import {
   getResearchMetroFamilyCostGuidance,
   getResearchMetroMobilityGuidance,
   getResearchMetroHousingContext,
+  getResearchMetroIncomeGuidance,
   loadLosAngelesToSeattleResearchBenchmark,
   losAngelesToSeattleBalancedResearchScenario,
 } from "@workspace/benchmark-data";
@@ -147,6 +148,15 @@ const mobilityContextReading = (
         : `lower than ${originCity}`;
   return `${destinationCommuteAwayShare} of ${destinationCity} workers commute away from home, ${direction}. This is daily-life context, not a car-dependence score.`;
 };
+
+const incomeLaborReading = (
+  destinationCity: string,
+  originCity: string,
+  direction: "lower" | "similar" | "higher",
+) =>
+  direction === "similar"
+    ? `${destinationCity} and ${originCity} have similar ACS metro household income in this estimate. This is labor-market context, not a household-specific salary forecast.`
+    : `${destinationCity} metro household income is ${direction} than ${originCity} in this ACS estimate. This is labor-market context, not a household-specific salary forecast.`;
 
 const nextStepCopy: Record<string, string> = {
   review_decision_evidence:
@@ -343,6 +353,13 @@ export const createResearchResultsViewModel = (
   const mobilityGuidance = getResearchMetroMobilityGuidance(
     profile.scenario.origin.slug,
     profile.scenario.destination.slug,
+  );
+  const incomeGuidance = getResearchMetroIncomeGuidance(
+    profile.scenario.origin.slug,
+    profile.scenario.destination.slug,
+    Math.round(
+      profile.financialPosition.origin.monthlyTakeHomeIncomeCents / 100,
+    ),
   );
   const familyCostGuidance = getResearchMetroFamilyCostGuidance(
     profile.scenario.origin.slug,
@@ -1099,6 +1116,27 @@ export const createResearchResultsViewModel = (
     comparison: {
       financialRows,
     },
+    incomeLaborContext: incomeGuidance
+      ? {
+          role: incomeGuidance.role,
+          originMedianHouseholdIncome: dollars.format(
+            incomeGuidance.origin.annualMedianHouseholdIncomeDollars,
+          ),
+          destinationMedianHouseholdIncome: dollars.format(
+            incomeGuidance.destination.annualMedianHouseholdIncomeDollars,
+          ),
+          destinationToOriginRatio: `${(
+            incomeGuidance.destinationToOriginRatioBps / 100
+          ).toFixed(1)}%`,
+          reading: incomeLaborReading(
+            profile.scenario.destination.selectedPlace.city,
+            profile.scenario.origin.selectedPlace.city,
+            incomeGuidance.direction,
+          ),
+          laborMarketBoundary: incomeGuidance.laborMarketBoundary,
+          sourceLabel: `${incomeGuidance.source.publisher} · ACS table ${incomeGuidance.source.tableId}`,
+        }
+      : null,
     familyCostContext: familyCostGuidance
       ? {
           role: familyCostGuidance.role,

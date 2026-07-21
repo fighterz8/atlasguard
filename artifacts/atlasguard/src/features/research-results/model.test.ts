@@ -491,6 +491,16 @@ describe("research results view model", () => {
         role: "Context only",
       },
     });
+    expect(model.incomeLaborContext).toMatchObject({
+      role: "Context only",
+      originMedianHouseholdIncome: "$99,897",
+      destinationMedianHouseholdIncome: "$109,132",
+      reading: expect.stringContaining(
+        "San Diego metro household income is higher than Austin",
+      ),
+      laborMarketBoundary: expect.stringContaining("not a salary prediction"),
+      sourceLabel: "U.S. Census Bureau · ACS table B19013",
+    });
     expect(model.familyCostContext).toMatchObject({
       role: "Context only",
       destinationMonthlyExpenses: "$1,661",

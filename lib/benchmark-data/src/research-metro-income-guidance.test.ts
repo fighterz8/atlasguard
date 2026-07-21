@@ -28,8 +28,16 @@ describe("research metro income guidance", () => {
       },
       national: { annualMedianHouseholdIncomeDollars: 81_604 },
       destinationToOriginRatioBps: 11_658,
+      direction: "higher",
+      role: "Context only",
     });
-    expect(guidance.boundary).toContain("not a paycheck forecast");
+    expect(guidance.summary).toContain(
+      "metro household-income context is higher",
+    );
+    expect(guidance.boundary).toContain("not a salary prediction");
+    expect(guidance.laborMarketBoundary).toContain(
+      "not an occupation wage estimate",
+    );
   });
 
   it("binds the frozen public source and fails closed for unsupported input", () => {
