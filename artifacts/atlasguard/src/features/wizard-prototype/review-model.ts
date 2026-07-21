@@ -7,6 +7,7 @@ import {
 } from "@workspace/benchmark-data";
 
 import { submitWizardDraft } from "./submit-wizard-draft";
+import { householdFactorLabels } from "./model";
 import type { WizardErrors, WizardPrototypeDraft } from "./model";
 import type { DestinationPlanningSource } from "./destination-planning-assumptions";
 
@@ -81,6 +82,45 @@ const differenceText = (amount: number, noun: string) =>
 
 const ownershipContextApplies = (tenure: string) =>
   tenure === "rent_then_buy" || tenure === "buy";
+
+const householdEssentialSummary = (
+  householdAnswers: Extract<
+    ReturnType<typeof submitWizardDraft>,
+    { success: true }
+  >["householdAnswers"],
+) => {
+  const essential = householdAnswers.factors.filter(
+    ({ importance }) => importance === "essential",
+  );
+  const confirmed = essential.filter(
+    ({ essentialStatus }) => essentialStatus === "confirmed_met",
+  );
+  const unconfirmed = essential.filter(
+    ({ essentialStatus }) => essentialStatus === "unconfirmed",
+  );
+  const unmet = essential.filter(
+    ({ essentialStatus }) => essentialStatus === "confirmed_unmet",
+  );
+  const important = householdAnswers.factors.filter(
+    ({ importance, impact }) =>
+      importance === "important" && impact !== "unavailable",
+  );
+
+  const named = [...unmet, ...unconfirmed, ...confirmed, ...important]
+    .slice(0, 4)
+    .map(
+      ({ factorId }) =>
+        householdFactorLabels[factorId as keyof typeof householdFactorLabels],
+    );
+
+  return {
+    confirmedCount: confirmed.length,
+    unconfirmedCount: unconfirmed.length,
+    unmetCount: unmet.length,
+    importantCount: important.length,
+    names: named,
+  };
+};
 
 const supplyComparisonText = (
   destinationCity: string,
@@ -282,6 +322,29 @@ export function createMoveWiseReviewModel(
             ? "caution"
             : "neutral",
       role: familyCostGuidance.role,
+    });
+  }
+
+  const householdSummary = householdEssentialSummary(result.householdAnswers);
+  if (
+    householdSummary.confirmedCount > 0 ||
+    householdSummary.unconfirmedCount > 0 ||
+    householdSummary.unmetCount > 0 ||
+    householdSummary.importantCount > 0
+  ) {
+    findings.push({
+      id: "household-essentials",
+      label: "Household essentials",
+      detail: `${householdSummary.unmetCount} unmet, ${householdSummary.unconfirmedCount} not confirmed, and ${householdSummary.confirmedCount} confirmed essential needs. Tracked needs: ${householdSummary.names.join(", ")}. These are user-supplied checks, not public childcare, school, provider, or access data.`,
+      tone:
+        householdSummary.unmetCount > 0
+          ? "risk"
+          : householdSummary.unconfirmedCount > 0
+            ? "caution"
+            : householdSummary.confirmedCount > 0
+              ? "favorable"
+              : "neutral",
+      role: "Context only",
     });
   }
 

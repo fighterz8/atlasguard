@@ -353,6 +353,22 @@ const deterministicMetricLabels = {
   climate: "Climate fit",
 } as const;
 
+const householdImpactLabels = {
+  strong_positive: "Very workable",
+  positive: "Workable",
+  neutral: "Mixed or unclear",
+  negative: "Difficult",
+  strong_negative: "Very difficult",
+  unavailable: "Needs confirmation",
+  excluded: "Not needed",
+} as const;
+
+const householdEssentialStatusLabels = {
+  confirmed_met: "Essential confirmed",
+  confirmed_unmet: "Essential not met",
+  unconfirmed: "Essential not confirmed",
+} as const;
+
 const bedroomLabels = {
   studio: "studio rental",
   "1": "1-bedroom rental",
@@ -779,6 +795,53 @@ export const createResearchResultsViewModel = (
               ? "Household or family move"
               : "Individual move",
           summary: essentialSummary,
+          essentials: {
+            boundary:
+              "These are user-supplied household checks. MoveWise does not yet use public childcare prices, school ratings, provider availability, or neighborhood-level access data.",
+            factors: deterministicAnswers.factors
+              .filter(({ importance, impact }) => {
+                if (importance === "essential") return true;
+                return importance === "important" && impact !== "unavailable";
+              })
+              .map((answer) => {
+                const contribution =
+                  deterministicResult.metricContributions.household.signals.find(
+                    ({ signalId }) => signalId === answer.factorId,
+                  )?.contribution;
+                const status =
+                  answer.importance === "essential" &&
+                  answer.essentialStatus !== null
+                    ? householdEssentialStatusLabels[answer.essentialStatus]
+                    : householdImpactLabels[answer.impact];
+                return {
+                  id: answer.factorId,
+                  label:
+                    householdFactorLabels[
+                      answer.factorId as keyof typeof householdFactorLabels
+                    ],
+                  status,
+                  tone:
+                    answer.essentialStatus === "confirmed_unmet" ||
+                    answer.impact === "negative" ||
+                    answer.impact === "strong_negative"
+                      ? ("risk" as const)
+                      : answer.essentialStatus === "unconfirmed" ||
+                          answer.impact === "neutral" ||
+                          answer.impact === "unavailable"
+                        ? ("caution" as const)
+                        : answer.essentialStatus === "confirmed_met" ||
+                            answer.impact === "positive" ||
+                            answer.impact === "strong_positive"
+                          ? ("favorable" as const)
+                          : ("neutral" as const),
+                  role:
+                    answer.importance === "essential"
+                      ? ("Condition" as const)
+                      : ("Household signal" as const),
+                  contribution: contribution ?? 0,
+                };
+              }),
+          },
           rentalPlan:
             planningSources?.rentGuidance === null ||
             planningSources?.rentGuidance === undefined

@@ -11,6 +11,8 @@ import type {
 
 import {
   validateWizardStep,
+  type ConditionalHouseholdNeed,
+  type HouseholdFitAssessment,
   type WizardErrors,
   type WizardPrototypeDraft,
 } from "./model";
@@ -29,6 +31,39 @@ const excludedAnswer = (
   impact: "excluded",
   essentialStatus: null,
 });
+
+const essentialStatusFromAssessment = (
+  assessment: HouseholdFitAssessment,
+): NonNullable<HouseholdFactorAnswer["essentialStatus"]> => {
+  switch (assessment) {
+    case "strong_positive":
+    case "positive":
+      return "confirmed_met";
+    case "strong_negative":
+    case "negative":
+      return "confirmed_unmet";
+    case "neutral":
+    case "unavailable":
+      return "unconfirmed";
+  }
+};
+
+const answerFromConditionalNeed = (
+  factorId: HouseholdFactorAnswer["factorId"],
+  need: ConditionalHouseholdNeed,
+): HouseholdFactorAnswer => {
+  if (need.needed !== "yes") return excludedAnswer(factorId);
+
+  const isEssential = need.stopsMove === "yes";
+  return {
+    factorId,
+    importance: isEssential ? "essential" : "important",
+    impact: need.assessment,
+    essentialStatus: isEssential
+      ? essentialStatusFromAssessment(need.assessment)
+      : null,
+  };
+};
 
 const parseWholeDollars = (value: string): number | null => {
   const normalized = value.trim().replace(/,/g, "");
@@ -78,6 +113,26 @@ export function adaptWizardDraftToHouseholdAnswers(
     ),
     car_free_access: excludedAnswer("car_free_access"),
   };
+  answersByFactor.support_network = answerFromConditionalNeed(
+    "support_network",
+    householdPlan.supportNetwork,
+  );
+  answersByFactor.childcare_continuity = answerFromConditionalNeed(
+    "childcare_continuity",
+    householdPlan.childcare,
+  );
+  answersByFactor.school_continuity = answerFromConditionalNeed(
+    "school_continuity",
+    householdPlan.school,
+  );
+  answersByFactor.required_services_continuity = answerFromConditionalNeed(
+    "required_services_continuity",
+    householdPlan.requiredServices,
+  );
+  answersByFactor.car_free_access = answerFromConditionalNeed(
+    "car_free_access",
+    householdPlan.carFreeAccess,
+  );
   const factors = MOVEWISE_HOUSEHOLD_FACTOR_IDS_BY_MODE[
     draft.householdMode
   ].map((factorId) => answersByFactor[factorId]);

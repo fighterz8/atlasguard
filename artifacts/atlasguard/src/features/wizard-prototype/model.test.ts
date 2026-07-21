@@ -100,6 +100,23 @@ describe("Wizard prototype model", () => {
     });
   });
 
+  it("requires stop-the-move intent for household needs marked relevant", () => {
+    const draft = validDraft();
+    draft.householdPlan.supportNetwork = {
+      needed: "yes",
+      stopsMove: "",
+      assessment: "positive",
+    };
+
+    expect(validateWizardStep("household", draft)).toMatchObject({
+      "householdPlan.supportNetwork.stopsMove":
+        "Choose whether nearby support can stop the move.",
+    });
+
+    draft.householdPlan.supportNetwork.stopsMove = "no";
+    expect(validateWizardStep("household", draft)).toEqual({});
+  });
+
   it("accepts a signed retained-property monthly net", () => {
     const draft = validDraft();
     draft.finances.retainedPropertyNet = "-450";
@@ -223,18 +240,28 @@ describe("Wizard prototype model", () => {
     expect(validateWizardStep("household", validDraft())).toEqual({});
   });
 
-  it("does not require unsupported family opinion inputs in v1", () => {
+  it("keeps family details optional but requires intent for marked needs", () => {
     const draft = validDraft();
     draft.householdMode = "family";
     draft.householdPlan.childcare.needed = "yes";
     draft.householdPlan.school.needed = "yes";
 
+    expect(validateWizardStep("household", draft)).toMatchObject({
+      "householdPlan.childcare.stopsMove":
+        "Choose whether childcare can stop the move.",
+      "householdPlan.school.stopsMove":
+        "Choose whether school continuity can stop the move.",
+    });
+
+    draft.householdPlan.childcare.stopsMove = "yes";
+    draft.householdPlan.school.stopsMove = "no";
     expect(validateWizardStep("household", draft)).toEqual({});
 
     draft.householdPlan.childcare = {
       needed: "no",
       arrangement: "",
       stopsMove: "",
+      assessment: "unavailable",
     };
     draft.householdPlan.school = {
       needed: "no",
@@ -242,6 +269,7 @@ describe("Wizard prototype model", () => {
       preference: "",
       requirements: "",
       stopsMove: "",
+      assessment: "unavailable",
     };
     expect(validateWizardStep("household", draft)).toEqual({});
   });

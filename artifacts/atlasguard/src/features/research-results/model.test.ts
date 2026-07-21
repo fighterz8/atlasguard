@@ -366,6 +366,18 @@ describe("research results view model", () => {
     expect(model.household).toMatchObject({
       modeLabel: "Individual move",
       rentalPlan: null,
+      essentials: {
+        factors: [
+          {
+            id: "space_fit",
+            label: "Suitable housing",
+            status: "Essential not met",
+            tone: "risk",
+            role: "Condition",
+            contribution: 0,
+          },
+        ],
+      },
     });
     expect(model.household).not.toHaveProperty("factors");
     expect(model.score.missingComponents).toEqual([
@@ -420,6 +432,19 @@ describe("research results view model", () => {
         scorePath: expect.stringContaining(
           "already included in monthly cushion and the MoveWise Score",
         ),
+      },
+      essentials: {
+        factors: [
+          {
+            id: "support_network",
+            label: "Nearby support",
+            status: "Workable",
+            tone: "favorable",
+            role: "Household signal",
+            contribution: 10,
+          },
+        ],
+        boundary: expect.stringContaining("user-supplied household checks"),
       },
     });
     expect(model.household).not.toHaveProperty("factors");

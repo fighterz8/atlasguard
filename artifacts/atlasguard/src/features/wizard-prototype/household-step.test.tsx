@@ -47,17 +47,20 @@ describe("HouseholdStep", () => {
     expect(html).not.toContain("easier");
     expect(html).not.toContain("harder");
     expect(html).not.toContain("+15");
-    expect(html).not.toContain("Childcare plan");
-    expect(html).not.toContain("School plan");
-    expect(html).not.toContain("Nearby support");
-    expect(html).not.toContain("Required services");
-    expect(html).not.toContain("Car-free routines");
+    expect(html).toContain("Household essentials");
+    expect(html).toContain("Nearby support");
+    expect(html).toContain("Required services");
+    expect(html).toContain("Car-free routines");
+    expect(html).not.toContain("Workable childcare");
+    expect(html).not.toContain("Suitable school path");
     expect(html).toContain('id="householdPlan-housing-tenure"');
     expect(html).toContain('id="householdPlan-housing-bedrooms"');
   });
 
   it("keeps the same evidence-backed v1 scope for a family", () => {
     const draft = createInitialWizardDraft();
+    draft.householdPlan.childcare.needed = "yes";
+    draft.householdPlan.school.needed = "yes";
     const html = renderToStaticMarkup(
       <HouseholdStep
         mode="family"
@@ -73,7 +76,9 @@ describe("HouseholdStep", () => {
     expect(html).toContain(
       "buying later does not change the first-stage score",
     );
-    expect(html).not.toContain("Childcare plan");
-    expect(html).not.toContain("School plan");
+    expect(html).toContain("Workable childcare");
+    expect(html).toContain("Suitable school path");
+    expect(html).toContain("Care arrangement");
+    expect(html).toContain("School preference");
   });
 });

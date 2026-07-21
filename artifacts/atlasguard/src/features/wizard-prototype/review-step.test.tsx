@@ -62,6 +62,7 @@ describe("MoveWise review step", () => {
       "ownership-later",
       "recurring-expenses",
       "family-operating-costs",
+      "household-essentials",
       "climate-risk-context",
       "daily-life-friction",
       "monthly-cushion",
@@ -111,6 +112,8 @@ describe("MoveWise review step", () => {
     expect(html).toContain("Recurring expense translation");
     expect(html).toContain("Family operating costs");
     expect(html).toContain("not childcare-price data");
+    expect(html).toContain("Household essentials");
+    expect(html).toContain("user-supplied checks");
     expect(html).toContain("Climate and risk context");
     expect(html).toContain("county-level context only");
     expect(html).toContain("FEMA NRI");

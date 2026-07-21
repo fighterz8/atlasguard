@@ -156,7 +156,7 @@ describe("MoveWise score presentation", () => {
       <DecisionNotes {...model} />,
     );
 
-    expect(summaryHtml).toContain("No clear advantage yet");
+    expect(summaryHtml).toContain("Promising if");
     expect(summaryHtml).toContain("Deterministic 0.2.0");
     expect(summaryHtml).toContain("1 essential need not met");
     expect(scoreHtml).toContain("Closest decision change");

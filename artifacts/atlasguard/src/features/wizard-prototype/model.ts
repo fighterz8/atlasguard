@@ -546,6 +546,20 @@ export function validateWizardStep(
       errors["householdPlan.housing.maxMonthlyCost"] =
         "Housing budget must be a whole-dollar amount.";
     }
+
+    const conditionalNeeds = [
+      ["supportNetwork", householdPlan.supportNetwork, "nearby support"],
+      ["childcare", householdPlan.childcare, "childcare"],
+      ["school", householdPlan.school, "school continuity"],
+      ["requiredServices", householdPlan.requiredServices, "required services"],
+      ["carFreeAccess", householdPlan.carFreeAccess, "car-free routines"],
+    ] as const;
+    for (const [key, need, label] of conditionalNeeds) {
+      if (need.needed === "yes" && need.stopsMove === "") {
+        errors[`householdPlan.${key}.stopsMove`] =
+          `Choose whether ${label} can stop the move.`;
+      }
+    }
   }
 
   return errors;

@@ -164,6 +164,58 @@ export function HouseholdFit({ household }: HouseholdFitProps) {
           plan is submitted.
         </p>
       )}
+
+      <section
+        aria-labelledby="household-essentials-results-heading"
+        className="mt-10 border-y border-slate-300 py-5"
+      >
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-start">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+              Household essentials
+            </p>
+            <h3
+              id="household-essentials-results-heading"
+              className="mt-2 text-lg font-semibold text-slate-950"
+            >
+              What still has to work
+            </h3>
+          </div>
+          <p className="text-xs leading-5 text-slate-500">
+            {household.essentials.boundary}
+          </p>
+        </div>
+        {household.essentials.factors.length > 0 ? (
+          <ul className="mt-5 divide-y divide-slate-200 border-y border-slate-200">
+            {household.essentials.factors.map((factor) => (
+              <li
+                key={factor.id}
+                className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_12rem_8rem] sm:items-center"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-950">
+                    {factor.label}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Contribution: {factor.contribution > 0 ? "+" : ""}
+                    {factor.contribution}
+                  </p>
+                </div>
+                <div>
+                  <StatusBadge tone={factor.tone}>{factor.status}</StatusBadge>
+                </div>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500 sm:text-right">
+                  {factor.role}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-5 border-y border-slate-200 py-4 text-sm leading-6 text-slate-600">
+            No non-housing household essentials were marked for this run.
+          </p>
+        )}
+      </section>
     </section>
   );
 }
