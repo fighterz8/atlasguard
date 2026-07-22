@@ -1,6 +1,10 @@
 **AtlasGuard  
 06 · Eval, QA, Risk, and Change Log**
 
+> **Historical status (2026-07-17):** Superseded for implementation by
+> [MW-CHG-001](movewise/type-b-c-approval-and-requirements-migration.md)
+> and ADR-001 through ADR-005. Retained unchanged below as decision history.
+
 Process control draft for AtlasGuard MVP
 
 **Purpose:** Define the evaluation process, QA gates, risk management

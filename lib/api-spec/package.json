@@ -2,10 +2,21 @@
   "name": "@workspace/api-spec",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "codegen": "orval --config ./orval.config.ts"
+    "generate:openapi": "tsx ./src/generate-openapi.ts",
+    "generate:client": "orval --config ./orval.config.ts",
+    "codegen": "pnpm run generate:openapi && pnpm run generate:client",
+    "check:drift": "tsx ./src/check-generated.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "orval": "^8.5.2"
+    "@asteasolutions/zod-to-openapi": "catalog:",
+    "@types/node": "catalog:",
+    "@workspace/contracts": "workspace:*",
+    "orval": "^8.5.2",
+    "tsx": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
   }
 }

@@ -1,5 +1,9 @@
 **02 · Deterministic Scoring Spec**
 
+> **Historical status (2026-07-17):** Superseded for implementation by
+> [MW-CHG-001](movewise/type-b-c-approval-and-requirements-migration.md)
+> and ADR-001 through ADR-005. Retained unchanged below as decision history.
+
 **Purpose:** Define AtlasGuard’s deterministic scoring logic at a level
 precise enough to support implementation, explanation grounding, and
 verifier design.

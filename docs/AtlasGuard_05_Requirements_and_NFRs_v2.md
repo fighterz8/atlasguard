@@ -2,6 +2,10 @@
 
 **05 · Requirements and NFRs**
 
+> **Historical status (2026-07-17):** Superseded for implementation by
+> [MW-CHG-001](movewise/type-b-c-approval-and-requirements-migration.md)
+> and ADR-001 through ADR-005. Retained unchanged below as decision history.
+
 | **Purpose**               | Define the detailed functional and non-functional requirements for AtlasGuard MVP in a format that is buildable, testable, and traceable into later implementation and QA work. |
 |---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Owner / Status / Date** | Nick · Draft v0.1 · 2026-04-01                                                                                                                                                  |

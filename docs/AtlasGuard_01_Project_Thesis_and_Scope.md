@@ -1,5 +1,9 @@
 01 · Project Thesis and Scope
 
+> **Historical status (2026-07-17):** Superseded for implementation by
+> [MW-CHG-001](movewise/type-b-c-approval-and-requirements-migration.md)
+> and ADR-001 through ADR-005. Retained unchanged below as decision history.
+
 | **Purpose**               | Define the project thesis, scope boundaries, and MVP success criteria before implementation expands. |
 |---------------------------|------------------------------------------------------------------------------------------------------|
 | **Owner / Status / Date** | Nick · Draft · 2026-04-01                                                                            |

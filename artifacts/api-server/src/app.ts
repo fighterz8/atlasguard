@@ -1,34 +1,82 @@
-import express, { type Express } from "express";
+import express, { type ErrorRequestHandler, type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import router from "./routes";
+import { createRouter } from "./routes";
 import { logger } from "./lib/logger";
+import {
+  disabledEvaluationCapability,
+  type EvaluationCapability,
+} from "./research-evaluation";
 
-const app: Express = express();
+export type AppOptions = Readonly<{
+  evaluationCapability?: EvaluationCapability;
+}>;
 
-app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
+const malformedJsonHandler: ErrorRequestHandler = (
+  error: unknown,
+  _req,
+  res,
+  next,
+) => {
+  const parseError = error as {
+    status?: unknown;
+    type?: unknown;
+  };
+
+  if (
+    !(error instanceof SyntaxError) ||
+    parseError.status !== 400 ||
+    parseError.type !== "entity.parse.failed"
+  ) {
+    next(error);
+    return;
+  }
+
+  res.status(400).json({
+    error: "invalid_scenario_input",
+    issues: [
+      {
+        code: "invalid_json",
+        message: "Malformed JSON request body.",
+        path: [],
       },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
+    ],
+  });
+};
+
+export const createApp = (options: AppOptions = {}): Express => {
+  const app: Express = express();
+  const evaluationCapability =
+    options.evaluationCapability ?? disabledEvaluationCapability;
+
+  app.use(
+    pinoHttp({
+      logger,
+      serializers: {
+        req(req) {
+          return {
+            id: req.id,
+            method: req.method,
+            url: req.url?.split("?")[0],
+          };
+        },
+        res(res) {
+          return {
+            statusCode: res.statusCode,
+          };
+        },
       },
-    },
-  }),
-);
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+    }),
+  );
+  app.use(cors());
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", router);
+  app.use(malformedJsonHandler);
 
-export default app;
+  app.use("/api", createRouter(evaluationCapability));
+
+  return app;
+};
+
+export default createApp();

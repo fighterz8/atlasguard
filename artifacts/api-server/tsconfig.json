@@ -8,10 +8,13 @@
   "include": ["src"],
   "references": [
     {
-      "path": "../../lib/db"
+      "path": "../../lib/contracts"
     },
     {
-      "path": "../../lib/api-zod"
+      "path": "../../lib/benchmark-data"
+    },
+    {
+      "path": "../../lib/decision-core"
     }
   ]
 }

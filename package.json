@@ -2,15 +2,27 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "pnpm": "10.33.2"
+  },
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "format:check": "prettier --check package.json tsconfig.json vercel.json scripts/package.json \".github/workflows/*.yml\" \"artifacts/api-server/src/**/*.{ts,tsx}\" \"artifacts/atlasguard/index.html\" \"artifacts/atlasguard/src/App.tsx\" \"artifacts/atlasguard/src/index.css\" \"artifacts/atlasguard/src/pages/results.tsx\" \"artifacts/atlasguard/src/features/research-results/**/*.{ts,tsx}\" \"docs/decisions/**/*.md\" \"docs/movewise/**/*.md\" \"lib/api-spec/**/*.{ts,yaml}\" \"lib/benchmark-data/package.json\" \"lib/benchmark-data/src/**/*.{ts,tsx}\" \"lib/contracts/src/**/*.{ts,tsx}\" \"lib/decision-core/src/**/*.{ts,tsx}\" \"scripts/src/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "transport:generate": "pnpm --filter @workspace/api-spec run codegen",
+    "transport:check": "pnpm --filter @workspace/api-spec run check:drift",
+    "verify": "pnpm run transport:check && pnpm run format:check && pnpm run test && pnpm run typecheck && PORT=5173 BASE_PATH=/ pnpm run build && pnpm audit --prod --audit-level moderate"
   },
   "private": true,
   "devDependencies": {
     "prettier": "^3.8.1",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "4.1.10"
   }
 }
