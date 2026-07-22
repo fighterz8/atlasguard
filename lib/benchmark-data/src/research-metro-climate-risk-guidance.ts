@@ -257,7 +257,7 @@ export const getResearchMetroClimateRiskGuidance = (
         ? "FEMA NRI county-level baseline risk is similar between these selected-city anchor counties."
         : `FEMA NRI county-level baseline risk is ${riskDirection} for the destination selected-city anchor county.`,
     boundary:
-      "This is climate and natural-hazard context only. It uses FEMA National Risk Index county-level baseline risk for the selected-city anchor counties. It is not a metro-wide risk model, not a neighborhood or parcel rating, not an insurance quote, not an emergency alert, not a live forecast, not a climate-change projection, not a safety guarantee, and not a scored MoveWise rule.",
+      "This is area-level climate and hazard context. Check the exact neighborhood, home, insurance, and emergency-planning details before deciding.",
     source: Object.freeze({
       publisher: RESEARCH_METRO_CLIMATE_RISK_SOURCE.publisher,
       dataset: RESEARCH_METRO_CLIMATE_RISK_SOURCE.dataset,

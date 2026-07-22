@@ -4,6 +4,59 @@ import { createInitialWizardDraft } from "./model";
 import { adaptWizardDraftToHouseholdAnswers } from "./household-answer-adapter";
 
 describe("Wizard household-answer adapter", () => {
+  it("maps the explicit status-board dimensions into the accepted rule contract", () => {
+    const draft = createInitialWizardDraft();
+    draft.householdMode = "individual";
+    Object.assign(draft.householdPlan.housing, {
+      tenure: "rent",
+      type: "apartment_or_condo",
+      bedrooms: "2",
+      bathrooms: "1",
+      maxMonthlyCost: "2200",
+      ceilingType: "target",
+      stopsMove: "no",
+    });
+    Object.assign(draft.householdPlan.supportNetwork, {
+      relevance: "yes",
+      importance: "blocker",
+      status: "not_checked",
+    });
+    Object.assign(draft.householdPlan.requiredServices, {
+      relevance: "yes",
+      importance: "important",
+      status: "does_not_work",
+    });
+    Object.assign(draft.householdPlan.carFreeAccess, {
+      relevance: "no",
+    });
+    draft.finances.targetHousing = "1859";
+
+    const result = adaptWizardDraftToHouseholdAnswers(draft);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.answers.factors.slice(1)).toEqual([
+      {
+        factorId: "support_network",
+        importance: "essential",
+        impact: "unavailable",
+        essentialStatus: "unconfirmed",
+      },
+      {
+        factorId: "required_services_continuity",
+        importance: "important",
+        impact: "negative",
+        essentialStatus: null,
+      },
+      {
+        factorId: "car_free_access",
+        importance: "not_applicable",
+        impact: "excluded",
+        essentialStatus: null,
+      },
+    ]);
+  });
+
   it("derives the rent requirement from evaluated dollars instead of user opinion", () => {
     const draft = createInitialWizardDraft();
     draft.householdMode = "individual";
@@ -15,23 +68,24 @@ describe("Wizard household-answer adapter", () => {
         bedrooms: "2",
         bathrooms: "1",
         maxMonthlyCost: "2200",
+        ceilingType: "hard",
         stopsMove: "yes",
         assessment: "strong_negative",
       },
       supportNetwork: {
-        needed: "no",
-        stopsMove: "",
-        assessment: "unavailable",
+        relevance: "no",
+        importance: "",
+        status: "",
       },
       requiredServices: {
-        needed: "yes",
-        stopsMove: "no",
-        assessment: "negative",
+        relevance: "yes",
+        importance: "important",
+        status: "does_not_work",
       },
       carFreeAccess: {
-        needed: "yes",
-        stopsMove: "yes",
-        assessment: "strong_positive",
+        relevance: "yes",
+        importance: "blocker",
+        status: "works",
       },
     };
     draft.finances.targetHousing = "1859";
@@ -67,7 +121,7 @@ describe("Wizard household-answer adapter", () => {
         {
           factorId: "car_free_access",
           importance: "essential",
-          impact: "strong_positive",
+          impact: "positive",
           essentialStatus: "confirmed_met",
         },
       ],
@@ -80,38 +134,41 @@ describe("Wizard household-answer adapter", () => {
     draft.householdMode = "family";
     Object.assign(draft.householdPlan.housing, {
       tenure: "rent",
+      type: "apartment_or_condo",
       bedrooms: "3",
+      bathrooms: "1",
       maxMonthlyCost: "2600",
+      ceilingType: "target",
       stopsMove: "no",
     });
     draft.householdPlan.supportNetwork = {
-      needed: "yes",
-      stopsMove: "no",
-      assessment: "positive",
+      relevance: "yes",
+      importance: "important",
+      status: "works",
     };
     draft.householdPlan.childcare = {
-      needed: "yes",
+      relevance: "yes",
+      importance: "blocker",
+      status: "not_checked",
       arrangement: "center",
-      stopsMove: "yes",
-      assessment: "unavailable",
     };
     draft.householdPlan.school = {
-      needed: "yes",
+      relevance: "yes",
+      importance: "blocker",
+      status: "does_not_work",
       gradeBand: "elementary",
       preference: "public",
       requirements: "",
-      stopsMove: "yes",
-      assessment: "negative",
     };
     draft.householdPlan.requiredServices = {
-      needed: "yes",
-      stopsMove: "no",
-      assessment: "neutral",
+      relevance: "yes",
+      importance: "important",
+      status: "not_checked",
     };
     draft.householdPlan.carFreeAccess = {
-      needed: "no",
-      stopsMove: "",
-      assessment: "unavailable",
+      relevance: "no",
+      importance: "",
+      status: "",
     };
     draft.finances.targetHousing = "2400";
 
@@ -147,7 +204,7 @@ describe("Wizard household-answer adapter", () => {
       {
         factorId: "required_services_continuity",
         importance: "important",
-        impact: "neutral",
+        impact: "unavailable",
         essentialStatus: null,
       },
       {
@@ -164,10 +221,16 @@ describe("Wizard household-answer adapter", () => {
     draft.householdMode = "individual";
     Object.assign(draft.householdPlan.housing, {
       tenure: "rent",
+      type: "apartment_or_condo",
       bedrooms: "3",
+      bathrooms: "1",
       maxMonthlyCost: "2200",
+      ceilingType: "hard",
       stopsMove: "yes",
     });
+    draft.householdPlan.supportNetwork.relevance = "no";
+    draft.householdPlan.requiredServices.relevance = "no";
+    draft.householdPlan.carFreeAccess.relevance = "no";
     draft.finances.targetHousing = "2500";
 
     const result = adaptWizardDraftToHouseholdAnswers(draft);
@@ -192,6 +255,11 @@ describe("Wizard household-answer adapter", () => {
         "householdPlan.housing.tenure": expect.any(String),
         "householdPlan.housing.bedrooms": expect.any(String),
         "householdPlan.housing.maxMonthlyCost": expect.any(String),
+        "householdPlan.supportNetwork.relevance": expect.any(String),
+        "householdPlan.childcare.relevance": expect.any(String),
+        "householdPlan.school.relevance": expect.any(String),
+        "householdPlan.requiredServices.relevance": expect.any(String),
+        "householdPlan.carFreeAccess.relevance": expect.any(String),
       }),
     });
   });

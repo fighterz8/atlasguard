@@ -20,9 +20,21 @@ const reviewedDraft = (): WizardPrototypeDraft => {
     maxMonthlyCost: "2600",
     stopsMove: "no",
   };
-  draft.householdPlan.supportNetwork = { needed: "no", stopsMove: "" };
-  draft.householdPlan.requiredServices = { needed: "no", stopsMove: "" };
-  draft.householdPlan.carFreeAccess = { needed: "no", stopsMove: "" };
+  draft.householdPlan.supportNetwork = {
+    relevance: "no",
+    importance: "",
+    status: "",
+  };
+  draft.householdPlan.requiredServices = {
+    relevance: "no",
+    importance: "",
+    status: "",
+  };
+  draft.householdPlan.carFreeAccess = {
+    relevance: "no",
+    importance: "",
+    status: "",
+  };
   return draft;
 };
 

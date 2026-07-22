@@ -9,9 +9,22 @@ import type {
   MoveWiseHouseholdMode,
 } from "@workspace/contracts";
 
+import {
+  createInitialHouseholdConstraint,
+  getHouseholdConstraintDefinitions,
+  validateHouseholdConstraint,
+  type HouseholdConstraint,
+} from "./household-constraints";
+import {
+  createInitialExpenseWorksheet,
+  getExpenseWorksheetErrors,
+  type ExpenseWorksheetDraft,
+} from "./expense-worksheet";
+
 export const wizardSteps = [
   { id: "move", label: "Your move", shortLabel: "Move" },
   { id: "money", label: "Your money", shortLabel: "Money" },
+  { id: "firstHome", label: "First home", shortLabel: "First home" },
   { id: "priorities", label: "Daily life", shortLabel: "Daily life" },
   { id: "household", label: "Household needs", shortLabel: "Household" },
   { id: "review", label: "Review", shortLabel: "Review" },
@@ -24,11 +37,15 @@ export type PriorityImportance =
   | "important"
   | "nice_to_have"
   | "does_not_matter";
+export type ActivePriorityImportance = Exclude<
+  PriorityImportance,
+  "does_not_matter"
+>;
 export type ClimateHeatPreference =
   | "fewer_hot_days"
   | "more_hot_days"
   | "does_not_matter";
-export const HOUSEHOLD_PLAN_VERSION = "1.0.0" as const;
+export const HOUSEHOLD_PLAN_VERSION = "2.0.0" as const;
 
 export const householdFactorLabels = {
   space_fit: "Suitable housing",
@@ -55,6 +72,13 @@ export type HousingType =
   | "flexible";
 export type BedroomNeed = "studio" | "1" | "2" | "3" | "4_plus";
 export type BathroomNeed = "1" | "1_5" | "2" | "3_plus";
+export type RentCeilingType = "hard" | "target" | "flexible" | "not_sure";
+
+export const isHardRentCeiling = (
+  housing: Pick<HouseholdPlanDraft["housing"], "ceilingType" | "stopsMove">,
+) =>
+  housing.ceilingType === "hard" ||
+  (housing.ceilingType === "" && housing.stopsMove === "yes");
 export type ChildcareArrangement =
   | "center"
   | "home_based"
@@ -70,11 +94,7 @@ export type SchoolGradeBand =
   | "multiple";
 export type SchoolPreference = "public" | "private" | "either";
 
-export type ConditionalHouseholdNeed = {
-  needed: YesNoAnswer | "";
-  stopsMove: YesNoAnswer | "";
-  assessment: HouseholdFitAssessment;
-};
+export type ConditionalHouseholdNeed = HouseholdConstraint;
 
 export type HouseholdPlanDraft = {
   version: typeof HOUSEHOLD_PLAN_VERSION;
@@ -84,6 +104,8 @@ export type HouseholdPlanDraft = {
     bedrooms: BedroomNeed | "";
     bathrooms: BathroomNeed | "";
     maxMonthlyCost: string;
+    ceilingType: RentCeilingType | "";
+    /** Compatibility signal consumed by the current deterministic evaluator. */
     stopsMove: YesNoAnswer | "";
     assessment: HouseholdFitAssessment;
   };
@@ -108,26 +130,23 @@ export const createInitialHouseholdPlan = (): HouseholdPlanDraft => ({
     bedrooms: "",
     bathrooms: "",
     maxMonthlyCost: "",
+    ceilingType: "",
     stopsMove: "",
     assessment: "unavailable",
   },
   childcare: {
-    needed: "",
+    ...createInitialHouseholdConstraint(),
     arrangement: "",
-    stopsMove: "",
-    assessment: "unavailable",
   },
   school: {
-    needed: "",
+    ...createInitialHouseholdConstraint(),
     gradeBand: "",
     preference: "",
     requirements: "",
-    stopsMove: "",
-    assessment: "unavailable",
   },
-  supportNetwork: { needed: "", stopsMove: "", assessment: "unavailable" },
-  requiredServices: { needed: "", stopsMove: "", assessment: "unavailable" },
-  carFreeAccess: { needed: "", stopsMove: "", assessment: "unavailable" },
+  supportNetwork: createInitialHouseholdConstraint(),
+  requiredServices: createInitialHouseholdConstraint(),
+  carFreeAccess: createInitialHouseholdConstraint(),
 });
 
 export const supportedPlaces = supportedResearchPlaces;
@@ -147,6 +166,7 @@ export type WizardPrototypeDraft = {
     targetGrossIncomeKnown: boolean;
     targetGrossIncome: string;
     currentExpenses: string;
+    expenseWorksheet: ExpenseWorksheetDraft;
     targetExpenses: string;
     retainedPropertyNet: string;
     targetTakeHomeRangeMin: string;
@@ -165,9 +185,9 @@ export type WizardPrototypeDraft = {
     targetExpensesBasis: AssumptionBasis;
     retainedPropertyNetBasis: AssumptionBasis;
   };
-  commuteImportance: PriorityImportance;
-  climateHeatPreference: ClimateHeatPreference;
-  climateHeatImportance: Exclude<PriorityImportance, "does_not_matter">;
+  commuteImportance: PriorityImportance | "";
+  climateHeatPreference: ClimateHeatPreference | "";
+  climateHeatImportance: ActivePriorityImportance | "";
   householdPlan: HouseholdPlanDraft;
 };
 
@@ -186,8 +206,9 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     targetGrossIncomeKnown: false,
     targetGrossIncome: "",
     currentExpenses: "",
+    expenseWorksheet: createInitialExpenseWorksheet(),
     targetExpenses: "",
-    retainedPropertyNet: "0",
+    retainedPropertyNet: "",
     targetTakeHomeRangeMin: "",
     targetTakeHomeRangeMax: "",
     targetHousingRangeMin: "",
@@ -202,11 +223,11 @@ export const createInitialWizardDraft = (): WizardPrototypeDraft => ({
     targetHousingBasis: "user_estimate",
     targetGrossIncomeBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
-    retainedPropertyNetBasis: "confirmed",
+    retainedPropertyNetBasis: "user_estimate",
   },
-  commuteImportance: "important",
-  climateHeatPreference: "fewer_hot_days",
-  climateHeatImportance: "important",
+  commuteImportance: "",
+  climateHeatPreference: "",
+  climateHeatImportance: "",
   householdPlan: createInitialHouseholdPlan(),
 });
 
@@ -424,6 +445,12 @@ export function validateWizardStep(
       "Current housing cost",
       true,
     );
+    if (draft.finances.expenseWorksheet.enabled) {
+      Object.assign(
+        errors,
+        getExpenseWorksheetErrors(draft.finances.expenseWorksheet),
+      );
+    }
     if (draft.finances.targetTakeHome.trim() !== "")
       validateMoney(
         errors,
@@ -469,12 +496,19 @@ export function validateWizardStep(
       "Current recurring expenses",
       true,
     );
-    validateSignedMoney(
-      errors,
-      "retainedPropertyNet",
-      draft.finances.retainedPropertyNet,
-      "Retained-property monthly net",
-    );
+    if (draft.finances.currentHousingTenure === "own") {
+      if (draft.finances.retainedPropertyNet.trim() === "") {
+        errors["finances.retainedPropertyNet"] =
+          "Enter the monthly impact of keeping the property, or enter 0 if it will not continue after the move.";
+      } else {
+        validateSignedMoney(
+          errors,
+          "retainedPropertyNet",
+          draft.finances.retainedPropertyNet,
+          "Retained-property monthly net",
+        );
+      }
+    }
     if (draft.finances.targetTakeHome.trim() !== "")
       validatePlausibleRange(errors, draft.finances, {
         valueKey: "targetTakeHome",
@@ -509,14 +543,44 @@ export function validateWizardStep(
         maxKey: "targetExpensesRangeMax",
         label: "Target recurring expenses",
       });
-    validatePlausibleRange(errors, draft.finances, {
-      valueKey: "retainedPropertyNet",
-      basisKey: "retainedPropertyNetBasis",
-      minKey: "retainedPropertyNetRangeMin",
-      maxKey: "retainedPropertyNetRangeMax",
-      label: "Retained-property monthly net",
-      signed: true,
-    });
+    if (draft.finances.currentHousingTenure === "own") {
+      validatePlausibleRange(errors, draft.finances, {
+        valueKey: "retainedPropertyNet",
+        basisKey: "retainedPropertyNetBasis",
+        minKey: "retainedPropertyNetRangeMin",
+        maxKey: "retainedPropertyNetRangeMax",
+        label: "Retained-property monthly net",
+        signed: true,
+      });
+    }
+  }
+
+  if (step === "firstHome") {
+    const { housing } = draft.householdPlan;
+    const requiredHousingFields = [
+      ["tenure", "Choose the first housing stage."],
+      ["type", "Choose the kind of home you need."],
+      ["bedrooms", "Choose the minimum number of bedrooms."],
+      ["bathrooms", "Choose the minimum number of bathrooms."],
+      ["ceilingType", "Choose how firm the rent ceiling is."],
+    ] as const;
+    for (const [field, message] of requiredHousingFields) {
+      if (housing[field] === "") {
+        errors[`householdPlan.housing.${field}`] = message;
+      }
+    }
+
+    const normalizedBudget = housing.maxMonthlyCost.trim().replace(/,/g, "");
+    if (normalizedBudget === "") {
+      errors["householdPlan.housing.maxMonthlyCost"] =
+        "Enter the most you want to spend on housing each month.";
+    } else if (!/^\d+$/.test(normalizedBudget)) {
+      errors["householdPlan.housing.maxMonthlyCost"] =
+        "Housing budget must be a whole-dollar amount.";
+    } else if (Number(normalizedBudget) <= 0) {
+      errors["householdPlan.housing.maxMonthlyCost"] =
+        "Housing budget must be greater than zero.";
+    }
   }
 
   if (step === "household") {
@@ -525,40 +589,14 @@ export function validateWizardStep(
       return errors;
     }
     const { householdPlan } = draft;
-    const requiredHousingFields = [
-      ["tenure", "Choose whether you plan to rent or buy."],
-      ["bedrooms", "Choose the minimum number of bedrooms."],
-      ["stopsMove", "Choose whether the rent ceiling is non-negotiable."],
-    ] as const;
-    for (const [field, message] of requiredHousingFields) {
-      if (householdPlan.housing[field] === "") {
-        errors[`householdPlan.housing.${field}`] = message;
-      }
-    }
-
-    const normalizedBudget = householdPlan.housing.maxMonthlyCost
-      .trim()
-      .replace(/,/g, "");
-    if (normalizedBudget === "") {
-      errors["householdPlan.housing.maxMonthlyCost"] =
-        "Enter the most you want to spend on housing each month.";
-    } else if (!/^\d+$/.test(normalizedBudget)) {
-      errors["householdPlan.housing.maxMonthlyCost"] =
-        "Housing budget must be a whole-dollar amount.";
-    }
-
-    const conditionalNeeds = [
-      ["supportNetwork", householdPlan.supportNetwork, "nearby support"],
-      ["childcare", householdPlan.childcare, "childcare"],
-      ["school", householdPlan.school, "school continuity"],
-      ["requiredServices", householdPlan.requiredServices, "required services"],
-      ["carFreeAccess", householdPlan.carFreeAccess, "car-free routines"],
-    ] as const;
-    for (const [key, need, label] of conditionalNeeds) {
-      if (need.needed === "yes" && need.stopsMove === "") {
-        errors[`householdPlan.${key}.stopsMove`] =
-          `Choose whether ${label} can stop the move.`;
-      }
+    for (const { key, applies } of getHouseholdConstraintDefinitions(
+      draft.householdMode,
+    )) {
+      if (!applies) continue;
+      Object.assign(
+        errors,
+        validateHouseholdConstraint(key, householdPlan[key]),
+      );
     }
   }
 
@@ -569,6 +607,7 @@ export function validateWizardDraft(draft: WizardPrototypeDraft): WizardErrors {
   return {
     ...validateWizardStep("move", draft),
     ...validateWizardStep("money", draft),
+    ...validateWizardStep("firstHome", draft),
     ...validateWizardStep("household", draft),
   };
 }

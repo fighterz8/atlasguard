@@ -12,21 +12,19 @@ import { createInitialWizardDraft } from "../wizard-prototype/model";
 import { ResearchResultsExperience } from "../../pages/results";
 
 describe("MoveWise score presentation", () => {
-  it("introduces the relative score without displacing the canonical decision", () => {
+  it("leads with the relocation brief instead of the score", () => {
     const model = createResearchResultsViewModel();
     const html = renderToStaticMarkup(<SummaryPanel {...model} />);
 
     expect(html.match(/<h1/g)).toHaveLength(1);
-    expect(html).toContain("No clear advantage yet");
-    expect(html).toContain("MoveWise Score");
-    expect(html).toContain("52");
-    expect(html).toContain("out of 100");
-    expect(html).toContain(
-      "50 means roughly even with Los Angeles for your current inputs.",
-    );
-    expect(html).toContain("Not a probability");
-    expect(html).toContain('data-score-tone="caution"');
-    expect(html).toContain('data-tone="neutral"');
+    expect(html).toContain("Seattle has tradeoffs worth weighing.");
+    expect(html).toContain("Move outlook");
+    expect(html).toContain("Decision readiness");
+    expect(html).toContain("Improves");
+    expect(html).toContain("Gets harder");
+    expect(html).toContain("Check before deciding");
+    expect(html).not.toContain("MoveWise Score");
+    expect(html).not.toContain("out of 100");
     expect(html).toContain('data-tone="caution"');
   });
 
@@ -117,23 +115,24 @@ describe("MoveWise score presentation", () => {
       bedrooms: "2",
       bathrooms: "1",
       maxMonthlyCost: "1700",
+      ceilingType: "hard",
       stopsMove: "yes",
       assessment: "positive",
     };
     draft.householdPlan.supportNetwork = {
-      needed: "yes",
-      stopsMove: "yes",
-      assessment: "unavailable",
+      relevance: "yes",
+      importance: "blocker",
+      status: "not_checked",
     };
     draft.householdPlan.requiredServices = {
-      needed: "no",
-      stopsMove: "",
-      assessment: "unavailable",
+      relevance: "no",
+      importance: "",
+      status: "",
     };
     draft.householdPlan.carFreeAccess = {
-      needed: "no",
-      stopsMove: "",
-      assessment: "unavailable",
+      relevance: "no",
+      importance: "",
+      status: "",
     };
     const evaluation = evaluateWizardDraft(draft);
     expect(evaluation.success).toBe(true);
@@ -156,15 +155,17 @@ describe("MoveWise score presentation", () => {
       <DecisionNotes {...model} />,
     );
 
-    expect(summaryHtml).toContain("Promising if");
-    expect(summaryHtml).toContain("Deterministic 0.2.0");
-    expect(summaryHtml).toContain("1 essential need not met");
+    expect(summaryHtml).toContain("must-have need is not met");
+    expect(summaryHtml).toContain("Move outlook");
+    expect(summaryHtml).toContain("Decision readiness");
+    expect(summaryHtml).not.toContain("Deterministic 0.2.0");
+    expect(summaryHtml).not.toContain("MoveWise Score");
     expect(scoreHtml).toContain("Closest decision change");
     expect(scoreHtml).toContain("Non-negotiable rental requirement");
-    expect(scoreHtml).toContain("High financial risk under these assumptions");
+    expect(scoreHtml).toContain("Budget risk looks high");
     expect(scoreHtml).toContain("MoveWise calculated");
     expect(scoreHtml).toContain("How estimates were calculated");
-    expect(scoreHtml).toContain("Public estimates + your inputs");
+    expect(scoreHtml).toContain("MoveWise estimates + your inputs");
     expect(scoreHtml).not.toContain("Preliminary");
     expect(scoreHtml).not.toContain("Needs confirmation");
     expect(scoreHtml).toContain("housing-burden safety check could not run");
@@ -176,21 +177,22 @@ describe("MoveWise score presentation", () => {
     expect(decisionNotesHtml).not.toContain("Assumptions to watch");
   });
 
-  it("shows what changes before score mechanics in the guided Results read", () => {
+  it("keeps the brief and numbers visible while collapsing deeper analysis", () => {
     (globalThis as typeof globalThis & { React: typeof React }).React = React;
     const html = renderToStaticMarkup(
       <ResearchResultsExperience model={createResearchResultsViewModel()} />,
     );
 
-    expect(html.indexOf("What changes if you move")).toBeGreaterThan(-1);
+    expect(html.indexOf("Numbers MoveWise used")).toBeGreaterThan(-1);
+    expect(html.indexOf("Explore the full comparison")).toBeGreaterThan(-1);
     expect(html).toContain("metro household income");
-    expect(html).toContain("not a salary prediction");
-    expect(html).toContain("not an occupation wage estimate");
+    expect(html).not.toContain("not a salary prediction");
+    expect(html).not.toContain("not an occupation wage estimate");
     expect(html).toContain("family operating costs");
-    expect(html).toContain("not childcare-price data");
-    expect(html.indexOf("What sits behind the score")).toBeGreaterThan(-1);
-    expect(html.indexOf("What changes if you move")).toBeLessThan(
-      html.indexOf("What sits behind the score"),
+    expect(html).not.toContain("not childcare-price data");
+    expect(html.indexOf("How this was estimated")).toBeGreaterThan(-1);
+    expect(html.indexOf("Numbers MoveWise used")).toBeLessThan(
+      html.indexOf("How this was estimated"),
     );
   });
 });

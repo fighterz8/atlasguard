@@ -12,8 +12,10 @@ import type {
 import type {
   BedroomNeed,
   HousingTenure,
+  RentCeilingType,
   WizardPrototypeDraft,
 } from "./model";
+import { isHardRentCeiling } from "./model";
 
 export type DestinationPlanningSource =
   | "movewise_public_estimate"
@@ -31,6 +33,7 @@ export type DestinationPlanningAssumptions = Readonly<{
   expenseGuidance: ResearchMetroExpenseGuidance | null;
   requestedBedrooms: BedroomNeed;
   maximumMonthlyRentDollars: number;
+  rentCeilingType: RentCeilingType;
   rentCeilingNonNegotiable: boolean;
 }>;
 
@@ -73,6 +76,7 @@ export function createDestinationPlanningDraft(
   const maximumMonthlyRentDollars = Number(
     draft.householdPlan.housing.maxMonthlyCost.trim().replace(/,/g, ""),
   );
+  const rentCeilingType = draft.householdPlan.housing.ceilingType;
   const takeHome =
     draft.finances.targetTakeHome.trim() === "" && incomeGuidance !== null
       ? {
@@ -108,6 +112,7 @@ export function createDestinationPlanningDraft(
     draft.finances.currentHousingTenure === "" ||
     draft.householdPlan.housing.tenure === "" ||
     requestedBedrooms === "" ||
+    rentCeilingType === "" ||
     !Number.isFinite(maximumMonthlyRentDollars) ||
     maximumMonthlyRentDollars <= 0
   ) {
@@ -171,8 +176,8 @@ export function createDestinationPlanningDraft(
       expenseGuidance,
       requestedBedrooms,
       maximumMonthlyRentDollars,
-      rentCeilingNonNegotiable:
-        draft.householdPlan.housing.stopsMove === "yes",
+      rentCeilingType,
+      rentCeilingNonNegotiable: isHardRentCeiling(draft.householdPlan.housing),
     },
   };
 }

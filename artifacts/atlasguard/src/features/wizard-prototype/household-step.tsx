@@ -1,36 +1,24 @@
-import {
-  RESEARCH_METRO_RENT_SOURCE,
-  getResearchMetroRentGuidance,
-  getSupportedResearchPlace,
-} from "@workspace/benchmark-data";
-import { Home, Users } from "lucide-react";
+import { CircleHelp, Users } from "lucide-react";
 import React from "react";
 import type { MoveWiseHouseholdMode } from "@workspace/contracts";
 
-import type {
-  HouseholdPlanDraft,
-  SupportedPlaceSlug,
-  WizardErrors,
-} from "./model";
+import {
+  getHouseholdConstraintDefinitions,
+  type HouseholdConstraintImportance,
+  type HouseholdConstraintKey,
+  type HouseholdConstraintRelevance,
+  type HouseholdConstraintStatus,
+} from "./household-constraints";
+import type { HouseholdPlanDraft, WizardErrors } from "./model";
 
 type HouseholdStepProps = {
   mode: MoveWiseHouseholdMode | "";
-  originSlug: SupportedPlaceSlug | "";
-  destinationSlug: SupportedPlaceSlug | "";
   plan: HouseholdPlanDraft;
   errors: WizardErrors;
   onPlanChange: (plan: HouseholdPlanDraft) => void;
 };
 
 type SelectOption = { value: string; label: string };
-
-const dollars = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-const percent = (basisPoints: number) => `${(basisPoints / 100).toFixed(1)}%`;
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
@@ -80,31 +68,33 @@ function SelectField({
   );
 }
 
-function YesNoQuestion({
+function ChoiceQuestion<T extends string>({
   id,
   legend,
   value,
+  options,
   error,
+  columns = 2,
   onChange,
 }: {
   id: string;
   legend: string;
-  value: "" | "yes" | "no";
+  value: T | "";
+  options: readonly { value: T; label: string }[];
   error?: string;
-  onChange: (value: "yes" | "no") => void;
+  columns?: 2 | 3;
+  onChange: (value: T) => void;
 }) {
   return (
     <fieldset
-      id={id}
       aria-invalid={error ? "true" : undefined}
       aria-describedby={error ? `${id}-error` : undefined}
     >
       <legend className="text-sm font-semibold text-slate-800">{legend}</legend>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        {[
-          { value: "yes" as const, label: "Yes" },
-          { value: "no" as const, label: "No" },
-        ].map((option) => (
+      <div
+        className={`mt-2 grid gap-2 ${columns === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+      >
+        {options.map((option) => (
           <label
             key={option.value}
             className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 has-[:checked]:border-teal-700 has-[:checked]:bg-teal-50"
@@ -116,7 +106,7 @@ function YesNoQuestion({
               value={option.value}
               checked={value === option.value}
               onChange={() => onChange(option.value)}
-              className="h-4 w-4 accent-teal-700"
+              className="h-4 w-4 shrink-0 accent-teal-700"
             />
             {option.label}
           </label>
@@ -127,26 +117,20 @@ function YesNoQuestion({
   );
 }
 
-const tenureOptions = [
-  { value: "rent", label: "Rent first" },
-  { value: "rent_then_buy", label: "Rent first, with ownership later" },
+const relevanceOptions = [
+  { value: "yes", label: "Yes, it matters" },
+  { value: "no", label: "No, not for this move" },
 ] as const;
 
-const bedroomOptions = [
-  { value: "studio", label: "Studio" },
-  { value: "1", label: "1 bedroom" },
-  { value: "2", label: "2 bedrooms" },
-  { value: "3", label: "3 bedrooms" },
-  { value: "4_plus", label: "4 or more bedrooms" },
+const importanceOptions = [
+  { value: "important", label: "Important" },
+  { value: "blocker", label: "Could block the move" },
 ] as const;
 
-const assessmentOptions = [
-  { value: "unavailable", label: "Need to confirm" },
-  { value: "positive", label: "Looks workable" },
-  { value: "strong_positive", label: "Looks very workable" },
-  { value: "neutral", label: "Mixed or unclear" },
-  { value: "negative", label: "Looks difficult" },
-  { value: "strong_negative", label: "Looks very difficult" },
+const statusOptions = [
+  { value: "works", label: "Works" },
+  { value: "does_not_work", label: "Does not work" },
+  { value: "not_checked", label: "Not checked" },
 ] as const;
 
 const childcareArrangementOptions = [
@@ -172,268 +156,76 @@ const schoolPreferenceOptions = [
   { value: "either", label: "Either" },
 ] as const;
 
-type ConditionalNeedKey =
-  | "supportNetwork"
-  | "childcare"
-  | "school"
-  | "requiredServices"
-  | "carFreeAccess";
+const statusLabel: Record<Exclude<HouseholdConstraintStatus, "">, string> = {
+  works: "Works",
+  does_not_work: "Does not work",
+  not_checked: "Not checked",
+};
 
 export function HouseholdStep({
   mode,
-  originSlug,
-  destinationSlug,
   plan,
   errors,
   onPlanChange,
 }: HouseholdStepProps) {
-  const updateHousing = (
-    key: keyof HouseholdPlanDraft["housing"],
-    value: string,
-  ) =>
-    onPlanChange({
-      ...plan,
-      housing: { ...plan.housing, [key]: value },
-    } as HouseholdPlanDraft);
-
-  const updateConditionalNeed = (
-    key: ConditionalNeedKey,
-    patch: Partial<HouseholdPlanDraft[ConditionalNeedKey]>,
+  const definitions = getHouseholdConstraintDefinitions(mode);
+  const updateConstraint = (
+    key: HouseholdConstraintKey,
+    patch: Partial<HouseholdPlanDraft[HouseholdConstraintKey]>,
   ) =>
     onPlanChange({
       ...plan,
       [key]: { ...plan[key], ...patch },
     } as HouseholdPlanDraft);
 
-  const guidance =
-    originSlug === "" || destinationSlug === ""
-      ? null
-      : getResearchMetroRentGuidance(
-          originSlug,
-          destinationSlug,
-          plan.housing.bedrooms,
-        );
-  const origin =
-    originSlug === "" ? null : getSupportedResearchPlace(originSlug);
-  const destination =
-    destinationSlug === "" ? null : getSupportedResearchPlace(destinationSlug);
-  const normalizedBudget = plan.housing.maxMonthlyCost.trim().replace(/,/g, "");
-  const budget = /^\d+$/.test(normalizedBudget)
-    ? Number(normalizedBudget)
-    : null;
-  const destinationRent = guidance?.destination.monthlyGrossRentDollars;
-  const budgetDifference =
-    budget === null || destinationRent === undefined
-      ? null
-      : budget - destinationRent;
-  const rentDifference = guidance?.monthlyDifferenceDollars ?? 0;
-  const householdNeedRows = [
-    {
-      key: "supportNetwork",
-      label: "Nearby support",
-      applies: true,
-      detail:
-        "Friends, family, or trusted people who can help with daily life.",
-    },
-    {
-      key: "childcare",
-      label: "Workable childcare",
-      applies: mode === "family",
-      detail: "Care arrangements that need to keep working after the move.",
-    },
-    {
-      key: "school",
-      label: "Suitable school path",
-      applies: mode === "family",
-      detail: "School continuity or a new school path that has to be viable.",
-    },
-    {
-      key: "requiredServices",
-      label: "Required services",
-      applies: true,
-      detail: "Healthcare, therapy, specialist, or other recurring services.",
-    },
-    {
-      key: "carFreeAccess",
-      label: "Car-free routines",
-      applies: true,
-      detail: "Daily routines that need to work without reliable car access.",
-    },
-  ] as const satisfies readonly {
-    key: ConditionalNeedKey;
-    label: string;
-    applies: boolean;
-    detail: string;
-  }[];
-
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 4 of 5</p>
+          <p className="eyebrow">Step 5 of 6</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
             className="section-heading"
           >
-            Your first rental plan
+            Household constraints
           </h1>
         </div>
         <Users aria-hidden="true" className="mt-1 h-6 w-6 text-teal-700" />
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Tell MoveWise what the first home needs to support. We will price the
-        requested bedroom count with public metro evidence and compare it with
-        your rent ceiling—no opinion score required.
+        For each need, record whether it matters, how important it is, and what
+        you know today. A relevant need stays open until its status is clear.
       </p>
 
-      <section className="mt-7 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-        <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
-            <Home aria-hidden="true" className="h-4 w-4" />
-          </span>
-          <div>
-            <h2 className="font-semibold text-slate-950">
-              Rent-first v1 scope
-            </h2>
-            <p className="mt-1 text-sm leading-5 text-slate-600">
-              V1 evaluates the immediate rental stage. Ownership later is saved
-              as context, but buying later does not change the first-stage
-              score.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <SelectField
-            id="householdPlan-housing-tenure"
-            label="First housing stage"
-            value={plan.housing.tenure}
-            options={tenureOptions}
-            error={errors["householdPlan.housing.tenure"]}
-            onChange={(value) => updateHousing("tenure", value)}
-          />
-          <SelectField
-            id="householdPlan-housing-bedrooms"
-            label="Minimum bedrooms"
-            value={plan.housing.bedrooms}
-            options={bedroomOptions}
-            error={errors["householdPlan.housing.bedrooms"]}
-            onChange={(value) => updateHousing("bedrooms", value)}
-          />
-          <div>
-            <label
-              htmlFor="householdPlan-housing-maxMonthlyCost"
-              className="text-sm font-semibold text-slate-800"
-            >
-              Maximum monthly rent
-            </label>
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
-                $
-              </span>
-              <input
-                id="householdPlan-housing-maxMonthlyCost"
-                inputMode="numeric"
-                value={plan.housing.maxMonthlyCost}
-                aria-invalid={
-                  errors["householdPlan.housing.maxMonthlyCost"]
-                    ? "true"
-                    : undefined
-                }
-                aria-describedby={
-                  errors["householdPlan.housing.maxMonthlyCost"]
-                    ? "householdPlan-housing-maxMonthlyCost-error"
-                    : undefined
-                }
-                onChange={(event) =>
-                  updateHousing("maxMonthlyCost", event.currentTarget.value)
-                }
-                className="control-input pl-7"
-              />
-            </div>
-            <FieldError
-              id="householdPlan-housing-maxMonthlyCost-error"
-              message={errors["householdPlan.housing.maxMonthlyCost"]}
-            />
-          </div>
-          <YesNoQuestion
-            id="householdPlan-housing-stopsMove"
-            legend="Is this rent ceiling non-negotiable?"
-            value={plan.housing.stopsMove}
-            error={errors["householdPlan.housing.stopsMove"]}
-            onChange={(value) => updateHousing("stopsMove", value)}
-          />
-        </div>
-
-        {guidance && origin && destination ? (
-          <aside className="mt-6 rounded-lg border border-teal-200 bg-teal-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-teal-800">
-              MoveWise rent estimate
-            </p>
-            <p className="mt-2 text-base font-semibold text-teal-950">
-              {destination.city}: {dollars.format(destinationRent!)} per month
-            </p>
-            <p className="mt-2 text-sm leading-6 text-teal-950/80">
-              That is {dollars.format(Math.abs(rentDifference))}{" "}
-              {rentDifference <= 0 ? "less" : "more"} than the same bedroom
-              category in {origin.city}.{" "}
-              {guidance.stockCategoryLabel.replace(/^./, (letter) =>
-                letter.toUpperCase(),
-              )}{" "}
-              make up {percent(guidance.destination.renterStockShareBps)} of{" "}
-              {destination.city} renter-occupied homes versus{" "}
-              {percent(guidance.origin.renterStockShareBps)} in {origin.city}.
-            </p>
-            {budgetDifference !== null ? (
-              <p
-                className={`mt-3 text-sm font-semibold ${budgetDifference >= 0 ? "text-teal-950" : "text-risk"}`}
-              >
-                {budgetDifference >= 0
-                  ? `${dollars.format(destinationRent!)} is ${dollars.format(budgetDifference)} under your ceiling.`
-                  : `${dollars.format(destinationRent!)} is ${dollars.format(Math.abs(budgetDifference))} over your ceiling.`}
-              </p>
-            ) : null}
-            <p className="mt-3 text-xs leading-5 text-teal-900/70">
-              U.S. Census Bureau ·{" "}
-              {RESEARCH_METRO_RENT_SOURCE.observationPeriod} · tables B25031 and
-              B25042. Occupied rental stock is a market proxy, not live listing
-              availability or a guarantee of a matching home.
-            </p>
-          </aside>
-        ) : null}
-      </section>
-
-      <section
-        aria-labelledby="household-essentials-heading"
-        className="mt-7 border-y border-slate-300 py-5"
-      >
-        <div className="flex items-start justify-between gap-4">
+      <section aria-labelledby="household-board-heading" className="mt-7">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-300 pb-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-              User-supplied checks
+              Your status board
             </p>
             <h2
-              id="household-essentials-heading"
+              id="household-board-heading"
               className="mt-2 text-lg font-semibold text-slate-950"
             >
-              Household essentials
+              Needs that must work
             </h2>
           </div>
-          <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600">
-            Context and conditions
-          </span>
+          <p className="text-xs font-medium text-slate-500">
+            You entered · Affects readiness
+          </p>
         </div>
-        <div className="mt-5 divide-y divide-slate-200 border-y border-slate-200">
-          {householdNeedRows
+
+        <div className="divide-y divide-slate-200 border-b border-slate-200">
+          {definitions
             .filter(({ applies }) => applies)
             .map(({ key, label, detail }) => {
-              const need = plan[key];
+              const constraint = plan[key];
               const fieldPrefix = `householdPlan.${key}`;
               return (
-                <div key={key} className="py-5">
-                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
-                    <div>
+                <article key={key} className="py-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="max-w-2xl">
                       <h3 className="text-base font-semibold text-slate-950">
                         {label}
                       </h3>
@@ -441,119 +233,161 @@ export function HouseholdStep({
                         {detail}
                       </p>
                     </div>
-                    <div className="grid gap-4">
-                      <YesNoQuestion
-                        id={`${fieldPrefix}-needed`}
-                        legend="Does this matter for this move?"
-                        value={need.needed}
-                        error={errors[`${fieldPrefix}.needed`]}
+                    {constraint.relevance === "yes" &&
+                    constraint.status !== "" ? (
+                      <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700">
+                        {statusLabel[constraint.status]}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-5 grid gap-5">
+                    <ChoiceQuestion<Exclude<HouseholdConstraintRelevance, "">>
+                      id={`${fieldPrefix}-relevance`}
+                      legend="1. Does it matter?"
+                      value={constraint.relevance}
+                      options={relevanceOptions}
+                      error={errors[`${fieldPrefix}.relevance`]}
+                      onChange={(value) =>
+                        updateConstraint(key, {
+                          relevance: value,
+                          ...(value === "no"
+                            ? { importance: "", status: "" }
+                            : {}),
+                        })
+                      }
+                    />
+                    {constraint.relevance === "yes" ? (
+                      <>
+                        <ChoiceQuestion<
+                          Exclude<HouseholdConstraintImportance, "">
+                        >
+                          id={`${fieldPrefix}-importance`}
+                          legend="2. How important is it?"
+                          value={constraint.importance}
+                          options={importanceOptions}
+                          error={errors[`${fieldPrefix}.importance`]}
+                          onChange={(importance) =>
+                            updateConstraint(key, { importance })
+                          }
+                        />
+                        <ChoiceQuestion<Exclude<HouseholdConstraintStatus, "">>
+                          id={`${fieldPrefix}-status`}
+                          legend="3. What is its status?"
+                          value={constraint.status}
+                          options={statusOptions}
+                          columns={3}
+                          error={errors[`${fieldPrefix}.status`]}
+                          onChange={(status) =>
+                            updateConstraint(key, { status })
+                          }
+                        />
+                      </>
+                    ) : null}
+
+                    {key === "childcare" && constraint.relevance === "yes" ? (
+                      <SelectField
+                        id={`${fieldPrefix}-arrangement`}
+                        label="Care arrangement (optional)"
+                        value={plan.childcare.arrangement}
+                        options={childcareArrangementOptions}
+                        error={errors[`${fieldPrefix}.arrangement`]}
                         onChange={(value) =>
-                          updateConditionalNeed(key, {
-                            needed: value,
-                            ...(value === "no"
-                              ? {
-                                  stopsMove: "",
-                                  assessment: "unavailable",
-                                }
-                              : {}),
+                          onPlanChange({
+                            ...plan,
+                            childcare: {
+                              ...plan.childcare,
+                              arrangement:
+                                value as HouseholdPlanDraft["childcare"]["arrangement"],
+                            },
                           })
                         }
                       />
-                      {need.needed === "yes" ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <YesNoQuestion
-                            id={`${fieldPrefix}-stopsMove`}
-                            legend="Can this stop the move?"
-                            value={need.stopsMove}
-                            error={errors[`${fieldPrefix}.stopsMove`]}
-                            onChange={(value) =>
-                              updateConditionalNeed(key, { stopsMove: value })
-                            }
-                          />
-                          <SelectField
-                            id={`${fieldPrefix}-assessment`}
-                            label="Current read"
-                            value={need.assessment}
-                            options={assessmentOptions}
-                            error={errors[`${fieldPrefix}.assessment`]}
-                            onChange={(value) =>
-                              updateConditionalNeed(key, {
-                                assessment:
-                                  value as HouseholdPlanDraft[typeof key]["assessment"],
-                              })
-                            }
-                          />
-                        </div>
-                      ) : null}
-                      {key === "childcare" && need.needed === "yes" ? (
+                    ) : null}
+                    {key === "school" && constraint.relevance === "yes" ? (
+                      <div className="grid gap-4 sm:grid-cols-2">
                         <SelectField
-                          id={`${fieldPrefix}-arrangement`}
-                          label="Care arrangement"
-                          value={plan.childcare.arrangement}
-                          options={childcareArrangementOptions}
-                          error={errors[`${fieldPrefix}.arrangement`]}
+                          id={`${fieldPrefix}-gradeBand`}
+                          label="Grade band (optional)"
+                          value={plan.school.gradeBand}
+                          options={gradeBandOptions}
+                          error={errors[`${fieldPrefix}.gradeBand`]}
                           onChange={(value) =>
                             onPlanChange({
                               ...plan,
-                              childcare: {
-                                ...plan.childcare,
-                                arrangement:
-                                  value as HouseholdPlanDraft["childcare"]["arrangement"],
+                              school: {
+                                ...plan.school,
+                                gradeBand:
+                                  value as HouseholdPlanDraft["school"]["gradeBand"],
                               },
                             })
                           }
                         />
-                      ) : null}
-                      {key === "school" && need.needed === "yes" ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <SelectField
-                            id={`${fieldPrefix}-gradeBand`}
-                            label="Grade band"
-                            value={plan.school.gradeBand}
-                            options={gradeBandOptions}
-                            error={errors[`${fieldPrefix}.gradeBand`]}
-                            onChange={(value) =>
-                              onPlanChange({
-                                ...plan,
-                                school: {
-                                  ...plan.school,
-                                  gradeBand:
-                                    value as HouseholdPlanDraft["school"]["gradeBand"],
-                                },
-                              })
-                            }
-                          />
-                          <SelectField
-                            id={`${fieldPrefix}-preference`}
-                            label="School preference"
-                            value={plan.school.preference}
-                            options={schoolPreferenceOptions}
-                            error={errors[`${fieldPrefix}.preference`]}
-                            onChange={(value) =>
-                              onPlanChange({
-                                ...plan,
-                                school: {
-                                  ...plan.school,
-                                  preference:
-                                    value as HouseholdPlanDraft["school"]["preference"],
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                      ) : null}
-                    </div>
+                        <SelectField
+                          id={`${fieldPrefix}-preference`}
+                          label="School preference (optional)"
+                          value={plan.school.preference}
+                          options={schoolPreferenceOptions}
+                          error={errors[`${fieldPrefix}.preference`]}
+                          onChange={(value) =>
+                            onPlanChange({
+                              ...plan,
+                              school: {
+                                ...plan.school,
+                                preference:
+                                  value as HouseholdPlanDraft["school"]["preference"],
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    ) : null}
                   </div>
-                </div>
+                </article>
               );
             })}
         </div>
-        <p className="mt-4 text-xs leading-5 text-slate-500">
-          These answers are user-supplied context. MoveWise does not yet use
-          childcare prices, school ratings, provider availability, or
-          neighborhood-level access data.
-        </p>
       </section>
+
+      {definitions.some(({ applies }) => !applies) ? (
+        <section
+          aria-labelledby="not-applicable-heading"
+          className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4"
+        >
+          <div className="flex items-start gap-3">
+            <CircleHelp
+              aria-hidden="true"
+              className="mt-0.5 h-5 w-5 shrink-0 text-slate-500"
+            />
+            <div>
+              <h2
+                id="not-applicable-heading"
+                className="text-sm font-semibold text-slate-900"
+              >
+                Not applicable to this move
+              </h2>
+              <ul className="mt-2 space-y-1 text-sm text-slate-600">
+                {definitions
+                  .filter(({ applies }) => !applies)
+                  .map(({ key, label, notApplicableReason }) => (
+                    <li key={key}>
+                      <span className="font-medium text-slate-700">
+                        {label}:
+                      </span>{" "}
+                      {notApplicableReason}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <p className="mt-5 text-xs leading-5 text-slate-500">
+        MoveWise uses these answers as household constraints. Childcare prices,
+        school ratings, provider availability, and neighborhood-level access
+        still require household-specific checks.
+      </p>
     </div>
   );
 }

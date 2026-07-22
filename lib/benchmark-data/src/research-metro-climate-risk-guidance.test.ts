@@ -44,9 +44,10 @@ describe("research metro climate risk guidance", () => {
       },
     });
     expect(guidance?.summary).toContain("county-level baseline risk");
-    expect(guidance?.boundary).toContain("not a metro-wide risk model");
-    expect(guidance?.boundary).toContain("not a neighborhood or parcel rating");
-    expect(guidance?.boundary).toContain("not a scored MoveWise rule");
+    expect(guidance?.boundary).toContain("area-level climate and hazard");
+    expect(guidance?.boundary).toContain(
+      "Check the exact neighborhood, home, insurance",
+    );
   });
 
   it("treats close county-level risk scores as similar", () => {

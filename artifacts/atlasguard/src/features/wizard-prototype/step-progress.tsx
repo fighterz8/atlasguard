@@ -13,7 +13,7 @@ export function StepProgress({ currentStep }: StepProgressProps) {
 
   return (
     <nav aria-label="Evaluation progress">
-      <ol className="grid grid-cols-4 gap-1 sm:gap-3">
+      <ol className="grid grid-cols-3 gap-1 sm:grid-cols-6 sm:gap-3">
         {wizardSteps.map((step, index) => {
           const complete = index < currentIndex;
           const current = index === currentIndex;

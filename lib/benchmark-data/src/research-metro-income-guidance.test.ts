@@ -34,9 +34,9 @@ describe("research metro income guidance", () => {
     expect(guidance.summary).toContain(
       "metro household-income context is higher",
     );
-    expect(guidance.boundary).toContain("not a salary prediction");
+    expect(guidance.boundary).toContain("editable starting point");
     expect(guidance.laborMarketBoundary).toContain(
-      "not an occupation wage estimate",
+      "Confirm job, remote-work, or occupation-specific pay",
     );
   });
 

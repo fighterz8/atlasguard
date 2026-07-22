@@ -2,21 +2,45 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  CircleDotDashed,
+  Home,
   LoaderCircle,
   RotateCcw,
+  ShieldCheck,
+  UsersRound,
+  WalletCards,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useMachine } from "@xstate/react";
 import { LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON } from "@workspace/benchmark-data";
 import type { MoveWiseHouseholdMode } from "@workspace/contracts";
 import { clonePlainData } from "../../lib/clone-plain-data";
+import { DestructiveActionDialog } from "../../components/destructive-action-dialog";
 
+import { createBudgetEquationModel } from "./budget-equation-model";
+import {
+  BudgetEditBanner,
+  BudgetEditSummaryPanel,
+} from "./budget-edit-feedback";
+import {
+  createBudgetEditSession,
+  createBudgetEditSummary,
+  type BudgetEditOrigin,
+  type BudgetEditSummary,
+} from "./budget-edit-session";
+import { createFirstHomeModel } from "./first-home-model";
+import { FirstHomeStep } from "./first-home-step";
 import { HouseholdStep } from "./household-step";
+import {
+  enableExpenseWorksheet,
+  getExpenseWorksheetTotal,
+  type ExpenseCategoryId,
+} from "./expense-worksheet";
 import {
   createInitialWizardDraft,
   getPlace,
   getNextStep,
-  getPreviousStep,
-  wizardSteps,
+  isHardRentCeiling,
   type AssumptionBasis,
   type ClimateHeatPreference,
   type HouseholdPlanDraft,
@@ -27,13 +51,22 @@ import {
   type WizardStepId,
 } from "./model";
 import { MoneyStep, type BasisKey, type ValueKey } from "./money-step";
+import { isLikelySoftKeyboardOpen } from "./mobile-viewport-state";
 import { MoveStep } from "./move-step";
 import { PrioritiesStep } from "./priorities-step";
 import { PrototypeShell } from "./prototype-shell";
 import { createMoveWiseReviewModel } from "./review-model";
 import type { MoveWiseReviewModel } from "./review-model";
 import { ReviewStep } from "./review-step";
+import type { MoveWiseDecisionGateModule } from "./decision-gate-model";
 import { StepProgress } from "./step-progress";
+import {
+  createWizardFlowMachine,
+  getWizardFlowStep,
+  isWizardFlowBusy,
+  isWizardFlowComplete,
+  type WizardFlowStateValue,
+} from "./wizard-flow-machine";
 
 const exampleDraft: WizardPrototypeDraft = {
   originSlug: LOS_ANGELES_TO_SEATTLE_RESEARCH_COMPARISON.origin.slug,
@@ -48,8 +81,21 @@ const exampleDraft: WizardPrototypeDraft = {
     targetGrossIncomeKnown: false,
     targetGrossIncome: "",
     currentExpenses: "1500",
+    expenseWorksheet: {
+      enabled: false,
+      values: {
+        utilities: "",
+        transport: "",
+        food: "",
+        childcare: "",
+        debt: "",
+        insurance: "",
+        subscriptions: "",
+        other: "",
+      },
+    },
     targetExpenses: "",
-    retainedPropertyNet: "0",
+    retainedPropertyNet: "",
     targetTakeHomeRangeMin: "",
     targetTakeHomeRangeMax: "",
     targetHousingRangeMin: "",
@@ -64,50 +110,51 @@ const exampleDraft: WizardPrototypeDraft = {
     targetHousingBasis: "user_estimate",
     targetGrossIncomeBasis: "user_estimate",
     targetExpensesBasis: "user_estimate",
-    retainedPropertyNetBasis: "confirmed",
+    retainedPropertyNetBasis: "user_estimate",
   },
   commuteImportance: "important",
   climateHeatPreference: "fewer_hot_days",
   climateHeatImportance: "important",
   householdPlan: {
-    version: "1.0.0",
+    version: "2.0.0",
     housing: {
       tenure: "rent",
       type: "apartment_or_condo",
       bedrooms: "2",
       bathrooms: "1",
       maxMonthlyCost: "2000",
+      ceilingType: "target",
       stopsMove: "no",
       assessment: "positive",
     },
     childcare: {
-      needed: "no",
+      relevance: "no",
+      importance: "",
+      status: "",
       arrangement: "",
-      stopsMove: "",
-      assessment: "unavailable",
     },
     school: {
-      needed: "no",
+      relevance: "no",
+      importance: "",
+      status: "",
       gradeBand: "",
       preference: "",
       requirements: "",
-      stopsMove: "",
-      assessment: "unavailable",
     },
     supportNetwork: {
-      needed: "yes",
-      stopsMove: "no",
-      assessment: "positive",
+      relevance: "yes",
+      importance: "important",
+      status: "works",
     },
     requiredServices: {
-      needed: "no",
-      stopsMove: "",
-      assessment: "unavailable",
+      relevance: "no",
+      importance: "",
+      status: "",
     },
     carFreeAccess: {
-      needed: "no",
-      stopsMove: "",
-      assessment: "unavailable",
+      relevance: "no",
+      importance: "",
+      status: "",
     },
   },
 };
@@ -118,6 +165,86 @@ const errorFieldId = (path: string) =>
     : path.startsWith("householdPlan.")
       ? path.split(".").join("-")
       : path;
+
+const wholeDollar = (value: string) => {
+  const amount = Number(value.trim().replace(/,/g, ""));
+  return Number.isFinite(amount) && Number.isInteger(amount) ? amount : null;
+};
+
+const formatMonthly = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+
+export const createMovePictureModel = (
+  draft: WizardPrototypeDraft,
+  flowValue: WizardFlowStateValue,
+  reviewModel: MoveWiseReviewModel | null,
+) => {
+  const origin = getPlace(draft.originSlug);
+  const destination = getPlace(draft.destinationSlug);
+  const currentTakeHome = wholeDollar(draft.finances.currentTakeHome);
+  const currentHousing = wholeDollar(draft.finances.currentHousing);
+  const currentExpenses = wholeDollar(draft.finances.currentExpenses);
+  const currentCushion =
+    currentTakeHome !== null &&
+    currentHousing !== null &&
+    currentExpenses !== null
+      ? currentTakeHome - currentHousing - currentExpenses
+      : null;
+  const plannedDestinationValues = [
+    draft.finances.targetTakeHome,
+    draft.finances.targetHousing,
+    draft.finances.targetExpenses,
+  ].filter((value) => value.trim() !== "").length;
+  const mustCheckCount =
+    [
+      draft.householdPlan.supportNetwork,
+      draft.householdPlan.childcare,
+      draft.householdPlan.school,
+      draft.householdPlan.requiredServices,
+      draft.householdPlan.carFreeAccess,
+    ].filter(
+      ({ relevance, importance }) =>
+        relevance === "yes" && importance === "blocker",
+    ).length + (isHardRentCeiling(draft.householdPlan.housing) ? 1 : 0);
+  const rentCeiling = wholeDollar(draft.householdPlan.housing.maxMonthlyCost);
+  const flowLabel =
+    flowValue === "evaluating"
+      ? "Building brief"
+      : flowValue === "comparisonReady"
+        ? "Brief ready"
+        : flowValue === "review"
+          ? "Ready to check"
+          : "Collecting facts";
+
+  return {
+    route:
+      origin && destination
+        ? `${origin.city} to ${destination.city}`
+        : "Choose both cities",
+    flowLabel,
+    currentCushion:
+      currentCushion === null
+        ? "Waiting on money inputs"
+        : formatMonthly(currentCushion),
+    rentCeiling:
+      draft.householdPlan.housing.maxMonthlyCost.trim() === ""
+        ? "Not set yet"
+        : rentCeiling === null
+          ? "Needs a whole dollar"
+          : `${formatMonthly(rentCeiling)}/mo`,
+    destinationAssumptions: reviewModel
+      ? "Ready for review"
+      : `${plannedDestinationValues}/3 money assumptions`,
+    familyChecks:
+      mustCheckCount === 0
+        ? "No hard stops marked"
+        : `${mustCheckCount} hard-stop check${mustCheckCount === 1 ? "" : "s"}`,
+  };
+};
 
 type RangeKey =
   | "targetTakeHomeRangeMin"
@@ -164,27 +291,93 @@ const rangeKeysByBasis: Record<
 
 type WizardPrototypeProps = {
   initialDraft?: WizardPrototypeDraft;
+  initialStep?: WizardStepId;
+  initialReviewModel?: MoveWiseReviewModel | null;
   onEvaluate?: (draft: WizardPrototypeDraft) => WizardErrors;
+  onDraftStateChange?: (
+    draft: WizardPrototypeDraft,
+    step: WizardStepId,
+  ) => void;
+  localDraftStatus?:
+    | Readonly<{ status: "idle" }>
+    | Readonly<{ status: "saved" | "restored"; savedAt: string }>
+    | Readonly<{ status: "error" }>;
+  restoreNotice?: string;
+  onClearSavedDraft?: () => boolean;
+  initialBudgetEditOrigin?: BudgetEditOrigin;
+  onCancelBudgetEdit?: () => void;
+  onSaveBudgetEdit?: (
+    draft: WizardPrototypeDraft,
+    summary: BudgetEditSummary,
+  ) => WizardErrors;
+  initialDirectEditModule?: Exclude<MoveWiseDecisionGateModule, "budget">;
+  onCancelDirectEdit?: () => void;
+  onSaveDirectEdit?: (draft: WizardPrototypeDraft) => WizardErrors;
 };
 
 export function WizardPrototype({
   initialDraft,
+  initialStep,
+  initialReviewModel = null,
   onEvaluate,
+  onDraftStateChange,
+  localDraftStatus = { status: "idle" },
+  restoreNotice,
+  onClearSavedDraft,
+  initialBudgetEditOrigin,
+  onCancelBudgetEdit,
+  onSaveBudgetEdit,
+  initialDirectEditModule,
+  onCancelDirectEdit,
+  onSaveDirectEdit,
 }: WizardPrototypeProps) {
-  const [step, setStep] = useState<WizardStepId>(
-    initialDraft ? "money" : "move",
+  const startingStep =
+    initialDirectEditModule === "first_home"
+      ? "firstHome"
+      : initialDirectEditModule === "household"
+        ? "household"
+        : (initialStep ?? (initialDraft ? "money" : "move"));
+  const flowMachine = useMemo(
+    () => createWizardFlowMachine(startingStep, initialReviewModel),
+    [initialReviewModel, startingStep],
   );
+  const [flowSnapshot, sendFlow] = useMachine(flowMachine);
+  const flowValue = flowSnapshot.value as WizardFlowStateValue;
+  const step = getWizardFlowStep(flowValue);
+  const errors = flowSnapshot.context.errors;
+  const reviewModel = flowSnapshot.context.reviewModel;
+  const reviewComplete = isWizardFlowComplete(flowValue);
+  const isEvaluating = isWizardFlowBusy(flowValue);
   const [draft, setDraft] = useState<WizardPrototypeDraft>(() =>
     initialDraft ? clonePlainData(initialDraft) : createInitialWizardDraft(),
   );
-  const [errors, setErrors] = useState<WizardErrors>({});
-  const [reviewComplete, setReviewComplete] = useState(false);
-  const [reviewModel, setReviewModel] = useState<MoveWiseReviewModel | null>(
-    null,
+  const [budgetEdit, setBudgetEdit] = useState(() =>
+    initialBudgetEditOrigin && initialDraft
+      ? createBudgetEditSession(initialBudgetEditOrigin, initialDraft)
+      : null,
   );
-  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [budgetChangeSummary, setBudgetChangeSummary] =
+    useState<BudgetEditSummary | null>(null);
+  const [directEdit, setDirectEdit] = useState<{
+    moduleId: Exclude<MoveWiseDecisionGateModule, "budget">;
+    origin: "review" | "results";
+    baselineDraft: WizardPrototypeDraft;
+  } | null>(() =>
+    initialDirectEditModule && initialDraft
+      ? {
+          moduleId: initialDirectEditModule,
+          origin: "results",
+          baselineDraft: clonePlainData(initialDraft),
+        }
+      : null,
+  );
+  const [softKeyboardOpen, setSoftKeyboardOpen] = useState(false);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const evaluationTimerRef = useRef<number | null>(null);
+  const lastReportedStateRef = useRef(
+    `${startingStep}:${JSON.stringify(initialDraft ?? createInitialWizardDraft())}`,
+  );
+  const skipNextDraftReportRef = useRef(false);
 
   useEffect(
     () => () => {
@@ -195,13 +388,41 @@ export function WizardPrototype({
     [],
   );
 
+  useEffect(() => {
+    const visualViewport = window.visualViewport;
+    if (step !== "money" || !visualViewport) {
+      setSoftKeyboardOpen(false);
+      return;
+    }
+
+    const updateKeyboardState = () => {
+      setSoftKeyboardOpen(
+        isLikelySoftKeyboardOpen(window.innerHeight, visualViewport.height),
+      );
+    };
+    updateKeyboardState();
+    visualViewport.addEventListener("resize", updateKeyboardState);
+    visualViewport.addEventListener("scroll", updateKeyboardState);
+    return () => {
+      visualViewport.removeEventListener("resize", updateKeyboardState);
+      visualViewport.removeEventListener("scroll", updateKeyboardState);
+    };
+  }, [step]);
+
+  useEffect(() => {
+    if (budgetEdit !== null || directEdit !== null) return;
+    const signature = `${step}:${JSON.stringify(draft)}`;
+    if (signature === lastReportedStateRef.current) return;
+    lastReportedStateRef.current = signature;
+    if (skipNextDraftReportRef.current) {
+      skipNextDraftReportRef.current = false;
+      return;
+    }
+    onDraftStateChange?.(clonePlainData(draft), step);
+  }, [budgetEdit, directEdit, draft, onDraftStateChange, step]);
+
   const clearError = (key: string) => {
-    setErrors((current) => {
-      if (!(key in current)) return current;
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
+    sendFlow({ type: "CLEAR_ERROR", key });
   };
 
   const focusStepHeading = () => {
@@ -222,9 +443,9 @@ export function WizardPrototype({
 
   const continueForward = () => {
     const result = getNextStep(step, draft);
-    setErrors(result.errors);
 
     if (Object.keys(result.errors).length > 0) {
+      sendFlow({ type: "VALIDATION_FAILED", errors: result.errors });
       focusErrors(result.errors);
       return;
     }
@@ -232,61 +453,187 @@ export function WizardPrototype({
     if (step === "household") {
       const review = createMoveWiseReviewModel(clonePlainData(draft));
       if (!review.success) {
-        setErrors(review.errors);
+        sendFlow({ type: "VALIDATION_FAILED", errors: review.errors });
         focusErrors(review.errors);
         return;
       }
-      setReviewModel(review.model);
-      setStep("review");
-      setReviewComplete(false);
+      sendFlow({ type: "CONTINUE_TO_REVIEW", reviewModel: review.model });
       focusStepHeading();
       return;
     }
 
     if (step === "review") {
       if (onEvaluate) {
-        setIsEvaluating(true);
+        sendFlow({ type: "START_EVALUATION" });
         evaluationTimerRef.current = window.setTimeout(() => {
           const evaluationErrors = onEvaluate(clonePlainData(draft));
           evaluationTimerRef.current = null;
-          setIsEvaluating(false);
-          setErrors(evaluationErrors);
           if (Object.keys(evaluationErrors).length > 0) {
+            sendFlow({
+              type: "EVALUATION_FAILED",
+              errors: evaluationErrors,
+            });
             focusErrors(evaluationErrors);
+          } else {
+            sendFlow({ type: "EVALUATION_COMPLETE" });
           }
         }, 650);
         return;
       }
-      setReviewComplete(true);
+      sendFlow({ type: "EVALUATION_COMPLETE" });
       return;
     }
 
-    setStep(result.step);
-    setReviewComplete(false);
+    if (result.step === "money") sendFlow({ type: "CONTINUE_TO_MONEY" });
+    if (result.step === "firstHome")
+      sendFlow({ type: "CONTINUE_TO_FIRST_HOME" });
+    if (result.step === "priorities")
+      sendFlow({ type: "CONTINUE_TO_PRIORITIES" });
+    if (result.step === "household")
+      sendFlow({ type: "CONTINUE_TO_HOUSEHOLD" });
     focusStepHeading();
   };
 
   const goBack = () => {
-    setStep(getPreviousStep(step));
-    setErrors({});
-    setReviewComplete(false);
+    sendFlow({ type: "BACK" });
+    focusStepHeading();
+  };
+
+  const beginReviewBudgetEdit = () => {
+    const session = createBudgetEditSession("review", draft);
+    setBudgetChangeSummary(null);
+    setBudgetEdit(session);
+    setDraft(session.workingDraft);
+    sendFlow({ type: "EDIT_ASSUMPTIONS" });
+    focusStepHeading();
+  };
+
+  const beginReviewModuleEdit = (moduleId: MoveWiseDecisionGateModule) => {
+    if (moduleId === "budget") {
+      beginReviewBudgetEdit();
+      return;
+    }
+    setBudgetChangeSummary(null);
+    setDirectEdit({
+      moduleId,
+      origin: "review",
+      baselineDraft: clonePlainData(draft),
+    });
+    sendFlow({
+      type: moduleId === "first_home" ? "EDIT_FIRST_HOME" : "EDIT_HOUSEHOLD",
+    });
+    focusStepHeading();
+  };
+
+  const cancelDirectEdit = () => {
+    if (!directEdit) return;
+    if (directEdit.origin === "results") {
+      onCancelDirectEdit?.();
+      return;
+    }
+    if (!reviewModel) return;
+    setDraft(clonePlainData(directEdit.baselineDraft));
+    setDirectEdit(null);
+    sendFlow({ type: "RETURN_TO_REVIEW", reviewModel });
+    focusStepHeading();
+  };
+
+  const saveDirectEdit = () => {
+    if (!directEdit) return;
+    const validation = getNextStep(step, draft);
+    if (Object.keys(validation.errors).length > 0) {
+      sendFlow({ type: "VALIDATION_FAILED", errors: validation.errors });
+      focusErrors(validation.errors);
+      return;
+    }
+    if (directEdit.origin === "results") {
+      const saveErrors = onSaveDirectEdit?.(clonePlainData(draft)) ?? {
+        scenario: "MoveWise could not return to Results from this edit.",
+      };
+      if (Object.keys(saveErrors).length > 0) {
+        sendFlow({ type: "VALIDATION_FAILED", errors: saveErrors });
+        focusErrors(saveErrors);
+      }
+      return;
+    }
+    const rebuiltReview = createMoveWiseReviewModel(clonePlainData(draft));
+    if (!rebuiltReview.success) {
+      sendFlow({ type: "VALIDATION_FAILED", errors: rebuiltReview.errors });
+      focusErrors(rebuiltReview.errors);
+      return;
+    }
+    setDirectEdit(null);
+    sendFlow({ type: "RETURN_TO_REVIEW", reviewModel: rebuiltReview.model });
+    focusStepHeading();
+  };
+
+  const cancelBudgetEdit = () => {
+    if (!budgetEdit) return;
+    if (budgetEdit.origin === "results") {
+      onCancelBudgetEdit?.();
+      return;
+    }
+    if (!reviewModel) return;
+    setDraft(clonePlainData(budgetEdit.baselineDraft));
+    setBudgetEdit(null);
+    setBudgetChangeSummary(null);
+    sendFlow({ type: "RETURN_TO_REVIEW", reviewModel });
+    focusStepHeading();
+  };
+
+  const saveBudgetEdit = () => {
+    if (!budgetEdit) return;
+    const next = getNextStep("money", draft);
+    if (Object.keys(next.errors).length > 0) {
+      sendFlow({ type: "VALIDATION_FAILED", errors: next.errors });
+      focusErrors(next.errors);
+      return;
+    }
+    const summary = createBudgetEditSummary(budgetEdit.baselineDraft, draft);
+    if (!summary.hasChanges) return;
+
+    if (budgetEdit.origin === "results") {
+      const saveErrors = onSaveBudgetEdit?.(clonePlainData(draft), summary) ?? {
+        scenario: "MoveWise could not return to Results from this edit.",
+      };
+      if (Object.keys(saveErrors).length > 0) {
+        sendFlow({ type: "VALIDATION_FAILED", errors: saveErrors });
+        focusErrors(saveErrors);
+      }
+      return;
+    }
+
+    const rebuiltReview = createMoveWiseReviewModel(clonePlainData(draft));
+    if (!rebuiltReview.success) {
+      sendFlow({ type: "VALIDATION_FAILED", errors: rebuiltReview.errors });
+      focusErrors(rebuiltReview.errors);
+      return;
+    }
+    setBudgetChangeSummary(summary);
+    setBudgetEdit(null);
+    sendFlow({
+      type: "RETURN_TO_REVIEW",
+      reviewModel: rebuiltReview.model,
+    });
     focusStepHeading();
   };
 
   const reset = () => {
     setDraft(createInitialWizardDraft());
-    setStep("move");
-    setErrors({});
-    setReviewModel(null);
-    setReviewComplete(false);
+    sendFlow({ type: "RESET" });
     focusStepHeading();
+  };
+
+  const clearSavedDraft = () => {
+    if (!onClearSavedDraft?.()) return;
+    skipNextDraftReportRef.current = true;
+    reset();
   };
 
   const loadExample = () => {
     setDraft(clonePlainData(exampleDraft));
-    setErrors({});
-    setReviewModel(null);
-    setReviewComplete(false);
+    sendFlow({ type: "RESET" });
+    focusStepHeading();
   };
 
   const updateMove = (
@@ -310,6 +657,39 @@ export function WizardPrototype({
     clearError(`finances.${key}`);
   };
 
+  const setExpenseWorksheetEnabled = (enabled: boolean) => {
+    setDraft((current) => ({
+      ...current,
+      finances: {
+        ...current.finances,
+        expenseWorksheet: enabled
+          ? enableExpenseWorksheet(current.finances.currentExpenses)
+          : { ...current.finances.expenseWorksheet, enabled: false },
+      },
+    }));
+  };
+
+  const updateExpenseCategory = (key: ExpenseCategoryId, value: string) => {
+    setDraft((current) => {
+      const expenseWorksheet = {
+        ...current.finances.expenseWorksheet,
+        values: { ...current.finances.expenseWorksheet.values, [key]: value },
+      };
+      const total = getExpenseWorksheetTotal(expenseWorksheet);
+      return {
+        ...current,
+        finances: {
+          ...current.finances,
+          expenseWorksheet,
+          currentExpenses:
+            total === null ? current.finances.currentExpenses : String(total),
+        },
+      };
+    });
+    clearError(`finances.expenseWorksheet.${key}`);
+    clearError("finances.currentExpenses");
+  };
+
   const updateGrossKnown = (value: boolean) => {
     setDraft((current) => ({
       ...current,
@@ -331,9 +711,21 @@ export function WizardPrototype({
   const updateCurrentHousingTenure = (value: "rent" | "own") => {
     setDraft((current) => ({
       ...current,
-      finances: { ...current.finances, currentHousingTenure: value },
+      finances: {
+        ...current.finances,
+        currentHousingTenure: value,
+        ...(value === "rent"
+          ? {
+              retainedPropertyNet: "",
+              retainedPropertyNetRangeMin: "",
+              retainedPropertyNetRangeMax: "",
+              retainedPropertyNetBasis: "user_estimate" as const,
+            }
+          : {}),
+      },
     }));
     clearError("finances.currentHousingTenure");
+    if (value === "rent") clearError("finances.retainedPropertyNet");
   };
 
   const updateBasis = (key: BasisKey, value: AssumptionBasis) => {
@@ -361,13 +753,9 @@ export function WizardPrototype({
       },
     }));
     if (value === "confirmed") {
-      setErrors((current) => {
-        const next = { ...current };
-        delete next[`finances.${rangeKeys.value}`];
-        delete next[`finances.${rangeKeys.min}`];
-        delete next[`finances.${rangeKeys.max}`];
-        return next;
-      });
+      clearError(`finances.${rangeKeys.value}`);
+      clearError(`finances.${rangeKeys.min}`);
+      clearError(`finances.${rangeKeys.max}`);
     }
   };
 
@@ -387,52 +775,71 @@ export function WizardPrototype({
 
   const updateHouseholdPlan = (householdPlan: HouseholdPlanDraft) => {
     setDraft((current) => ({ ...current, householdPlan }));
-    setErrors((current) =>
-      Object.fromEntries(
-        Object.entries(current).filter(
-          ([key]) => !key.startsWith("householdPlan."),
-        ),
-      ),
-    );
+    sendFlow({ type: "DRAFT_CHANGED" });
   };
 
   const errorEntries = Object.entries(errors);
-  const origin = getPlace(draft.originSlug);
-  const destination = getPlace(draft.destinationSlug);
+  const movePicture = createMovePictureModel(draft, flowValue, reviewModel);
+  const firstHomeRentEstimate =
+    createFirstHomeModel(draft).estimate?.monthlyDollars ?? null;
+  const budgetEquation = createBudgetEquationModel(
+    draft.finances,
+    draft.originSlug,
+    draft.destinationSlug,
+    firstHomeRentEstimate,
+  );
+  const workingBudgetSummary = budgetEdit
+    ? createBudgetEditSummary(budgetEdit.baselineDraft, draft)
+    : null;
 
   return (
     <PrototypeShell>
       <main
         id="wizard-content"
-        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8"
+        className={`mx-auto max-w-6xl px-4 sm:px-6 sm:py-8 lg:px-8 ${step === "move" ? "py-8" : "py-4"}`}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div
+          className={`${step === "move" ? "flex" : "hidden sm:flex"} flex-col gap-4 sm:flex-row sm:items-end sm:justify-between`}
+        >
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-              Pre-commitment move validator
+              Relocation brief
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Answer four focused questions, then see the financial tradeoff and
-              what could change it.
+              Add your move, budget, and family needs. MoveWise will show what
+              improves, what gets harder, and what still needs checking.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={loadExample}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:border-teal-600 hover:text-teal-900"
-          >
-            <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
-            Fill research example
-          </button>
+          {budgetEdit ? (
+            <p className="rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-900">
+              Working copy · not saved
+            </p>
+          ) : (
+            <DestructiveActionDialog
+              title="Replace this draft with the example move?"
+              description="This replaces every answer in the current relocation brief with the Los Angeles to Seattle example. You can cancel and keep your draft unchanged."
+              actionLabel="Replace draft"
+              onConfirm={loadExample}
+              trigger={
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:border-teal-600 hover:text-teal-900"
+                >
+                  <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+                  Use example move
+                </button>
+              }
+            />
+          )}
         </div>
 
-        <div className="mt-7">
+        <div className={step === "move" ? "mt-7" : "mt-4 sm:mt-7"}>
           <StepProgress currentStep={step} />
         </div>
 
-        <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="mt-4 grid items-start gap-6 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <section
-            className="panel relative min-w-0 overflow-hidden"
+            className="panel relative min-w-0"
             aria-label="Wizard step"
             aria-busy={isEvaluating || undefined}
           >
@@ -449,7 +856,7 @@ export function WizardPrototype({
                   />
                 </span>
                 <h1 className="mt-6 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-                  Building your move picture
+                  Building your relocation brief
                 </h1>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
                   Comparing your monthly position and applying the priorities
@@ -497,15 +904,41 @@ export function WizardPrototype({
                     />
                   ) : null}
                   {step === "money" ? (
-                    <MoneyStep
-                      finances={draft.finances}
+                    <>
+                      {budgetEdit ? (
+                        <BudgetEditBanner origin={budgetEdit.origin} />
+                      ) : null}
+                      <MoneyStep
+                        finances={draft.finances}
+                        originSlug={draft.originSlug}
+                        destinationSlug={draft.destinationSlug}
+                        firstHomeRentEstimate={firstHomeRentEstimate}
+                        errors={errors}
+                        onValueChange={updateFinanceValue}
+                        onBasisChange={updateBasis}
+                        onGrossKnownChange={updateGrossKnown}
+                        onCurrentHousingTenureChange={
+                          updateCurrentHousingTenure
+                        }
+                        onExpenseWorksheetEnabledChange={
+                          setExpenseWorksheetEnabled
+                        }
+                        onExpenseCategoryChange={updateExpenseCategory}
+                      />
+                    </>
+                  ) : null}
+                  {step === "firstHome" ? (
+                    <FirstHomeStep
                       originSlug={draft.originSlug}
                       destinationSlug={draft.destinationSlug}
+                      housing={draft.householdPlan.housing}
                       errors={errors}
-                      onValueChange={updateFinanceValue}
-                      onBasisChange={updateBasis}
-                      onGrossKnownChange={updateGrossKnown}
-                      onCurrentHousingTenureChange={updateCurrentHousingTenure}
+                      onHousingChange={(housing) =>
+                        updateHouseholdPlan({
+                          ...draft.householdPlan,
+                          housing,
+                        })
+                      }
                     />
                   ) : null}
                   {step === "priorities" ? (
@@ -521,23 +954,22 @@ export function WizardPrototype({
                   {step === "household" ? (
                     <HouseholdStep
                       mode={draft.householdMode}
-                      originSlug={draft.originSlug}
-                      destinationSlug={draft.destinationSlug}
                       plan={draft.householdPlan}
                       errors={errors}
                       onPlanChange={updateHouseholdPlan}
                     />
                   ) : null}
                   {step === "review" && reviewModel ? (
-                    <ReviewStep
-                      model={reviewModel}
-                      onEditAssumptions={() => {
-                        setStep("money");
-                        setErrors({});
-                        setReviewComplete(false);
-                        focusStepHeading();
-                      }}
-                    />
+                    <>
+                      {budgetChangeSummary ? (
+                        <BudgetEditSummaryPanel summary={budgetChangeSummary} />
+                      ) : null}
+                      <ReviewStep
+                        model={reviewModel}
+                        onEditAssumptions={beginReviewBudgetEdit}
+                        onEditModule={beginReviewModuleEdit}
+                      />
+                    </>
                   ) : null}
                 </div>
 
@@ -546,10 +978,12 @@ export function WizardPrototype({
                     role="status"
                     className="mt-7 rounded-xl border border-favorable/25 bg-favorable-surface p-4 text-favorable"
                   >
-                    <p className="font-semibold">Your comparison is ready.</p>
+                    <p className="font-semibold">
+                      Your relocation brief is ready.
+                    </p>
                     <p className="mt-1 text-sm leading-6">
-                      The prototype stops here by design. You can inspect the
-                      fixed research result without submitting these values.
+                      Review the judgment, the tradeoffs, and the checks that
+                      could change your decision.
                     </p>
                     <a
                       href={`${import.meta.env.BASE_URL}research/la-to-seattle`}
@@ -561,75 +995,243 @@ export function WizardPrototype({
                   </div>
                 ) : null}
 
-                <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex gap-2">
-                    {step !== "move" ? (
+                <div
+                  data-mobile-budget-actions={step === "money" || undefined}
+                  data-keyboard-open={
+                    step === "money" ? softKeyboardOpen : undefined
+                  }
+                  className={`mt-8 border-t border-slate-200 pt-5 ${
+                    step === "money"
+                      ? `wizard-mobile-action-dock z-20 -mx-5 bg-white/95 px-5 shadow-[0_-10px_30px_-22px_rgba(15,23,42,0.8)] backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:backdrop-blur-none ${softKeyboardOpen ? "max-sm:static" : "max-sm:sticky max-sm:bottom-0"}`
+                      : ""
+                  }`}
+                >
+                  {step === "money" ? (
+                    <div
+                      data-budget-compact-summary
+                      className="mb-3 flex items-center justify-between gap-3 sm:hidden"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-[0.11em] text-slate-500">
+                          Monthly room
+                        </p>
+                        <p className="truncate text-sm font-semibold text-slate-950 tabular-nums">
+                          {budgetEquation.consequence.compact}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-900">
+                        {budgetEquation.consequence.openCount > 0
+                          ? `${budgetEquation.consequence.openCount} open`
+                          : "Complete"}
+                      </span>
+                    </div>
+                  ) : null}
+                  {budgetEdit ? (
+                    <div className="flex items-center justify-between gap-3">
                       <button
                         type="button"
-                        onClick={goBack}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:border-teal-600 hover:text-teal-900"
+                        onClick={cancelBudgetEdit}
+                        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:border-teal-600 hover:text-teal-950"
                       >
-                        <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-                        Back
+                        Cancel
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={reset}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                    >
-                      <RotateCcw aria-hidden="true" className="h-4 w-4" />
-                      Reset
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={continueForward}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-900"
-                  >
-                    {step === "review" ? "Run final comparison" : "Continue"}
-                    <ArrowRight aria-hidden="true" className="h-4 w-4" />
-                  </button>
+                      <button
+                        type="button"
+                        onClick={saveBudgetEdit}
+                        disabled={!workingBudgetSummary?.hasChanges}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-900 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:px-5"
+                      >
+                        Save Budget
+                        <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : directEdit ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={cancelDirectEdit}
+                        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:border-teal-600 hover:text-teal-950"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveDirectEdit}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-900 sm:px-5"
+                      >
+                        Save{" "}
+                        {directEdit.moduleId === "first_home"
+                          ? "First home"
+                          : "Household"}
+                        <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 gap-2">
+                        {step !== "move" ? (
+                          <button
+                            type="button"
+                            onClick={goBack}
+                            aria-label="Back"
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-semibold text-slate-800 transition-colors hover:border-teal-600 hover:text-teal-900 min-[360px]:px-3 sm:px-4"
+                          >
+                            <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+                            <span className="sr-only min-[360px]:not-sr-only">
+                              Back
+                            </span>
+                          </button>
+                        ) : null}
+                        <DestructiveActionDialog
+                          title="Reset this relocation brief?"
+                          description="This removes every answer from the current brief and replaces the locally saved draft with a blank one."
+                          actionLabel="Reset brief"
+                          onConfirm={reset}
+                          trigger={
+                            <button
+                              type="button"
+                              aria-label="Reset relocation brief"
+                              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950 sm:px-3"
+                            >
+                              <RotateCcw
+                                aria-hidden="true"
+                                className="h-4 w-4"
+                              />
+                              <span className="sr-only sm:not-sr-only">
+                                Reset
+                              </span>
+                            </button>
+                          }
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={continueForward}
+                        className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-teal-800 bg-teal-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-900 sm:px-5"
+                      >
+                        {step === "review"
+                          ? "Build my relocation brief"
+                          : "Continue"}
+                        <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
           </section>
 
           <aside
-            aria-label="Your comparison"
-            className="space-y-4 lg:sticky lg:top-6"
+            aria-label="Brief in progress"
+            className="space-y-3 lg:sticky lg:top-6"
           >
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                Your comparison
-              </p>
-              <p className="mt-3 text-lg font-semibold tracking-[-0.02em] text-slate-950">
-                {origin ? `${origin.city}, ${origin.state}` : "Choose a start"}
-                <ArrowRight
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <CircleDotDashed
                   aria-hidden="true"
-                  className="mx-2 inline h-4 w-4 text-teal-700"
+                  className="h-4 w-4 text-teal-700"
                 />
-                {destination
-                  ? `${destination.city}, ${destination.state}`
-                  : "choose a destination"}
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                  Brief in progress
+                </p>
+              </div>
+              <p className="mt-3 text-lg font-semibold tracking-[-0.02em] text-slate-950">
+                {movePicture.route}
               </p>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Your answers stay editable. MoveWise will show a review step
-                before the final comparison.
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {movePicture.flowLabel}
               </p>
             </div>
-            <div className="rounded-xl bg-slate-950 p-5 text-white shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-300">
-                Step {wizardSteps.findIndex((item) => item.id === step) + 1} of
-                {wizardSteps.length}
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <WalletCards aria-hidden="true" className="h-4 w-4" />
+                  <p className="text-xs font-bold uppercase tracking-[0.12em]">
+                    Monthly cushion
+                  </p>
+                </div>
+                <p className="mt-2 text-base font-semibold text-slate-950">
+                  {movePicture.currentCushion}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <Home aria-hidden="true" className="h-4 w-4" />
+                  <p className="text-xs font-bold uppercase tracking-[0.12em]">
+                    Rent ceiling
+                  </p>
+                </div>
+                <p className="mt-2 text-base font-semibold text-slate-950">
+                  {movePicture.rentCeiling}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <UsersRound aria-hidden="true" className="h-4 w-4" />
+                  <p className="text-xs font-bold uppercase tracking-[0.12em]">
+                    Family checks
+                  </p>
+                </div>
+                <p className="mt-2 text-base font-semibold text-slate-950">
+                  {movePicture.familyChecks}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="flex items-center gap-2 text-slate-500">
+                <ShieldCheck aria-hidden="true" className="h-4 w-4" />
+                <p className="text-xs font-bold uppercase tracking-[0.12em]">
+                  Saved privately
+                </p>
+              </div>
+              <p
+                role="status"
+                className="mt-2 text-sm font-semibold text-slate-950"
+              >
+                {localDraftStatus.status === "restored"
+                  ? "Restored from this device"
+                  : localDraftStatus.status === "saved"
+                    ? "Saved on this device"
+                    : localDraftStatus.status === "error"
+                      ? "Could not save on this device"
+                      : "Saves after your first change"}
               </p>
-              <p className="mt-2 text-sm font-semibold">
-                {wizardSteps.find((item) => item.id === step)?.label}
+              {localDraftStatus.status === "saved" ||
+              localDraftStatus.status === "restored" ? (
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Last saved{" "}
+                  {new Date(localDraftStatus.savedAt).toLocaleString()}
+                </p>
+              ) : null}
+              <p className="mt-2 text-xs leading-5 text-slate-600">
+                Your brief stays in this browser. MoveWise does not upload it or
+                connect it to an account.
               </p>
-              <p className="mt-2 text-xs leading-5 text-slate-300">
-                MoveWise uses only the information needed for the comparison
-                shown next.
-              </p>
+              {restoreNotice ? (
+                <p className="mt-2 text-xs font-semibold leading-5 text-risk">
+                  {restoreNotice}
+                </p>
+              ) : null}
+              {onClearSavedDraft ? (
+                <DestructiveActionDialog
+                  title="Clear this brief from this device?"
+                  description="This removes the locally saved brief and resets the open form. Other browser data is not affected."
+                  actionLabel="Clear from device"
+                  onConfirm={clearSavedDraft}
+                  trigger={
+                    <button
+                      type="button"
+                      className="mt-3 min-h-11 text-sm font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-risk"
+                    >
+                      Clear from this device
+                    </button>
+                  }
+                />
+              ) : null}
             </div>
           </aside>
         </div>

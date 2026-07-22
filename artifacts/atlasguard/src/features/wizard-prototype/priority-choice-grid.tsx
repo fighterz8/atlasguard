@@ -9,7 +9,7 @@ export type PriorityChoiceOption<Value extends string> = {
 
 type PriorityChoiceGridProps<Value extends string> = {
   name: string;
-  value: Value;
+  value: Value | "";
   options: readonly PriorityChoiceOption<Value>[];
   onChange: (value: Value) => void;
   columns?: "two" | "three";

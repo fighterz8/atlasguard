@@ -125,7 +125,7 @@ export function WhatIfPanel({ evaluation }: WhatIfPanelProps) {
         <div className="space-y-6">
           {model.controls.length === 0 ? (
             <div className="border-y border-slate-200 py-5 text-sm leading-6 text-slate-600">
-              All destination amounts were marked confirmed. Edit an assumption
+              All destination amounts were marked verified. Edit an assumption
               if you want to test a different estimate.
             </div>
           ) : null}

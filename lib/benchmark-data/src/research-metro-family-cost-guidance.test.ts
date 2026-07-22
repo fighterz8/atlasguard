@@ -24,8 +24,10 @@ describe("research metro family cost guidance", () => {
       },
     });
     expect(guidance?.summary).toContain("family operating costs");
-    expect(guidance?.childcareBoundary).toContain("not childcare-price data");
-    expect(guidance?.childcareBoundary).toContain("not scored");
+    expect(guidance?.childcareBoundary).toContain(
+      "Childcare, school fit, taxes",
+    );
+    expect(guidance?.childcareBoundary).toContain("Keep those needs visible");
   });
 
   it("fails closed when expense guidance is unavailable", () => {

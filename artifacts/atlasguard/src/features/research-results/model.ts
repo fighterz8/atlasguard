@@ -25,8 +25,14 @@ import {
 import type { MoveWiseDeterministicAnalysis } from "@workspace/decision-core";
 
 import { householdFactorLabels } from "../wizard-prototype/model";
+import {
+  createMoveWiseOpenCheckLedger,
+  moveWiseEvidenceLabel,
+  moveWiseOriginLabel,
+} from "../wizard-prototype/decision-ledger";
 import type { DestinationPlanningAssumptions } from "../wizard-prototype/destination-planning-assumptions";
 import type { DestinationPlanningSource } from "../wizard-prototype/destination-planning-assumptions";
+import { createMoveWiseDecisionGateModel } from "../wizard-prototype/decision-gate-model";
 
 const dollars = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -63,7 +69,7 @@ const conditionCopy = {
       "The evidence evaluated so far does not create a decisive case for or against this move.",
   },
   high_financial_risk_under_assumptions: {
-    label: "High financial risk under these assumptions",
+    label: "Budget risk looks high",
     summary:
       "At least one financial condition needs to be resolved before proceeding.",
   },
@@ -71,7 +77,7 @@ const conditionCopy = {
 
 const deterministicConditionCopy = {
   likely_better_move: {
-    label: "Likely better under these assumptions",
+    label: "Likely better for this move picture",
     summary:
       "The evaluated finances, daily-life evidence, and household fit show strong upside with no active safety or essential-needs gate.",
   },
@@ -88,10 +94,10 @@ const deterministicConditionCopy = {
   no_clear_advantage: {
     label: "No clear advantage yet",
     summary:
-      "The current assumptions do not show a clear enough advantage, or a caution or unmet household need is holding the result back.",
+      "The current move picture does not show a clear enough advantage, or a caution or unmet household need is holding the result back.",
   },
   high_financial_risk: {
-    label: "High financial risk under these assumptions",
+    label: "Budget risk looks high",
     summary:
       "A destination budget condition needs to be resolved before this move can receive a favorable result.",
   },
@@ -154,7 +160,7 @@ const mobilityContextReading = (
       : differenceBps > 0
         ? `higher than ${originCity}`
         : `lower than ${originCity}`;
-  return `${destinationCommuteAwayShare} of ${destinationCity} workers commute away from home, ${direction}. This is daily-life context, not a car-dependence score.`;
+  return `${destinationCommuteAwayShare} of ${destinationCity} workers commute away from home, ${direction}.`;
 };
 
 const incomeLaborReading = (
@@ -163,8 +169,8 @@ const incomeLaborReading = (
   direction: "lower" | "similar" | "higher",
 ) =>
   direction === "similar"
-    ? `${destinationCity} and ${originCity} have similar ACS metro household income in this estimate. This is labor-market context, not a household-specific salary forecast.`
-    : `${destinationCity} metro household income is ${direction} than ${originCity} in this ACS estimate. This is labor-market context, not a household-specific salary forecast.`;
+    ? `${destinationCity} and ${originCity} have similar metro household income in this estimate.`
+    : `${destinationCity} metro household income is ${direction} than ${originCity} in this estimate.`;
 
 const ownershipReading = (
   destinationCity: string,
@@ -173,8 +179,8 @@ const ownershipReading = (
   ownerCostDirection: "lower" | "similar" | "higher",
 ) =>
   ownerValueDirection === "similar" && ownerCostDirection === "similar"
-    ? `${destinationCity} and ${originCity} have similar ACS ownership context in this estimate.`
-    : `${destinationCity} has ${ownerValueDirection} ACS owner-occupied home values and ${ownerCostDirection} selected monthly owner costs with a mortgage than ${originCity}.`;
+    ? `${destinationCity} and ${originCity} have similar ownership context in this estimate.`
+    : `${destinationCity} has ${ownerValueDirection} owner-occupied home values and ${ownerCostDirection} typical monthly owner costs than ${originCity}.`;
 
 const climateRiskReading = (
   destinationCity: string,
@@ -189,9 +195,9 @@ const nextStepCopy: Record<string, string> = {
   review_decision_evidence:
     "Add any household factors that could materially change day-to-day life.",
   resolve_negative_target_cushion:
-    "Change income, housing, or recurring-expense assumptions until the destination budget is viable.",
+    "Adjust income, rent, or recurring bills until the destination budget has breathing room.",
   verify_target_housing_burden:
-    "Verify target housing and gross-income assumptions before treating the move as viable.",
+    "Add destination gross income so MoveWise can check whether rent is taking too much of the budget.",
   verify_target_income: "Verify the expected destination take-home income.",
   collect_target_gross_income:
     "Add destination gross income to assess housing burden.",
@@ -465,21 +471,19 @@ export const createResearchResultsViewModel = (
   const deterministic = deterministicContext?.analysis;
   const deterministicResult = deterministic?.result;
   const planningSources = deterministicContext?.destinationAssumptions;
-  const sourcePresentation = (source: DestinationPlanningSource | undefined) =>
-    source === "movewise_public_estimate"
-      ? {
-          sourceLabel: "MoveWise public-data estimate",
-          sourceTone: "benchmark" as const,
-        }
-      : source === "movewise_baseline"
-        ? {
-            sourceLabel: "Fallback estimate",
-            sourceTone: "benchmark" as const,
-          }
-        : {
-            sourceLabel: "You told us",
-            sourceTone: "neutral" as const,
-          };
+  const sourcePresentation = (
+    source: DestinationPlanningSource | undefined,
+    basis: "confirmed" | "user_estimate" | "assumed_same_as_origin",
+  ) => {
+    const origin =
+      source === "user_override" || source === undefined ? "user" : "movewise";
+    const evidenceStatus = basis === "confirmed" ? "verified" : "estimated";
+    return {
+      sourceLabel: `${moveWiseOriginLabel[origin]} · ${moveWiseEvidenceLabel[evidenceStatus]}`,
+      sourceTone:
+        origin === "movewise" ? ("benchmark" as const) : ("neutral" as const),
+    };
+  };
   const destinationAssumptions = result.scenarioInput.finances.destination;
   const publicEstimateLabels = planningSources
     ? [
@@ -500,7 +504,7 @@ export const createResearchResultsViewModel = (
       ].some((source) => source === "user_override")
     : false;
   const financialReadiness = {
-    label: "Public estimates + your inputs",
+    label: "MoveWise estimates + your inputs",
     tone: "benchmark" as const,
     explanation: `${
       publicEstimateLabels.length > 0
@@ -516,7 +520,7 @@ export const createResearchResultsViewModel = (
       destinationAssumptions.grossIncome === null
         ? "The housing-burden safety check could not run because destination gross income was not provided."
         : "The housing-burden safety check used the destination gross income supplied."
-    } V1 evaluates first-stage rent; ownership timing is context only until MoveWise has a complete buying model.`,
+    } This pass focuses on the first rental stage; buying later stays on the checklist.`,
   };
   const financialRows = [
     {
@@ -553,7 +557,10 @@ export const createResearchResultsViewModel = (
       emphasis: false,
       ...(deterministicResult
         ? {
-            ...sourcePresentation(planningSources?.takeHome),
+            ...sourcePresentation(
+              planningSources?.takeHome,
+              destinationAssumptions.takeHomeIncome.basis,
+            ),
           }
         : {}),
     },
@@ -582,7 +589,10 @@ export const createResearchResultsViewModel = (
       emphasis: false,
       ...(deterministicResult
         ? {
-            ...sourcePresentation(planningSources?.housing),
+            ...sourcePresentation(
+              planningSources?.housing,
+              destinationAssumptions.housingCost.basis,
+            ),
           }
         : {}),
     },
@@ -605,7 +615,10 @@ export const createResearchResultsViewModel = (
       emphasis: false,
       ...(deterministicResult
         ? {
-            ...sourcePresentation(planningSources?.expenses),
+            ...sourcePresentation(
+              planningSources?.expenses,
+              destinationAssumptions.recurringExpensesExcludingHousing.basis,
+            ),
           }
         : {}),
     },
@@ -633,7 +646,14 @@ export const createResearchResultsViewModel = (
             emphasis: false,
             ...(deterministicResult
               ? {
-                  sourceLabel: "You told us",
+                  sourceLabel: `${moveWiseOriginLabel.user} · ${
+                    moveWiseEvidenceLabel[
+                      destinationAssumptions.retainedPropertyNet.basis ===
+                      "confirmed"
+                        ? "verified"
+                        : "estimated"
+                    ]
+                  }`,
                   sourceTone: "neutral" as const,
                 }
               : {}),
@@ -731,6 +751,15 @@ export const createResearchResultsViewModel = (
   }
 
   const deterministicAnswers = deterministicContext?.householdAnswers;
+  const canonicalOpenChecks =
+    planningSources && deterministicAnswers
+      ? createMoveWiseOpenCheckLedger({
+          scenario: result.scenarioInput,
+          householdAnswers: deterministicAnswers,
+          destinationAssumptions: planningSources,
+          activeBlockerCodes: deterministic?.result.activeBlockerCodes,
+        })
+      : null;
   const deterministicContributions = deterministicResult
     ? [
         ...(["financial", "commute", "climate"] as const).map((id) => ({
@@ -873,8 +902,8 @@ export const createResearchResultsViewModel = (
                     laterPlanLabel:
                       planningSources.destinationHousingTenure ===
                       "rent_then_buy"
-                        ? "Ownership later is context only"
-                        : "No ownership timeline in this score",
+                        ? "Buying later stays on the checklist"
+                        : "No buying timeline added",
                     bedroomLabel:
                       bedroomLabels[planningSources.requestedBedrooms],
                     originRent: dollars.format(
@@ -900,7 +929,7 @@ export const createResearchResultsViewModel = (
                       rentGuidance.destination.renterStockShareBps,
                     ),
                     supplySignal,
-                    realitySummary: `${ceilingReading}. ${supplySignal} This is not a live listing guarantee.`,
+                    realitySummary: `${ceilingReading}. ${supplySignal} Check current listings before relying on this rent plan.`,
                     ceiling: dollars.format(
                       planningSources.maximumMonthlyRentDollars,
                     ),
@@ -952,6 +981,212 @@ export const createResearchResultsViewModel = (
       ]
     : [];
 
+  const destinationCity = profile.scenario.destination.selectedPlace.city;
+  const resultCondition =
+    deterministicResult?.condition ?? profile.condition.value;
+  const outlook = {
+    likely_better_move: { label: "Promising", tone: "favorable" as const },
+    worth_closer_look: { label: "Promising", tone: "favorable" as const },
+    worth_a_closer_look: { label: "Promising", tone: "favorable" as const },
+    promising_if: { label: "Promising if", tone: "caution" as const },
+    no_clear_advantage: { label: "Mixed", tone: "caution" as const },
+    meaningful_tradeoff: { label: "Mixed", tone: "caution" as const },
+    high_financial_risk: { label: "Risky", tone: "risk" as const },
+    high_financial_risk_under_assumptions: {
+      label: "Risky",
+      tone: "risk" as const,
+    },
+  }[resultCondition];
+  const evaluatedRentDollars = Math.round(
+    destinationFinances.monthlyHousingCostCents / 100,
+  );
+  const rentOverCeilingDollars = planningSources?.rentGuidance
+    ? Math.max(
+        0,
+        evaluatedRentDollars - planningSources.maximumMonthlyRentDollars,
+      )
+    : 0;
+  const openCheckIds = new Set<string>();
+  if (rentOverCeilingDollars > 0) openCheckIds.add("rent-ceiling");
+  if (unmetCount > 0) openCheckIds.add("unmet-essential");
+  if (conditionalCount > 0) openCheckIds.add("conditional-essential");
+  if (deterministicBlockerCode !== undefined) {
+    openCheckIds.add(`blocker:${deterministicBlockerCode}`);
+  }
+  const openCheckCount = canonicalOpenChecks?.length ?? openCheckIds.size;
+  const decisionGate = canonicalOpenChecks
+    ? createMoveWiseDecisionGateModel(canonicalOpenChecks)
+    : null;
+  const legacyReadiness =
+    unmetCount > 0
+      ? { label: "Must-have blocked", tone: "risk" as const }
+      : deterministicBlockerCode !== undefined
+        ? { label: "Budget needs work", tone: "risk" as const }
+        : openCheckCount === 0
+          ? { label: "Ready to compare", tone: "favorable" as const }
+          : {
+              label: `${openCheckCount === 1 ? "One" : openCheckCount} key ${openCheckCount === 1 ? "check" : "checks"} open`,
+              tone: "caution" as const,
+            };
+  const readiness = decisionGate?.readiness ?? legacyReadiness;
+  const improvements: Array<{
+    label: string;
+    detail: string;
+    tone: "favorable";
+  }> = [];
+  if (financialChange.monthlyCushionDeltaCents > 0) {
+    improvements.push({
+      label: "Monthly breathing room",
+      detail: `Your monthly cushion increases by ${formatMoney(financialChange.monthlyCushionDeltaCents)}.`,
+      tone: "favorable",
+    });
+  }
+  if (priority.weight > 0 && priority.classification === "improves") {
+    improvements.push({
+      label: "Commute",
+      detail: `A typical one-way commute is ${Math.abs(commuteMetric.deltaValue).toFixed(1)} minutes shorter.`,
+      tone: "favorable",
+    });
+  }
+  if (
+    climatePriority.weight > 0 &&
+    climatePriority.classification === "improves"
+  ) {
+    improvements.push({
+      label: "Climate fit",
+      detail: `The hot-day pattern is a better match for your preference for ${heatPreference}.`,
+      tone: "favorable",
+    });
+  }
+  deterministicHousehold?.essentials.factors
+    .filter(({ tone }) => tone === "favorable")
+    .slice(0, Math.max(0, 3 - improvements.length))
+    .forEach(({ label, status }) => {
+      improvements.push({
+        label,
+        detail: `${status} based on the household facts you entered.`,
+        tone: "favorable",
+      });
+    });
+
+  const pressures: Array<{
+    label: string;
+    detail: string;
+    tone: "risk" | "caution";
+  }> = [];
+  if (rentOverCeilingDollars > 0 && planningSources?.rentGuidance) {
+    pressures.push({
+      label: "Rent fit",
+      detail: `A typical ${bedroomLabels[planningSources.requestedBedrooms]} is ${dollars.format(rentOverCeilingDollars)} above your ${dollars.format(planningSources.maximumMonthlyRentDollars)} ceiling.`,
+      tone: planningSources.rentCeilingNonNegotiable ? "risk" : "caution",
+    });
+  }
+  if (financialChange.monthlyCushionDeltaCents < 0) {
+    pressures.push({
+      label: "Monthly breathing room",
+      detail: `Your monthly cushion decreases by ${formatMoney(Math.abs(financialChange.monthlyCushionDeltaCents))}.`,
+      tone: "risk",
+    });
+  }
+  const recurringExpenseRow = financialRows.find(
+    ({ id }) => id === "recurring_expenses",
+  );
+  if (recurringExpenseRow?.classification === "worsens") {
+    pressures.push({
+      label: "Everyday expenses",
+      detail: `Recurring expenses increase by ${recurringExpenseRow.deltaValue} a month.`,
+      tone: "caution",
+    });
+  }
+  if (priority.weight > 0 && priority.classification === "worsens") {
+    pressures.push({
+      label: "Commute",
+      detail: `A typical one-way commute is ${Math.abs(commuteMetric.deltaValue).toFixed(1)} minutes longer.`,
+      tone: "caution",
+    });
+  }
+
+  const checks: Array<{
+    label: string;
+    detail: string;
+    tone: "risk" | "caution" | "neutral";
+  }> = [];
+  if (rentOverCeilingDollars > 0 && planningSources) {
+    checks.push({
+      label: "Find a home within budget",
+      detail: `Confirm that suitable rentals actually exist at or below ${dollars.format(planningSources.maximumMonthlyRentDollars)}.`,
+      tone: planningSources.rentCeilingNonNegotiable ? "risk" : "caution",
+    });
+  }
+  deterministicHousehold?.essentials.factors
+    .filter(({ tone }) => tone === "risk" || tone === "caution")
+    .slice(0, Math.max(0, 3 - checks.length))
+    .forEach(({ label, status, tone }) => {
+      checks.push({
+        label,
+        detail: `${status}. Confirm this before relying on the brief.`,
+        tone: tone === "risk" ? "risk" : "caution",
+      });
+    });
+  if (checks.length === 0) {
+    checks.push({
+      label: "Validate the plan",
+      detail:
+        "Confirm the destination income, rent, and household needs before committing to the move.",
+      tone: "neutral",
+    });
+  }
+  if (improvements.length === 0) {
+    improvements.push({
+      label: "No clear gain yet",
+      detail:
+        "The evaluated factors do not establish a material improvement yet.",
+      tone: "favorable",
+    });
+  }
+  if (pressures.length === 0) {
+    pressures.push({
+      label: "No major pressure found",
+      detail:
+        "No evaluated factor creates a material downside at these inputs.",
+      tone: "caution",
+    });
+  }
+  const judgment =
+    unmetCount > 0
+      ? `${destinationCity} has upside, but a must-have need is not met.`
+      : outlook.label === "Risky"
+        ? `${destinationCity} looks financially risky at these numbers.`
+        : rentOverCeilingDollars > 0 && outlook.label === "Promising"
+          ? `${destinationCity} looks promising, but rent fit needs checking.`
+          : conditionalCount > 0
+            ? `${destinationCity} looks promising if your family checks work out.`
+            : outlook.label === "Promising"
+              ? `${destinationCity} looks promising for this move.`
+              : `${destinationCity} has tradeoffs worth weighing.`;
+  const canonicalChecks = canonicalOpenChecks?.map((check) => ({
+    label: check.label,
+    detail: check.action,
+    tone:
+      check.severity === "blocker" ? ("risk" as const) : ("caution" as const),
+  }));
+  const brief = {
+    judgment,
+    outlook,
+    readiness,
+    evidenceConfidence: decisionGate?.evidenceConfidence ?? {
+      level: profile.confidence.level,
+      label: confidenceLabels[profile.confidence.level],
+      tone: "caution" as const,
+      explanation: confidenceExplanation,
+    },
+    decisionGate,
+    improvements: improvements.slice(0, 3),
+    pressures: pressures.slice(0, 3),
+    checks: canonicalChecks ?? checks.slice(0, 3),
+    openChecks: canonicalOpenChecks ?? [],
+  };
+
   return {
     releaseStatus: result.releaseStatus,
     route: {
@@ -960,6 +1195,7 @@ export const createResearchResultsViewModel = (
       originMetro: profile.scenario.origin.label,
       destinationMetro: profile.scenario.destination.label,
     },
+    brief,
     condition: deterministicResult
       ? deterministicConditionCopy[deterministicResult.condition]
       : conditionCopy[profile.condition.value],
@@ -1001,7 +1237,7 @@ export const createResearchResultsViewModel = (
           : {
               label: `${(deterministicResult?.range ?? analysis.score.range)!.min}–${(deterministicResult?.range ?? analysis.score.range)!.max}`,
               explanation:
-                "This estimate sensitivity range reruns the accepted low and high financial estimates. It is not a confidence interval.",
+                "This range reruns the low and high financial estimates so you can see whether the answer is fragile.",
             },
       exactFinance: {
         label: "Monthly cushion difference",

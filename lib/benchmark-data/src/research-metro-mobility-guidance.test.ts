@@ -24,8 +24,8 @@ describe("research metro mobility guidance", () => {
       displayCommuteDifferenceMinutes: 2.1,
       commuteAwayShareDifferenceBps: -707,
     });
-    expect(guidance?.boundary).toContain("not a route-level commute");
-    expect(guidance?.boundary).toContain("not a car-dependence score");
+    expect(guidance?.boundary).toContain("metro-level daily-life context");
+    expect(guidance?.boundary).toContain("Check the actual route");
   });
 
   it("fails closed for unsupported or same-metro comparisons", () => {

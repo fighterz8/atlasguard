@@ -32,9 +32,8 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
           </h2>
         </div>
         <p className="text-sm leading-6 text-slate-600">
-          The Decision Profile remains the source of truth. The score is a
-          compact reading of the same finances, preferences, blockers, and
-          evidence—not a replacement for them.
+          The score condenses the budget, daily-life tradeoffs, and must-have
+          needs into one read. The cards below show what moved it.
         </p>
       </div>
 
@@ -55,7 +54,7 @@ export function ScoreExplanation({ score }: ScoreExplanationProps) {
               </StatusBadge>
             </span>
             <span className="mt-2 block text-sm font-normal leading-6 text-slate-600">
-              Exact monthly arithmetic from the assumptions shown below.
+              Monthly breathing room after rent and recurring bills.
             </span>
             <span className="mt-2 block">
               <StatusBadge tone="benchmark">MoveWise calculated</StatusBadge>

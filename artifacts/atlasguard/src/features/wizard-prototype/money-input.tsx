@@ -13,12 +13,13 @@ type MoneyInputProps = {
   basis: AssumptionBasis | "confirmed";
   basisKey?: BasisKey;
   sourceLabel?:
-    | "MoveWise public-data estimate"
+    | "MoveWise estimate"
     | "Calculated after your rental plan"
     | "You told us";
   onReset?: () => void;
   onValueChange: (value: string) => void;
   onBasisChange?: (key: BasisKey, value: AssumptionBasis) => void;
+  readOnly?: boolean;
 };
 
 export function MoneyInput({
@@ -34,6 +35,7 @@ export function MoneyInput({
   onReset,
   onValueChange,
   onBasisChange,
+  readOnly = false,
 }: MoneyInputProps) {
   const descriptionId = `${id}-description`;
   const errorId = `${id}-error`;
@@ -63,7 +65,7 @@ export function MoneyInput({
               className="min-h-11 max-w-full rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700/20"
             >
               <option value="user_estimate">Estimate</option>
-              <option value="confirmed">Confirmed</option>
+              <option value="confirmed">Verified</option>
             </select>
           </div>
         ) : sourceLabel ? (
@@ -88,11 +90,12 @@ export function MoneyInput({
           inputMode="numeric"
           autoComplete="off"
           value={value}
+          readOnly={readOnly}
           aria-label={accessibleLabel}
           aria-invalid={error ? "true" : undefined}
           aria-describedby={`${descriptionId}${error ? ` ${errorId}` : ""}`}
           onChange={(event) => onValueChange(event.currentTarget.value)}
-          className="control-input pl-7 text-sm tabular-nums sm:text-base"
+          className={`control-input pl-7 text-sm tabular-nums sm:text-base ${readOnly ? "cursor-default bg-slate-100 text-slate-700" : ""}`}
           placeholder="0"
         />
       </div>

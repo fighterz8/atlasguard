@@ -145,7 +145,7 @@ export const getResearchMetroOwnershipGuidance = (
         ? "ACS ownership context is similar between these metros."
         : `ACS ownership context shows ${ownerValueDirection} owner-occupied home values and ${ownerCostDirection} selected monthly owner costs with a mortgage in the destination metro.`,
     boundary:
-      "This is ownership context only. It is not a mortgage quote, not a purchase budget, not a down-payment plan, not an interest-rate forecast, not a property-tax or insurance estimate, not a listing search, not affordability approval, and not a scored buying model. V1 scores the immediate rental stage until MoveWise has user-reviewed buying inputs and approved ownership rules.",
+      "Use this as a buying-later checkpoint. A real buying plan still needs price range, down payment, rates, taxes, insurance, and lender-specific approval.",
     source: Object.freeze({
       publisher: RESEARCH_METRO_OWNERSHIP_SOURCE.publisher,
       ownerValueTableId:

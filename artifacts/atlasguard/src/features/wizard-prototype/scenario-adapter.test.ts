@@ -5,6 +5,7 @@ import {
   type PriorityImportance,
   type WizardPrototypeDraft,
 } from "./model";
+import { enableExpenseWorksheet } from "./expense-worksheet";
 import { adaptWizardDraftToScenarioInput } from "./scenario-adapter";
 
 const validDraft = (): WizardPrototypeDraft => ({
@@ -22,13 +23,13 @@ const validDraft = (): WizardPrototypeDraft => ({
       maxMonthlyCost: "2000",
       stopsMove: "no",
     },
-    supportNetwork: { needed: "no", stopsMove: "" },
-    requiredServices: { needed: "no", stopsMove: "" },
-    carFreeAccess: { needed: "no", stopsMove: "" },
+    supportNetwork: { relevance: "no", importance: "", status: "" },
+    requiredServices: { relevance: "no", importance: "", status: "" },
+    carFreeAccess: { relevance: "no", importance: "", status: "" },
   },
   finances: {
     ...createInitialWizardDraft().finances,
-    currentHousingTenure: "rent",
+    currentHousingTenure: "own",
     currentTakeHome: "5,000",
     targetTakeHome: "5250",
     currentHousing: "2000",
@@ -48,9 +49,63 @@ const validDraft = (): WizardPrototypeDraft => ({
     retainedPropertyNetBasis: "user_estimate",
   },
   commuteImportance: "important",
+  climateHeatPreference: "fewer_hot_days",
+  climateHeatImportance: "important",
 });
 
 describe("Wizard scenario adapter", () => {
+  it("keeps evaluator input identical when a worksheet emits the same expense total", () => {
+    const direct = validDraft();
+    const brokenDown = validDraft();
+    brokenDown.finances.expenseWorksheet = enableExpenseWorksheet("1500");
+
+    expect(adaptWizardDraftToScenarioInput(brokenDown)).toEqual(
+      adaptWizardDraftToScenarioInput(direct),
+    );
+  });
+
+  it("uses a non-editable structural zero for renters", () => {
+    const draft = validDraft();
+    draft.finances.currentHousingTenure = "rent";
+    draft.finances.retainedPropertyNet = "";
+    draft.finances.retainedPropertyNetRangeMin = "";
+    draft.finances.retainedPropertyNetRangeMax = "";
+
+    const result = adaptWizardDraftToScenarioInput(draft);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.scenario.finances.destination.retainedPropertyNet).toEqual({
+      monthlyCents: 0,
+      basis: "confirmed",
+      plausibleRangeCents: null,
+    });
+  });
+
+  it("gives untouched daily-life answers zero decision weight", () => {
+    const draft = validDraft();
+    draft.commuteImportance = "";
+    draft.climateHeatPreference = "";
+    draft.climateHeatImportance = "";
+
+    const result = adaptWizardDraftToScenarioInput(draft);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.scenario.priorities).toEqual([
+      {
+        priorityId: "climate_heat",
+        preferredDirection: "lower",
+        weight: 0,
+      },
+      {
+        priorityId: "commute_time",
+        preferredDirection: "lower",
+        weight: 0,
+      },
+    ]);
+  });
+
   it("converts reviewed whole-dollar values into canonical monthly cents", () => {
     const result = adaptWizardDraftToScenarioInput(validDraft());
 

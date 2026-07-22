@@ -108,7 +108,7 @@ export function HouseholdFit({ household }: HouseholdFitProps) {
                 </div>
               </dl>
               <p className="mt-4 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
-                {plan.supplySignal} Not a live listing count.
+                {plan.supplySignal} Check current listings next.
               </p>
             </article>
 

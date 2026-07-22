@@ -11,8 +11,8 @@ import type {
 
 import {
   validateWizardStep,
+  isHardRentCeiling,
   type ConditionalHouseholdNeed,
-  type HouseholdFitAssessment,
   type WizardErrors,
   type WizardPrototypeDraft,
 } from "./model";
@@ -32,19 +32,31 @@ const excludedAnswer = (
   essentialStatus: null,
 });
 
-const essentialStatusFromAssessment = (
-  assessment: HouseholdFitAssessment,
+const essentialStatusFromConstraint = (
+  status: ConditionalHouseholdNeed["status"],
 ): NonNullable<HouseholdFactorAnswer["essentialStatus"]> => {
-  switch (assessment) {
-    case "strong_positive":
-    case "positive":
+  switch (status) {
+    case "works":
       return "confirmed_met";
-    case "strong_negative":
-    case "negative":
+    case "does_not_work":
       return "confirmed_unmet";
-    case "neutral":
-    case "unavailable":
+    case "not_checked":
+    case "":
       return "unconfirmed";
+  }
+};
+
+const impactFromConstraint = (
+  status: ConditionalHouseholdNeed["status"],
+): HouseholdFactorAnswer["impact"] => {
+  switch (status) {
+    case "works":
+      return "positive";
+    case "does_not_work":
+      return "negative";
+    case "not_checked":
+    case "":
+      return "unavailable";
   }
 };
 
@@ -52,15 +64,20 @@ const answerFromConditionalNeed = (
   factorId: HouseholdFactorAnswer["factorId"],
   need: ConditionalHouseholdNeed,
 ): HouseholdFactorAnswer => {
-  if (need.needed !== "yes") return excludedAnswer(factorId);
+  if (need.relevance === "") {
+    throw new Error(
+      `Household factor ${factorId} cannot be adapted while relevance is unknown.`,
+    );
+  }
+  if (need.relevance === "no") return excludedAnswer(factorId);
 
-  const isEssential = need.stopsMove === "yes";
+  const isEssential = need.importance === "blocker";
   return {
     factorId,
     importance: isEssential ? "essential" : "important",
-    impact: need.assessment,
+    impact: impactFromConstraint(need.status),
     essentialStatus: isEssential
-      ? essentialStatusFromAssessment(need.assessment)
+      ? essentialStatusFromConstraint(need.status)
       : null,
   };
 };
@@ -73,7 +90,10 @@ const parseWholeDollars = (value: string): number | null => {
 export function adaptWizardDraftToHouseholdAnswers(
   draft: WizardPrototypeDraft,
 ): WizardHouseholdAnswerAdapterResult {
-  const errors = validateWizardStep("household", draft);
+  const errors = {
+    ...validateWizardStep("firstHome", draft),
+    ...validateWizardStep("household", draft),
+  };
   if (Object.keys(errors).length > 0 || draft.householdMode === "") {
     return { success: false, errors };
   }
@@ -90,7 +110,7 @@ export function adaptWizardDraftToHouseholdAnswers(
       },
     };
   }
-  const rentIsEssential = householdPlan.housing.stopsMove === "yes";
+  const rentIsEssential = isHardRentCeiling(householdPlan.housing);
   const answersByFactor: Record<
     HouseholdFactorAnswer["factorId"],
     HouseholdFactorAnswer
@@ -117,14 +137,16 @@ export function adaptWizardDraftToHouseholdAnswers(
     "support_network",
     householdPlan.supportNetwork,
   );
-  answersByFactor.childcare_continuity = answerFromConditionalNeed(
-    "childcare_continuity",
-    householdPlan.childcare,
-  );
-  answersByFactor.school_continuity = answerFromConditionalNeed(
-    "school_continuity",
-    householdPlan.school,
-  );
+  if (draft.householdMode === "family") {
+    answersByFactor.childcare_continuity = answerFromConditionalNeed(
+      "childcare_continuity",
+      householdPlan.childcare,
+    );
+    answersByFactor.school_continuity = answerFromConditionalNeed(
+      "school_continuity",
+      householdPlan.school,
+    );
+  }
   answersByFactor.required_services_continuity = answerFromConditionalNeed(
     "required_services_continuity",
     householdPlan.requiredServices,

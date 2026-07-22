@@ -32,8 +32,8 @@ export type ComparisonDefinition = {
 export const moneyComparisons: readonly ComparisonDefinition[] = [
   {
     kind: "take_home",
-    title: "Take-home income",
-    description: "Monthly spendable income after withholding.",
+    title: "Income after tax",
+    description: "About how much reaches your account in a normal month.",
     current: {
       id: "currentTakeHome",
       description: "Today",
@@ -46,9 +46,8 @@ export const moneyComparisons: readonly ComparisonDefinition[] = [
   },
   {
     kind: "housing",
-    title: "Housing",
-    description:
-      "Required housing today and your expected cost after the move—not the regional median.",
+    title: "Home",
+    description: "Rent or mortgage plus required monthly housing charges.",
     current: {
       id: "currentHousing",
       description: "Today",
@@ -61,8 +60,8 @@ export const moneyComparisons: readonly ComparisonDefinition[] = [
   },
   {
     kind: "expenses",
-    title: "Other recurring expenses",
-    description: "Monthly recurring costs excluding housing.",
+    title: "Everything else",
+    description: "Normal monthly spending outside housing.",
     current: {
       id: "currentExpenses",
       description: "Today",
@@ -257,7 +256,7 @@ export function MoneyComparisonCard({
         </div>
       ) : (
         <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
-          Confirmed amounts stay direct-entry so an exploratory slider cannot
+          Verified amounts stay direct-entry so an exploratory slider cannot
           change them accidentally.
         </p>
       )}

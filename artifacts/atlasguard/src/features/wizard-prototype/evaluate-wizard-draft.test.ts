@@ -18,9 +18,9 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
       maxMonthlyCost: "2000",
       stopsMove: "no",
     },
-    supportNetwork: { needed: "no", stopsMove: "" },
-    requiredServices: { needed: "no", stopsMove: "" },
-    carFreeAccess: { needed: "no", stopsMove: "" },
+    supportNetwork: { relevance: "no", importance: "", status: "" },
+    requiredServices: { relevance: "no", importance: "", status: "" },
+    carFreeAccess: { relevance: "no", importance: "", status: "" },
   },
   finances: {
     ...createInitialWizardDraft().finances,
@@ -42,6 +42,8 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
     retainedPropertyNetRangeMax: "250",
   },
   commuteImportance: "important",
+  climateHeatPreference: "fewer_hot_days",
+  climateHeatImportance: "important",
 });
 
 describe("Wizard deterministic evaluation", () => {

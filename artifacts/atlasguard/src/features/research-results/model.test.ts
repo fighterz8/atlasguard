@@ -25,15 +25,16 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
       bedrooms: "2",
       bathrooms: "1",
       maxMonthlyCost: "2000",
+      ceilingType: "target",
       stopsMove: "no",
     },
-    supportNetwork: { needed: "no", stopsMove: "" },
-    requiredServices: { needed: "no", stopsMove: "" },
-    carFreeAccess: { needed: "no", stopsMove: "" },
+    supportNetwork: { relevance: "no", importance: "", status: "" },
+    requiredServices: { relevance: "no", importance: "", status: "" },
+    carFreeAccess: { relevance: "no", importance: "", status: "" },
   },
   finances: {
     ...createInitialWizardDraft().finances,
-    currentHousingTenure: "rent",
+    currentHousingTenure: "own",
     currentTakeHome: "5000",
     targetTakeHome: "5250",
     currentHousing: "2000",
@@ -51,6 +52,8 @@ const reviewedDraft = (): WizardPrototypeDraft => ({
     retainedPropertyNetRangeMax: "100",
   },
   commuteImportance: "important",
+  climateHeatPreference: "fewer_hot_days",
+  climateHeatImportance: "important",
 });
 
 describe("research results view model", () => {
@@ -81,7 +84,9 @@ describe("research results view model", () => {
         "Not a probability, universal city grade, city ranking, or instruction to move.",
       range: {
         label: expect.stringMatching(/^\d+–\d+$/),
-        explanation: expect.stringContaining("estimate sensitivity"),
+        explanation: expect.stringContaining(
+          "low and high financial estimates",
+        ),
       },
       exactFinance: {
         label: "Monthly cushion difference",
@@ -301,7 +306,9 @@ describe("research results view model", () => {
       reading: expect.stringContaining(
         "similar FEMA NRI anchor-county baseline risk",
       ),
-      boundary: expect.stringContaining("not a neighborhood or parcel rating"),
+      boundary: expect.stringContaining(
+        "Check the exact neighborhood, home, insurance",
+      ),
       sourceLabel:
         "Federal Emergency Management Agency · National Risk Index Counties December 2025 v1.20",
     });
@@ -319,6 +326,7 @@ describe("research results view model", () => {
 
   it("activates deterministic rule 0.2.0 only with its verified Wizard context", () => {
     const draft = reviewedDraft();
+    draft.householdPlan.housing.ceilingType = "hard";
     draft.householdPlan.housing.stopsMove = "yes";
     draft.householdPlan.housing.maxMonthlyCost = "1700";
     const evaluation = evaluateWizardDraft(draft);
@@ -336,10 +344,10 @@ describe("research results view model", () => {
       scoreVersion: "0.2.0",
       mode: "deterministic",
       decisionChangingAssumption: {
-        changesConditionTo: "High financial risk under these assumptions",
+        changesConditionTo: "Budget risk looks high",
       },
       readiness: {
-        label: "Public estimates + your inputs",
+        label: "MoveWise estimates + your inputs",
         tone: "benchmark",
         explanation: expect.stringContaining(
           "housing-burden safety check could not run",
@@ -359,7 +367,7 @@ describe("research results view model", () => {
         }),
         expect.objectContaining({
           id: "take_home_income",
-          sourceLabel: "You told us",
+          sourceLabel: "You entered · Estimated",
         }),
       ]),
     );
@@ -399,9 +407,9 @@ describe("research results view model", () => {
     draft.finances.targetExpenses = "";
     draft.householdPlan.housing.assessment = "positive";
     draft.householdPlan.supportNetwork = {
-      needed: "yes",
-      stopsMove: "no",
-      assessment: "positive",
+      relevance: "yes",
+      importance: "important",
+      status: "works",
     };
     const submission = submitWizardDraft(draft);
     expect(submission.success).toBe(true);
@@ -417,7 +425,7 @@ describe("research results view model", () => {
       modeLabel: "Individual move",
       rentalPlan: {
         stageLabel: "First stage: renting",
-        laterPlanLabel: "No ownership timeline in this score",
+        laterPlanLabel: "No buying timeline added",
         bedroomLabel: "2-bedroom rental",
         originRent: "$2,263",
         destinationRent: "$2,162",
@@ -454,7 +462,7 @@ describe("research results view model", () => {
       "Opportunity context",
     ]);
     expect(model.score.readiness).toMatchObject({
-      label: "Public estimates + your inputs",
+      label: "MoveWise estimates + your inputs",
       tone: "benchmark",
     });
     expect(model.score.readiness.explanation).not.toContain("Preliminary");
@@ -462,6 +470,52 @@ describe("research results view model", () => {
       "Needs confirmation",
     );
     expect(model.nextSteps).toEqual([]);
+    expect(model.brief).toMatchObject({
+      judgment: "Seattle looks promising, but rent fit needs checking.",
+      outlook: {
+        label: "Promising",
+        tone: "favorable",
+      },
+      readiness: {
+        label: "Preliminary",
+        tone: "caution",
+      },
+      improvements: expect.arrayContaining([
+        expect.objectContaining({
+          label: "Monthly breathing room",
+          detail: expect.stringContaining("increases by"),
+        }),
+      ]),
+      pressures: expect.arrayContaining([
+        expect.objectContaining({
+          label: "Rent fit",
+          detail:
+            "A typical 2-bedroom rental is $162 above your $2,000 ceiling.",
+        }),
+      ]),
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          label: "Resolve the rent-ceiling conflict",
+          detail:
+            "Find a suitable home at or below $2,000 or change the constraint.",
+        }),
+      ]),
+      openChecks: expect.arrayContaining([
+        expect.objectContaining({
+          id: "budget.destination.take-home",
+          origin: "movewise",
+          evidenceStatus: "estimated",
+        }),
+        expect.objectContaining({
+          id: "budget.destination.gross-income",
+          knowledge: "unknown",
+        }),
+        expect.objectContaining({ id: "first-home.rent-ceiling" }),
+        expect.objectContaining({
+          id: "budget.destination.retained-property",
+        }),
+      ]),
+    });
   });
 
   it("labels public estimates, baselines, overrides, and transition tenure separately", () => {
@@ -494,16 +548,16 @@ describe("research results view model", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: "take_home_income",
-          sourceLabel: "MoveWise public-data estimate",
+          sourceLabel: "MoveWise estimate · Estimated",
         }),
         expect.objectContaining({
           id: "housing_cost",
           label: "Housing · owning → first stage rent",
-          sourceLabel: "You told us",
+          sourceLabel: "You entered · Estimated",
         }),
         expect.objectContaining({
           id: "recurring_expenses",
-          sourceLabel: "Fallback estimate",
+          sourceLabel: "MoveWise estimate · Estimated",
         }),
       ]),
     );
@@ -518,8 +572,8 @@ describe("research results view model", () => {
       originMonthlyOwnerCostsWithMortgage: "$3,255",
       destinationMonthlyOwnerCostsWithMortgage: "$2,989",
       monthlyOwnerCostDifference: "$266 lower",
-      reading: expect.stringContaining("selected monthly owner costs"),
-      boundary: expect.stringContaining("not a mortgage quote"),
+      reading: expect.stringContaining("typical monthly owner costs"),
+      boundary: expect.stringContaining("buying-later checkpoint"),
       sourceLabel: "U.S. Census Bureau · ACS tables B25077/B25088",
     });
   });
@@ -554,14 +608,16 @@ describe("research results view model", () => {
       reading: expect.stringContaining(
         "San Diego metro household income is higher than Austin",
       ),
-      laborMarketBoundary: expect.stringContaining("not a salary prediction"),
+      laborMarketBoundary: expect.stringContaining(
+        "Confirm job, remote-work, or occupation-specific pay",
+      ),
       sourceLabel: "U.S. Census Bureau · ACS table B19013",
     });
     expect(model.familyCostContext).toMatchObject({
       role: "Context only",
       destinationMonthlyExpenses: "$1,661",
       reading: expect.stringContaining("family operating costs"),
-      childcareBoundary: expect.stringContaining("not childcare-price data"),
+      childcareBoundary: expect.stringContaining("Keep those needs visible"),
     });
     expect(model.ownershipContext).toBeNull();
     expect(model.housingContext).toMatchObject({
@@ -645,10 +701,11 @@ describe("research results view model", () => {
   it("builds the complete results experience when commute is excluded and ranges are omitted", () => {
     const draft = reviewedDraft();
     draft.commuteImportance = "does_not_matter";
+    draft.finances.currentHousingTenure = "rent";
     draft.finances.targetTakeHome = "5000";
     draft.finances.targetHousing = "2000";
     draft.finances.targetExpenses = "1500";
-    draft.finances.retainedPropertyNet = "0";
+    draft.finances.retainedPropertyNet = "";
     draft.finances.targetTakeHomeRangeMin = "";
     draft.finances.targetTakeHomeRangeMax = "";
     draft.finances.targetHousingRangeMin = "";
@@ -685,7 +742,7 @@ describe("research results view model", () => {
       createResearchResultsViewModel(evaluation.evaluation).climateRiskContext,
     ).toMatchObject({
       role: "Context only",
-      boundary: expect.stringContaining("not a scored MoveWise rule"),
+      boundary: expect.stringContaining("area-level climate and hazard"),
     });
     expect(
       createResearchResultsViewModel(evaluation.evaluation).confidence
@@ -736,10 +793,11 @@ describe("research results view model", () => {
   it("builds controls and thresholds from a reviewed user evaluation", () => {
     const draft = reviewedDraft();
     draft.climateHeatPreference = "does_not_matter";
+    draft.finances.currentHousingTenure = "rent";
     draft.finances.targetTakeHome = "5000";
     draft.finances.targetHousing = "2000";
     draft.finances.targetExpenses = "1500";
-    draft.finances.retainedPropertyNet = "0";
+    draft.finances.retainedPropertyNet = "";
     const evaluation = evaluateWizardDraft(draft);
     expect(evaluation.success).toBe(true);
     if (!evaluation.success) return;

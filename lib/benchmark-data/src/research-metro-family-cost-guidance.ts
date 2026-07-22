@@ -52,7 +52,7 @@ export const getResearchMetroFamilyCostGuidance = (
         ? "BEA regional prices suggest broad family operating costs are similar after housing is excluded."
         : `BEA regional prices suggest broad family operating costs are ${direction} after housing is excluded.`,
     childcareBoundary:
-      "This is not childcare-price data, school fit, tax advice, or a household-specific family budget. Childcare remains important but not scored until MoveWise adds age-specific public childcare evidence and user-reviewed need assumptions.",
+      "Childcare, school fit, taxes, and household-specific costs can still move the answer. Keep those needs visible when they matter.",
     source: expenseGuidance.source,
   });
 };

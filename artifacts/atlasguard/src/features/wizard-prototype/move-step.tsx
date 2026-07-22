@@ -103,7 +103,7 @@ export function MoveStep({
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 1 of 5</p>
+          <p className="eyebrow">Step 1 of 6</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}

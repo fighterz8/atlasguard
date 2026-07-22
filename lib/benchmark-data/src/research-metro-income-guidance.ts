@@ -153,9 +153,9 @@ export const getResearchMetroIncomeGuidance = (
     method:
       "Applies the destination-to-origin ACS median household-income ratio to the user's current take-home amount.",
     boundary:
-      "This preserves the user's relative position against metro household-income medians. It is an editable planning estimate, not a salary prediction, paycheck forecast, job offer, tax calculation, occupational wage estimate, or claim that the household will earn the metro median.",
+      "This preserves the user's relative position against metro household-income medians. Treat it as an editable starting point for destination take-home.",
     laborMarketBoundary:
-      "This is metro household-income context, not a salary prediction, paycheck forecast, job offer, tax calculation, employment probability, and not an occupation wage estimate.",
+      "This is broad metro income context. Confirm job, remote-work, or occupation-specific pay before relying on it.",
     source: Object.freeze({
       publisher: RESEARCH_METRO_INCOME_SOURCE.publisher,
       tableId: RESEARCH_METRO_INCOME_SOURCE.tableId,

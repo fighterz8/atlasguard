@@ -2,21 +2,23 @@ import { Flame, Route } from "lucide-react";
 
 import { StatusBadge } from "../ux-system/status-badge";
 
-import type { ClimateHeatPreference, PriorityImportance } from "./model";
+import type {
+  ActivePriorityImportance,
+  ClimateHeatPreference,
+  PriorityImportance,
+} from "./model";
 import {
   PriorityChoiceGrid,
   type PriorityChoiceOption,
 } from "./priority-choice-grid";
 
-type ActiveImportance = Exclude<PriorityImportance, "does_not_matter">;
-
 type PrioritiesStepProps = {
-  commuteImportance: PriorityImportance;
-  climateHeatPreference: ClimateHeatPreference;
-  climateHeatImportance: ActiveImportance;
+  commuteImportance: PriorityImportance | "";
+  climateHeatPreference: ClimateHeatPreference | "";
+  climateHeatImportance: ActivePriorityImportance | "";
   onCommuteChange: (value: PriorityImportance) => void;
   onClimatePreferenceChange: (value: ClimateHeatPreference) => void;
-  onClimateImportanceChange: (value: ActiveImportance) => void;
+  onClimateImportanceChange: (value: ActivePriorityImportance) => void;
 };
 
 const importanceOptions: readonly PriorityChoiceOption<PriorityImportance>[] = [
@@ -45,7 +47,7 @@ const importanceOptions: readonly PriorityChoiceOption<PriorityImportance>[] = [
 ];
 
 const activeImportanceOptions = importanceOptions.filter(
-  (option): option is PriorityChoiceOption<ActiveImportance> =>
+  (option): option is PriorityChoiceOption<ActivePriorityImportance> =>
     option.value !== "does_not_matter",
 );
 
@@ -81,7 +83,7 @@ export function PrioritiesStep({
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Step 3 of 5</p>
+          <p className="eyebrow">Step 4 of 6</p>
           <h1
             id="wizard-step-heading"
             tabIndex={-1}
@@ -133,7 +135,8 @@ export function PrioritiesStep({
           columns="three"
         />
 
-        {climateHeatPreference !== "does_not_matter" ? (
+        {climateHeatPreference === "fewer_hot_days" ||
+        climateHeatPreference === "more_hot_days" ? (
           <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-sm font-semibold text-slate-950">
               How much should this heat preference count?

@@ -34,9 +34,8 @@ describe("research metro ownership guidance", () => {
       },
     });
     expect(guidance?.summary).toContain("ownership context");
-    expect(guidance?.boundary).toContain("not a mortgage quote");
-    expect(guidance?.boundary).toContain("not a purchase budget");
-    expect(guidance?.boundary).toContain("approved ownership rules");
+    expect(guidance?.boundary).toContain("buying-later checkpoint");
+    expect(guidance?.boundary).toContain("down payment, rates, taxes");
   });
 
   it("fails closed when ownership evidence is unavailable", () => {

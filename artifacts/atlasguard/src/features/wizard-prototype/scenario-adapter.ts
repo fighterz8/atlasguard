@@ -26,6 +26,10 @@ const priorityWeight: Record<PriorityImportance, PriorityWeight> = {
   does_not_matter: 0,
 };
 
+const weightForPriority = (
+  importance: PriorityImportance | "",
+): PriorityWeight => (importance === "" ? 0 : priorityWeight[importance]);
+
 const dollarsToCents = (
   value: string,
   field: string,
@@ -72,6 +76,10 @@ export function adaptWizardDraftToScenarioInput(
     return { success: false, errors };
   }
 
+  const retainedPropertyApplies = draft.finances.currentHousingTenure === "own";
+  const retainedPropertyNet = retainedPropertyApplies
+    ? draft.finances.retainedPropertyNet
+    : "0";
   const cents = {
     currentTakeHome: dollarsToCents(
       draft.finances.currentTakeHome,
@@ -104,7 +112,7 @@ export function adaptWizardDraftToScenarioInput(
       errors,
     ),
     retainedPropertyNet: dollarsToCents(
-      draft.finances.retainedPropertyNet,
+      retainedPropertyNet,
       "finances.retainedPropertyNet",
       errors,
     ),
@@ -148,13 +156,15 @@ export function adaptWizardDraftToScenarioInput(
       "finances.targetExpenses",
       errors,
     ),
-    retainedPropertyNet: rangeToCents(
-      draft.finances.retainedPropertyNetBasis,
-      draft.finances.retainedPropertyNetRangeMin,
-      draft.finances.retainedPropertyNetRangeMax,
-      "finances.retainedPropertyNet",
-      errors,
-    ),
+    retainedPropertyNet: retainedPropertyApplies
+      ? rangeToCents(
+          draft.finances.retainedPropertyNetBasis,
+          draft.finances.retainedPropertyNetRangeMin,
+          draft.finances.retainedPropertyNetRangeMax,
+          "finances.retainedPropertyNet",
+          errors,
+        )
+      : null,
   };
 
   if (
@@ -209,7 +219,9 @@ export function adaptWizardDraftToScenarioInput(
         ),
         retainedPropertyNet: assumption(
           cents.retainedPropertyNet!,
-          draft.finances.retainedPropertyNetBasis,
+          retainedPropertyApplies
+            ? draft.finances.retainedPropertyNetBasis
+            : "confirmed",
           ranges.retainedPropertyNet,
         ),
       },
@@ -220,14 +232,16 @@ export function adaptWizardDraftToScenarioInput(
         preferredDirection:
           draft.climateHeatPreference === "more_hot_days" ? "higher" : "lower",
         weight:
-          draft.climateHeatPreference === "does_not_matter"
+          draft.climateHeatPreference === "" ||
+          draft.climateHeatPreference === "does_not_matter" ||
+          draft.climateHeatImportance === ""
             ? 0
             : priorityWeight[draft.climateHeatImportance],
       },
       {
         priorityId: "commute_time",
         preferredDirection: "lower",
-        weight: priorityWeight[draft.commuteImportance],
+        weight: weightForPriority(draft.commuteImportance),
       },
     ],
   });

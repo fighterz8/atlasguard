@@ -40,23 +40,116 @@ const validDraft = () => ({
       bedrooms: "2" as const,
       bathrooms: "1" as const,
       maxMonthlyCost: "2200",
+      ceilingType: "hard" as const,
       stopsMove: "yes" as const,
     },
-    supportNetwork: { needed: "no" as const, stopsMove: "" as const },
-    requiredServices: { needed: "no" as const, stopsMove: "" as const },
-    carFreeAccess: { needed: "no" as const, stopsMove: "" as const },
+    supportNetwork: {
+      relevance: "no" as const,
+      importance: "" as const,
+      status: "" as const,
+    },
+    requiredServices: {
+      relevance: "no" as const,
+      importance: "" as const,
+      status: "" as const,
+    },
+    carFreeAccess: {
+      relevance: "no" as const,
+      importance: "" as const,
+      status: "" as const,
+    },
   },
 });
 
 describe("Wizard prototype model", () => {
-  it("uses the accepted five-step decision flow with review before results", () => {
+  it("starts decision-bearing daily-life answers as unknown", () => {
+    const draft = createInitialWizardDraft();
+
+    expect(draft).toMatchObject({
+      commuteImportance: "",
+      climateHeatPreference: "",
+      climateHeatImportance: "",
+    });
+    expect(draft.finances).toMatchObject({
+      retainedPropertyNet: "",
+      retainedPropertyNetBasis: "user_estimate",
+    });
+  });
+
+  it("keeps relevant unanswered household needs unknown", () => {
+    const individual = createInitialWizardDraft();
+    individual.householdMode = "individual";
+
+    expect(validateWizardStep("household", individual)).toMatchObject({
+      "householdPlan.supportNetwork.relevance": expect.any(String),
+      "householdPlan.requiredServices.relevance": expect.any(String),
+      "householdPlan.carFreeAccess.relevance": expect.any(String),
+    });
+    expect(validateWizardStep("household", individual)).not.toHaveProperty(
+      "householdPlan.childcare.relevance",
+    );
+    expect(validateWizardStep("household", individual)).not.toHaveProperty(
+      "householdPlan.school.relevance",
+    );
+
+    const family = createInitialWizardDraft();
+    family.householdMode = "family";
+    expect(validateWizardStep("household", family)).toMatchObject({
+      "householdPlan.childcare.relevance": expect.any(String),
+      "householdPlan.school.relevance": expect.any(String),
+    });
+  });
+
+  it("models household constraints as independent relevance, importance, and status", () => {
+    const draft = createInitialWizardDraft();
+    draft.householdMode = "individual";
+
+    expect(draft.householdPlan.supportNetwork).toEqual({
+      relevance: "",
+      importance: "",
+      status: "",
+    });
+    expect(validateWizardStep("household", draft)).toMatchObject({
+      "householdPlan.supportNetwork.relevance": expect.any(String),
+    });
+
+    Object.assign(draft.householdPlan.supportNetwork, {
+      relevance: "yes",
+      importance: "blocker",
+      status: "not_checked",
+    });
+    Object.assign(draft.householdPlan.requiredServices, { relevance: "no" });
+    Object.assign(draft.householdPlan.carFreeAccess, { relevance: "no" });
+
+    expect(validateWizardStep("household", draft)).toEqual({});
+  });
+
+  it("uses the accepted six-module decision flow with review before results", () => {
     expect(wizardSteps.map(({ id }) => id)).toEqual([
       "move",
       "money",
+      "firstHome",
       "priorities",
       "household",
       "review",
     ]);
+  });
+
+  it("validates First home separately from Household constraints", () => {
+    const draft = createInitialWizardDraft();
+    draft.householdMode = "individual";
+
+    expect(validateWizardStep("firstHome", draft)).toMatchObject({
+      "householdPlan.housing.tenure": expect.any(String),
+      "householdPlan.housing.type": expect.any(String),
+      "householdPlan.housing.bedrooms": expect.any(String),
+      "householdPlan.housing.bathrooms": expect.any(String),
+      "householdPlan.housing.maxMonthlyCost": expect.any(String),
+      "householdPlan.housing.ceilingType": expect.any(String),
+    });
+    expect(validateWizardStep("household", draft)).not.toHaveProperty(
+      "householdPlan.housing.tenure",
+    );
   });
 
   it("requires two different supported locations", () => {
@@ -100,28 +193,49 @@ describe("Wizard prototype model", () => {
     });
   });
 
-  it("requires stop-the-move intent for household needs marked relevant", () => {
+  it("requires importance and status for household needs marked relevant", () => {
     const draft = validDraft();
     draft.householdPlan.supportNetwork = {
-      needed: "yes",
-      stopsMove: "",
-      assessment: "positive",
+      relevance: "yes",
+      importance: "",
+      status: "",
     };
 
     expect(validateWizardStep("household", draft)).toMatchObject({
-      "householdPlan.supportNetwork.stopsMove":
-        "Choose whether nearby support can stop the move.",
+      "householdPlan.supportNetwork.importance": expect.any(String),
+      "householdPlan.supportNetwork.status": expect.any(String),
     });
 
-    draft.householdPlan.supportNetwork.stopsMove = "no";
+    draft.householdPlan.supportNetwork.importance = "important";
+    draft.householdPlan.supportNetwork.status = "works";
     expect(validateWizardStep("household", draft)).toEqual({});
   });
 
   it("accepts a signed retained-property monthly net", () => {
     const draft = validDraft();
+    draft.finances.currentHousingTenure = "own";
     draft.finances.retainedPropertyNet = "-450";
 
     expect(validateWizardStep("money", draft)).toEqual({});
+  });
+
+  it("requires a retained-property adjustment only for current owners", () => {
+    const renter = validDraft();
+    renter.finances.currentHousingTenure = "rent";
+    renter.finances.retainedPropertyNet = "";
+    renter.finances.retainedPropertyNetRangeMin = "";
+    renter.finances.retainedPropertyNetRangeMax = "";
+    expect(validateWizardStep("money", renter)).toEqual({});
+
+    const owner = validDraft();
+    owner.finances.currentHousingTenure = "own";
+    owner.finances.retainedPropertyNet = "";
+    owner.finances.retainedPropertyNetRangeMin = "";
+    owner.finances.retainedPropertyNetRangeMax = "";
+    expect(validateWizardStep("money", owner)).toMatchObject({
+      "finances.retainedPropertyNet":
+        "Enter the monthly impact of keeping the property, or enter 0 if it will not continue after the move.",
+    });
   });
 
   it("requires the current tenure with the current monthly baseline", () => {
@@ -149,6 +263,7 @@ describe("Wizard prototype model", () => {
     draft.finances.currentHousing = "2600";
     draft.finances.currentExpenses = "2100";
     draft.finances.currentHousingTenure = "own";
+    draft.finances.retainedPropertyNet = "0";
     draft.finances.targetHousing = "2200";
 
     expect(validateWizardStep("money", draft)).toEqual({});
@@ -224,52 +339,57 @@ describe("Wizard prototype model", () => {
     });
   });
 
-  it("requires only the rent-first facts MoveWise can evaluate in v1", () => {
+  it("requires the deliberate First home facts MoveWise can evaluate in v1", () => {
     const empty = createInitialWizardDraft();
     empty.householdMode = "individual";
 
-    expect(validateWizardStep("household", empty)).toMatchObject({
-      "householdPlan.housing.tenure": "Choose whether you plan to rent or buy.",
+    expect(validateWizardStep("firstHome", empty)).toMatchObject({
+      "householdPlan.housing.tenure": "Choose the first housing stage.",
+      "householdPlan.housing.type": "Choose the kind of home you need.",
       "householdPlan.housing.maxMonthlyCost":
         "Enter the most you want to spend on housing each month.",
       "householdPlan.housing.bedrooms":
         "Choose the minimum number of bedrooms.",
-      "householdPlan.housing.stopsMove":
-        "Choose whether the rent ceiling is non-negotiable.",
+      "householdPlan.housing.bathrooms":
+        "Choose the minimum number of bathrooms.",
+      "householdPlan.housing.ceilingType":
+        "Choose how firm the rent ceiling is.",
     });
-    expect(validateWizardStep("household", validDraft())).toEqual({});
+    expect(validateWizardStep("firstHome", validDraft())).toEqual({});
   });
 
   it("keeps family details optional but requires intent for marked needs", () => {
     const draft = validDraft();
     draft.householdMode = "family";
-    draft.householdPlan.childcare.needed = "yes";
-    draft.householdPlan.school.needed = "yes";
+    draft.householdPlan.childcare.relevance = "yes";
+    draft.householdPlan.school.relevance = "yes";
 
     expect(validateWizardStep("household", draft)).toMatchObject({
-      "householdPlan.childcare.stopsMove":
-        "Choose whether childcare can stop the move.",
-      "householdPlan.school.stopsMove":
-        "Choose whether school continuity can stop the move.",
+      "householdPlan.childcare.importance": expect.any(String),
+      "householdPlan.childcare.status": expect.any(String),
+      "householdPlan.school.importance": expect.any(String),
+      "householdPlan.school.status": expect.any(String),
     });
 
-    draft.householdPlan.childcare.stopsMove = "yes";
-    draft.householdPlan.school.stopsMove = "no";
+    draft.householdPlan.childcare.importance = "blocker";
+    draft.householdPlan.childcare.status = "not_checked";
+    draft.householdPlan.school.importance = "important";
+    draft.householdPlan.school.status = "works";
     expect(validateWizardStep("household", draft)).toEqual({});
 
     draft.householdPlan.childcare = {
-      needed: "no",
+      relevance: "no",
+      importance: "",
+      status: "",
       arrangement: "",
-      stopsMove: "",
-      assessment: "unavailable",
     };
     draft.householdPlan.school = {
-      needed: "no",
+      relevance: "no",
+      importance: "",
+      status: "",
       gradeBand: "",
       preference: "",
       requirements: "",
-      stopsMove: "",
-      assessment: "unavailable",
     };
     expect(validateWizardStep("household", draft)).toEqual({});
   });

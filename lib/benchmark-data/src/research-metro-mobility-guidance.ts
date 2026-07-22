@@ -137,7 +137,7 @@ export const getResearchMetroMobilityGuidance = (
     method:
       "Compares ACS mean commute time for non-home workers and the share of workers who commute away from home.",
     boundary:
-      "This is metro-level daily-life friction context, not a route-level commute, transit-quality measure, vehicle-availability estimate, neighborhood walkability measure, and not a car-dependence score.",
+      "This is metro-level daily-life context. Check the actual route, transit options, and car needs for the household.",
     source: Object.freeze({
       publisher: "U.S. Census Bureau",
       commuteTableId: "B08013",

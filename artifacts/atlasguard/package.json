@@ -78,5 +78,9 @@
     "vite": "catalog:",
     "wouter": "^3.3.5",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "@xstate/react": "^5.0.5",
+    "xstate": "^5.32.5"
   }
 }

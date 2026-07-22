@@ -14,6 +14,7 @@ const currentOnlyDraft = () => {
   draft.householdPlan.housing.tenure = "rent_then_buy";
   draft.householdPlan.housing.bedrooms = "3";
   draft.householdPlan.housing.maxMonthlyCost = "2400";
+  draft.householdPlan.housing.ceilingType = "target";
   draft.householdPlan.housing.stopsMove = "no";
   return draft;
 };
